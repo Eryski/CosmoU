@@ -1,0 +1,26 @@
+const { contextBridge, ipcRenderer: r } = require('electron');
+contextBridge.exposeInMainWorld('api', {
+  getSettings: () => r.invoke('settings'),
+  scan: () => r.invoke('scan'),
+  pickCemu: () => r.invoke('pickCemu'),
+  pickFolder: () => r.invoke('pickFolder'),
+  play: p => r.invoke('play', p),
+  openCovers: () => r.invoke('covers'),
+  showInFolder: p => r.invoke('showInFolder', p),
+  getMusic: () => r.invoke('music'),
+  openMusicFolder: () => r.invoke('musicFolder'),
+  setOnlineCovers: v => r.invoke('setOnlineCovers', v),
+  setGameSetting: (k, v) => r.invoke('setGameSetting', k, v),
+  cemuSettingsGet: () => r.invoke('cemuSettingsGet'),
+  setCemuSetting: (k, v) => r.invoke('setCemuSetting', k, v),
+  setDefaultQuality: n => r.invoke('setDefaultQuality', n),
+  onCoversUpdated: cb => r.on('covers-updated', () => cb()),
+  inputGet: s => r.invoke('inputGet', s),
+  inputSet: (s, k, v) => r.invoke('inputSet', s, k, v),
+  inputProfile: (s, a, n) => r.invoke('inputProfile', s, a, n),
+  inputOpenCemu: () => r.invoke('inputOpenCemu'),
+  cemuStatus: () => r.invoke('cemuStatus'),
+  cemuInstall: () => r.invoke('cemuInstall'),
+  cemuCancel: () => r.invoke('cemuCancel'),
+  onCemuProgress: cb => r.on('cemu-progress', (_, d) => cb(d))
+});
