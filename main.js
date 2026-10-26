@@ -1449,3 +1449,100 @@ ipcMain.handle('checkUpdate', async () => {
   return { ok: true, current, latest, available: newer(latest, current), notes: String(rel.body || '').slice(0, 1500) };
 });
 ipcMain.handle('openReleases', () => shell.openExternal(RELEASES));
+
+// ---------- First-time setup ----------
+ipcMain.handle('setSetupDone', (_, v) => {
+  write({ ...read(), setupDone: v !== false });
+  return read();
+});
+// Menu music: copy one chosen audio file into CosmoU's music folder (replaces the previous one), or remove it again.
+const musicDir = () => path.join(app.getPath('userData'), 'music');
+const AUDIO = /\.(mp3|ogg|wav|m4a|flac)$/i;
+ipcMain.handle('pickMusic', async () => {
+  const r = await dialog.showOpenDialog({
+    title: 'Choose your menu music',
+    filters: [{ name: 'Audio', extensions: ['mp3', 'ogg', 'wav', 'm4a', 'flac'] }],
+    properties: ['openFile'],
+  });
+  if (r.canceled || !AUDIO.test(r.filePaths[0])) return null;
+  fs.mkdirSync(musicDir(), { recursive: true });
+  for (const f of fs.readdirSync(musicDir())) if (AUDIO.test(f)) fs.rmSync(path.join(musicDir(), f), { force: true });
+  const dest = path.join(musicDir(), path.basename(r.filePaths[0]));
+  fs.copyFileSync(r.filePaths[0], dest);
+  return { url: pathToFileURL(dest).href, name: path.basename(dest) };
+});
+ipcMain.handle('resetMusic', () => {
+  try {
+    for (const f of fs.readdirSync(musicDir())) if (AUDIO.test(f)) fs.rmSync(path.join(musicDir(), f), { force: true });
+  } catch {}
+  return true;
+});
+
+// ---------- Export / import settings (no secrets: only paths and preferences) ----------
+const EXPORT_KEYS = {
+  theme: 'string',
+  cemuPath: 'string',
+  gamesDir: 'string',
+  onlineCovers: 'boolean',
+  defaultQuality: 'string',
+  gameSettings: 'object',
+  cemuOverrides: 'object',
+  customApps: 'array',
+  plays: 'object',
+};
+const UI_KEYS = ['style', 'viewMode', 'wuView', 'hoverCases', 'uiSounds', 'music', 'buddies'];
+ipcMain.handle('exportSettings', async (_, ui) => {
+  const r = await dialog.showSaveDialog({
+    title: 'Export CosmoU settings',
+    defaultPath: path.join(app.getPath('documents'), 'cosmou-settings.json'),
+    filters: [{ name: 'CosmoU settings', extensions: ['json'] }],
+  });
+  if (r.canceled || !r.filePath) return { ok: false, cancelled: true };
+  const s = read(),
+    settings = {};
+  for (const k of Object.keys(EXPORT_KEYS)) if (s[k] !== undefined) settings[k] = s[k];
+  const uiOut = {};
+  for (const k of UI_KEYS) if (ui && typeof ui[k] === 'string') uiOut[k] = ui[k].slice(0, 20000);
+  const data = { app: 'CosmoU', version: app.getVersion(), exportedAt: new Date().toISOString(), settings, ui: uiOut };
+  fs.writeFileSync(r.filePath, JSON.stringify(data, null, 2));
+  return { ok: true, file: r.filePath };
+});
+const typeOk = (v, t) =>
+  t === 'array' ? Array.isArray(v) : t === 'object' ? v && typeof v === 'object' && !Array.isArray(v) : typeof v === t;
+ipcMain.handle('importSettings', async () => {
+  const r = await dialog.showOpenDialog({
+    title: 'Import CosmoU settings',
+    filters: [{ name: 'CosmoU settings', extensions: ['json'] }],
+    properties: ['openFile'],
+  });
+  if (r.canceled) return { ok: false, cancelled: true };
+  let data;
+  try {
+    if (fs.statSync(r.filePaths[0]).size > 2 * 1048576) throw new Error('too big');
+    data = JSON.parse(fs.readFileSync(r.filePaths[0], 'utf8'));
+  } catch {
+    return { ok: false, error: 'This file isn’t a CosmoU settings file.' };
+  }
+  if (!data || data.app !== 'CosmoU' || !data.settings || typeof data.settings !== 'object')
+    return { ok: false, error: 'This file isn’t a CosmoU settings file.' };
+  const s = read(),
+    applied = [];
+  for (const [k, t] of Object.entries(EXPORT_KEYS)) {
+    const v = data.settings[k];
+    if (v === undefined || !typeOk(v, t)) continue;
+    s[k] = v;
+    applied.push(k);
+  }
+  if (typeof s.cemuPath === 'string' && s.cemuPath && !fs.existsSync(s.cemuPath)) {
+    s.cemuPath = '';
+    s.cemuManaged = false;
+  }
+  if (Array.isArray(s.customApps))
+    s.customApps = s.customApps.filter(a => a && typeof a.path === 'string' && typeof a.id === 'string');
+  s.setupDone = true;
+  write(s);
+  applyTheme(s.theme);
+  const ui = {};
+  for (const k of UI_KEYS) if (data.ui && typeof data.ui[k] === 'string') ui[k] = data.ui[k];
+  return { ok: true, applied, ui, from: data.version || '' };
+});

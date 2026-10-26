@@ -102,12 +102,31 @@ function paint(el, g, initials = true) {
     el.append(s);
   }
 }
-function toast(t, ms = 3500) {
-  const e = $('#toast');
-  e.textContent = t;
-  e.classList.add('on');
-  clearTimeout(toast.t);
-  toast.t = setTimeout(() => e.classList.remove('on'), ms);
+// Small Liquid Glass notifications in the bottom-right corner; they stack and fade out on their own.
+const WARN_RE = /(n’t|n't|\bnot\b|error|fail|first|only works|no longer|unknown|invalid|couldn|wrong|close cemu)/i;
+function toast(t, ms = 3500, type) {
+  const box = $('#notes');
+  if (!box) return;
+  t = String(t || '');
+  type = type || (/^✓/.test(t) ? 'ok' : ms >= 6000 || WARN_RE.test(t) ? 'warn' : 'ok');
+  const n = document.createElement('div'),
+    ic = document.createElement('i'),
+    tx = document.createElement('span');
+  n.className = 'note ' + type;
+  n.setAttribute('role', 'status');
+  ic.textContent = type === 'warn' ? '!' : type === 'info' ? 'i' : '✓';
+  tx.textContent = t.replace(/^✓\s*/, '');
+  n.append(ic, tx);
+  box.append(n);
+  while (box.children.length > 3) box.firstElementChild.remove();
+  requestAnimationFrame(() => n.classList.add('on'));
+  const kill = () => {
+    if (n.classList.contains('out')) return;
+    n.classList.add('out');
+    setTimeout(() => n.remove(), 420);
+  };
+  n.onclick = kill;
+  setTimeout(kill, Math.max(2500, ms));
 }
 const cur = () => games.find(g => g.name === sel);
 function list() {

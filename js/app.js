@@ -375,6 +375,11 @@ async function installCemu() {
 async function initCemu() {
   if (!window.api) return;
   cfg = await api.getSettings();
+  if (!cfg.setupDone && !cfg.gamesDir) {
+    openWizard();
+    return;
+  }
+  if (!cfg.setupDone) cfg = await api.setSetupDone(true);
   const st = await api.cemuStatus();
   if (!st.installed) installCemu();
 }
@@ -391,7 +396,10 @@ if (window.api)
     } else setupUi('Preparing Cemu…', d.text || '', d.stage === 'extract' ? 100 : 0, d.stage === 'extract' ? [] : ['cancel']);
   });
 applyStyle();
-load().then(initPolish);
+load().then(() => {
+  initPolish();
+  noteNewGames();
+});
 initMusic();
 initCemu();
 requestAnimationFrame(() => {

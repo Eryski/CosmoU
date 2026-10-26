@@ -13,6 +13,9 @@ A free Windows launcher for the [Cemu](https://cemu.info) Wii U emulator with a 
 - Per-game quality and global graphics, audio and overlay settings
 - Controller type, API and profiles
 - Built-in feedback form that fills in your Cemu and Windows version
+- First-time setup: Cemu, games folder and menu music in four steps
+- Export / import your settings as cosmou-settings.json
+- Small notifications (for example “14 games added”)
 - Recently played is saved on disk, so it survives restarts and updates
 - Light, dark or system theme, smooth view transitions and optional UI sounds
 - Update check: shows a hint when a new version is on GitHub

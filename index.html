@@ -213,6 +213,10 @@
               <button class="btn" id="oc">Open covers folder</button>
             </div>
             <div class="set">
+              <div class="lbl"><strong>Rescan library</strong><small>Look for new games in your games folder</small></div>
+              <button class="btn" id="rescan">Rescan</button>
+            </div>
+            <div class="set">
               <div class="lbl"><strong>Other apps</strong><small>Add other emulators or PC games to your library</small></div>
               <button class="btn" id="addapp">Add app</button>
             </div>
@@ -236,6 +240,20 @@
                 <strong>UI sounds</strong><small>Soft clicks when you move, turn pages and start a game</small>
               </div>
               <button class="tg" id="uis">On</button>
+            </div>
+          </div>
+          <h3 class="sh">Backup</h3>
+          <div class="grp">
+            <div class="set">
+              <div class="lbl">
+                <strong>Settings backup</strong
+                ><small>Save your CosmoU setup as cosmou-settings.json, or load it on another PC</small>
+              </div>
+              <div class="acts"><button class="btn" id="expS">Export</button><button class="btn" id="impS">Import</button></div>
+            </div>
+            <div class="set">
+              <div class="lbl"><strong>First-time setup</strong><small>Go through Cemu, games folder and music again</small></div>
+              <button class="btn" id="rerunSetup">Run again</button>
             </div>
           </div>
           <h3 class="sh">About</h3>
@@ -447,7 +465,62 @@
       <span class="dot"></span><b id="updt"></b><button class="btn main" id="updd">Download</button
       ><button class="updx" id="updx" aria-label="Dismiss">×</button>
     </div>
-    <div id="toast" class="glass pill" role="status"></div>
+    <div id="notes" aria-live="polite"></div>
+    <div id="wiz" hidden>
+      <div class="wz-card">
+        <div class="wz-steps" id="wzsteps"><i></i><i></i><i></i><i></i></div>
+        <div class="wz-pages">
+          <section class="wz-page wz-hello" data-s="0">
+            <img class="wz-logo" src="build/icon.png" alt="" />
+            <h1>Welcome to CosmoU</h1>
+            <p>Let’s set up your Wii U library.</p>
+            <button class="btn main big" id="wzstart">Let’s go</button>
+          </section>
+          <section class="wz-page" data-s="1">
+            <small class="wz-k">Step 1</small>
+            <h2>Select Cemu</h2>
+            <p>
+              CosmoU starts your games with Cemu, the Wii U emulator. Get the latest version automatically, or choose your own
+              Cemu.exe.
+            </p>
+            <div class="wz-acts">
+              <button class="btn main" id="wzdl">Download Cemu</button><button class="btn" id="wzpick">Choose Cemu.exe</button>
+            </div>
+            <div class="wz-status" id="wzcemu"></div>
+          </section>
+          <section class="wz-page" data-s="2">
+            <small class="wz-k">Step 2</small>
+            <h2>Select your Wii U games folder</h2>
+            <p>The folder with your game folders or .wua, .wud and .wux files. CosmoU finds the games inside by itself.</p>
+            <div class="wz-acts"><button class="btn main" id="wzfolder">Choose folder</button></div>
+            <div class="wz-status" id="wzdir"></div>
+            <div class="wz-count" id="wzcount"></div>
+          </section>
+          <section class="wz-page" data-s="3">
+            <small class="wz-k">Step 3 · Optional</small>
+            <h2>Choose your menu music</h2>
+            <p>Background music while you browse your games. It pauses when a game starts.</p>
+            <div class="wz-music" id="wzmusic">
+              <button data-m="default"><b>CosmoU music</b><small>The built-in tune</small></button>
+              <button data-m="file"><b>Your own file…</b><small>MP3, OGG, WAV, M4A or FLAC</small></button>
+              <button data-m="off"><b>No music</b><small>Quiet menu</small></button>
+            </div>
+          </section>
+          <section class="wz-page wz-done" data-s="4">
+            <div class="wz-check">✓</div>
+            <small class="wz-k">Step 4</small>
+            <h2>You’re ready!</h2>
+            <div class="wz-count ok" id="wzready"></div>
+            <button class="btn main big" id="wzenter">Enter CosmoU</button>
+          </section>
+        </div>
+        <div class="wz-foot">
+          <button class="btn ghost" id="wzback">Back</button>
+          <button class="wz-link" id="wzskip">I’ll do this later</button>
+          <button class="btn main" id="wznext">Next</button>
+        </div>
+      </div>
+    </div>
     <script src="js/core.js"></script>
     <script src="js/wiiu-look.js"></script>
     <script src="js/covers.js"></script>
@@ -458,6 +531,7 @@
     <script src="js/buddies.js"></script>
     <script src="js/wiiu-home.js"></script>
     <script src="js/polish.js"></script>
+    <script src="js/onboarding.js"></script>
     <script src="js/app.js"></script>
   </body>
 </html>
