@@ -1,12 +1,13 @@
 {
  "name": "cosmou",
  "productName": "CosmoU",
- "version": "0.6.0",
- "description": "CosmoU \u2013 Launcher f\u00fcr Cemu",
+ "version": "0.8.0",
+ "description": "CosmoU – a Wii U style launcher for Cemu",
  "main": "main.js",
  "scripts": {
   "start": "electron .",
-  "dist": "electron-builder"
+  "dist": "electron-builder",
+  "preview": "node scripts/build-preview.js"
  },
  "devDependencies": {
   "electron": "^33.0.0",
@@ -25,6 +26,8 @@
    "main.js",
    "preload.js",
    "index.html",
+   "css/**",
+   "js/**",
    "package.json",
    "build/icon.png"
   ],

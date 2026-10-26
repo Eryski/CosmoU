@@ -1,730 +1,399 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>CosmoU</title>
-<style>
-@property --a{syntax:"<angle>";initial-value:0deg;inherits:false}
-:root{--head:"Bahnschrift SemiBold","Bahnschrift","Segoe UI Variable Display","Segoe UI",sans-serif;--ink:#08141f;--mute:#5a6e7e;--bg:#f7f6f1;--g1:rgba(255,251,243,.62);--g2:rgba(255,246,232,.18);--cyan:#14bfd3;--deep:#0b7f96;--shadow:rgba(25,70,110,.3);--panel:rgba(255,255,255,.55)}
-@media (prefers-color-scheme:dark){:root{--ink:#eaf4fa;--mute:#9db3c2;--bg:#0b1522;--g1:rgba(255,255,255,.16);--g2:rgba(255,255,255,.04);--deep:#4fd8ea;--shadow:rgba(0,0,0,.55);--panel:rgba(20,34,50,.6)}.bg i{opacity:.22!important}}
-*{box-sizing:border-box;margin:0}
-html,body{height:100%}
-body{font:15px/1.45 "Segoe UI Variable","Segoe UI",system-ui,sans-serif;color:var(--ink);background:var(--bg);overflow:hidden;animation:fade .9s ease both}
-@keyframes fade{from{opacity:0}}
-svg.defs{position:absolute;width:0;height:0}
-.bg{position:fixed;inset:0;z-index:-1;overflow:hidden}
-.bg i{position:absolute;border-radius:50%;filter:blur(70px);opacity:.55}
-.bg i:nth-child(1){width:46vw;height:46vw;left:-8vw;top:-16vw;background:#8fe9f2}
-.bg i:nth-child(2){width:38vw;height:38vw;right:-10vw;top:12vh;background:#c4b8ff}
-.bg i:nth-child(3){width:40vw;height:40vw;left:30vw;bottom:-22vw;background:#ffd8b0}
-.bg canvas{position:absolute;inset:0;width:100%;height:100%}
-.bg::before{content:"";position:absolute;inset:0;background:radial-gradient(70% 50% at 88% 100%,rgba(255,185,115,.3),transparent 65%),radial-gradient(60% 40% at 0% 100%,rgba(255,215,160,.22),transparent 60%)}
-.bg::after{content:"";position:absolute;inset:0;opacity:.07;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E")}
-button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
-input{font:inherit;color:inherit}
-.glass{--bs:inset 0 1px 1px rgba(255,255,255,.95),inset 0 -10px 16px -10px rgba(255,255,255,.5),-1.5px 0 0 rgba(255,110,80,.14),1.5px 0 0 rgba(0,205,255,.2),0 16px 36px -14px var(--shadow);
- position:relative;background:linear-gradient(160deg,var(--g1),var(--g2));box-shadow:var(--bs);
- -webkit-backdrop-filter:blur(18px) saturate(1.8);backdrop-filter:blur(18px) saturate(1.8)}
-.glass{isolation:isolate}
-.glass::before,.glass::after{z-index:-1}
-.glass::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:radial-gradient(220px circle at var(--mx,50%) var(--my,-30%),rgba(255,255,255,.8),rgba(255,255,255,.25) 40%,transparent 72%),radial-gradient(70px 22px at 20% 6%,rgba(255,255,255,.95),transparent 72%),linear-gradient(0deg,rgba(255,214,170,.2),transparent 45%),linear-gradient(115deg,transparent 30%,rgba(255,255,255,.2) 45%,transparent 60%)}
-.glass::after{content:"";position:absolute;inset:0;border-radius:inherit;padding:2.5px;pointer-events:none;filter:drop-shadow(-1.5px 0 0 rgba(255,90,110,.55)) drop-shadow(1.5px 0 0 rgba(0,210,255,.6)) drop-shadow(0 0 4px rgba(255,255,255,.9));background:linear-gradient(135deg,#fff,rgba(255,255,255,.25) 30%,rgba(255,255,255,.1) 55%,rgba(255,255,255,.95));-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude}
-.pill{border-radius:999px}
-:is(button,input,.tile):focus-visible{outline:3px solid var(--cyan);outline-offset:3px}
-.page{height:100%;overflow:auto;padding:0 clamp(18px,4vw,44px) 140px}
-header{display:flex;align-items:center;gap:14px;padding:22px 0 18px;flex-wrap:wrap;position:relative;z-index:3}
-.brand{font-size:28px;font-weight:700;letter-spacing:-.03em;margin-right:auto}
-.brand small{display:block;font-size:13px;font-weight:400;letter-spacing:0;color:var(--deep)}
-.search{display:flex;align-items:center;gap:8px;padding:0 18px;height:46px;min-width:min(260px,100%)}
-.search input{background:none;border:0;outline:0;width:100%}
-.search input::placeholder{color:var(--mute)}
-.tool{height:46px;padding:0 20px;font-weight:500}
-.hero{position:relative;border-radius:46px;overflow:hidden;height:clamp(230px,38vh,360px);display:flex;align-items:flex-end;color:#fff;box-shadow:0 40px 70px -30px var(--c,var(--shadow))}
-.hero::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;box-shadow:inset 0 0 0 6px rgba(255,255,255,.22),inset 0 6px 6px rgba(255,255,255,.55),inset 0 -50px 70px -40px var(--c,transparent);background:radial-gradient(90% 55% at 25% -10%,rgba(255,255,255,.28),transparent 60%)}
-.hero .bgimg{position:absolute;inset:-6%;background-size:cover;background-position:center;transform:translate(var(--px,0),var(--py,0)) scale(1.06);transition:transform .3s}
-.hero::before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(6,18,30,.82),rgba(6,18,30,.25) 62%,transparent),linear-gradient(0deg,rgba(6,18,30,.6),transparent 55%),radial-gradient(60% 90% at 85% 10%,rgba(255,255,255,.18),transparent 60%)}
-.hero .in{position:relative;padding:clamp(18px,2.6vw,30px);display:flex;align-items:flex-end;justify-content:space-between;gap:16px;width:100%;flex-wrap:wrap}
-.hero small{opacity:.85;display:block}
-.hero h3{font-size:clamp(30px,4.6vw,54px);letter-spacing:-.03em;line-height:1.1;max-width:20ch}
-.acts{display:flex;gap:10px}
-.play{padding:13px 38px;font-size:17px;font-weight:600;color:#fff;transition:transform .25s}
-.play.dark{color:var(--ink)}
-.play:hover{transform:scale(1.04);animation:ripple 1.1s ease-out}
-@keyframes ripple{0%{box-shadow:var(--bs),0 0 0 0 rgba(255,255,255,.6)}100%{box-shadow:var(--bs),0 0 0 22px rgba(255,255,255,0)}}
-.sec{display:flex;justify-content:space-between;align-items:baseline;margin:28px 0 16px}
-.sec h4{font-size:20px;letter-spacing:-.02em}.sec span{color:var(--mute);font-size:13px}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:28px 24px}
-.grid.swap .tile{animation:rise .75s cubic-bezier(.34,1.5,.5,1) backwards;animation-delay:calc(var(--i,0)*45ms)}
-@keyframes rise{from{opacity:0;transform:translateY(30px) scale(.9);filter:blur(8px)}}
-.tile{position:relative;text-align:left;border-radius:38px;perspective:800px;transition:transform .6s cubic-bezier(.34,1.8,.5,1)}
-.tile.on{transform:translateY(-3px) scale(1.02)}
-.tile:hover{transform:translateY(-5px) scale(1.05)}
-.art{position:relative;overflow:hidden;aspect-ratio:1;border-radius:38px;background-size:cover;background-position:center;display:grid;place-items:center;
- transform:rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg));transition:transform .35s ease-out;box-shadow:inset 0 5px 4px rgba(255,255,255,.7),inset 0 26px 30px -18px rgba(255,255,255,.55),inset 0 -3px 3px rgba(255,255,255,.25),inset 0 0 0 5px rgba(255,255,255,.16),inset 0 -30px 36px -14px rgba(0,0,0,.45),inset 0 0 46px -8px var(--c,#14bfd3),0 30px 44px -18px var(--c,rgba(25,70,110,.5))}
-.art::before{content:"";position:absolute;inset:0;background:radial-gradient(110% 60% at 30% -8%,rgba(255,255,255,.55),transparent 58%)}
-.art::after{content:"";position:absolute;inset:0;background:linear-gradient(115deg,transparent 38%,rgba(255,255,255,.55) 50%,transparent 62%) -140% 0/260% 100% no-repeat;transition:background-position .9s}
-.tile:hover .art::after{background-position:140% 0}
-.art span{position:relative;font-size:clamp(44px,5vw,64px);font-weight:800;color:#fff;letter-spacing:-.04em;text-shadow:0 4px 20px rgba(0,0,0,.25)}
-.tile b{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin:14px 4px 0;padding:7px 14px;border-radius:16px;font-weight:600;background:linear-gradient(160deg,rgba(255,255,255,.5),rgba(255,255,255,.12));box-shadow:inset 0 1px 1px #fff,0 8px 16px -10px var(--shadow)}
-.ring{position:absolute;inset:-6px;border-radius:44px;padding:3px;pointer-events:none;opacity:.9;background:conic-gradient(from var(--a),rgba(255,255,255,.9),rgba(255,255,255,.1) 28%,rgba(255,255,255,.75) 52%,rgba(255,255,255,.08) 78%,rgba(255,255,255,.9));-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;filter:drop-shadow(0 0 7px rgba(255,255,255,.7));animation:spin 12s linear infinite}
-@keyframes spin{to{--a:360deg}}
-.empty{max-width:440px;margin:40px auto;padding:34px;border-radius:32px;text-align:center}
-.empty h3{font-size:22px;letter-spacing:-.02em}.empty p{color:var(--mute);margin:6px 0 20px}
-nav.glass{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);display:flex;padding:10px;gap:4px;z-index:5;box-shadow:var(--bs),inset 0 3px 4px #fff,inset 0 -16px 22px -10px rgba(255,255,255,.6),0 30px 50px -16px var(--shadow)}
-nav button{position:relative;z-index:1;padding:16px 34px;border-radius:999px;font-size:16px;font-weight:600;color:var(--ink);opacity:.66;transition:opacity .25s}
-nav button.on{opacity:1}
-#ind,#vi,#tind{position:absolute;top:10px;bottom:10px;border-radius:999px;background:linear-gradient(180deg,rgba(255,255,255,.75),rgba(20,191,211,.3));box-shadow:inset 0 1px 0 #fff,0 0 20px -4px var(--cyan);transition:left .5s cubic-bezier(.34,1.5,.5,1),width .5s cubic-bezier(.34,1.5,.5,1)}
-dialog{margin:auto;border:0;border-radius:42px;padding:0;width:min(540px,92vw);color:var(--ink);overflow:visible}
-dialog.glass{position:fixed;background:linear-gradient(160deg,var(--panel),var(--g2))}
-dialog::backdrop{background:rgba(150,200,225,.3);backdrop-filter:blur(10px)}
-.in{padding:28px;position:relative;z-index:1}
-dialog h2{font-size:24px;letter-spacing:-.02em;margin-bottom:14px}
-.row{display:flex;gap:12px;align-items:center;justify-content:space-between;padding:14px 16px;margin-bottom:12px;border-radius:32px;padding:18px 22px;box-shadow:var(--bs),inset 0 3px 4px #fff,inset 0 -14px 20px -10px rgba(255,255,255,.6)}
-.row div{min-width:0}.row b{display:block}.row small{color:var(--mute);display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.hint{color:var(--mute);font-size:13px;margin:12px 4px 18px}
-.btn{padding:11px 20px;border-radius:999px;background:rgba(20,191,211,.16);color:var(--deep);font-weight:600;white-space:nowrap}
-.btn.main{background:var(--ink);color:var(--bg)}
-.det{display:flex;gap:22px;align-items:center;flex-wrap:wrap}
-.det .art{width:220px;flex:none}
-.det .t{flex:1;min-width:200px}.det small{color:var(--mute)}
-.det h2{margin:2px 0 18px}
-.det .acts{flex-wrap:wrap}
-#toast{position:fixed;left:50%;top:18px;transform:translate(-50%,-16px);padding:12px 22px;opacity:0;transition:.3s;pointer-events:none;max-width:90vw;z-index:30}
-#toast.on{opacity:1;transform:translate(-50%,0)}
-#launch,#setup{position:fixed;inset:0;z-index:20;display:grid;place-items:center;background:rgba(150,205,230,.35);backdrop-filter:blur(22px);opacity:0;visibility:hidden;transition:opacity .45s,visibility .45s}
-#launch.on,#setup.on{opacity:1;visibility:visible}
-.lp{width:min(320px,86vw);padding:26px;border-radius:38px;text-align:center;transform:scale(.9);transition:transform .6s cubic-bezier(.34,1.5,.5,1)}
-#launch.on .lp,#setup.on .lp{transform:none}
-#setup .lp{width:min(430px,90vw)}#setup .acts{justify-content:center;flex-wrap:wrap}
-.bar{height:8px;border-radius:9px;background:rgba(120,160,185,.25);overflow:hidden;margin:8px 0 18px}
-.bar i{display:block;height:100%;width:0;border-radius:9px;background:linear-gradient(90deg,var(--cyan),#fff);transition:width .25s}
-.lp .art{width:100%;margin-bottom:18px}.lp h3{font-size:20px}.lp p{color:var(--mute);margin:2px 0 16px}
-.flow{height:6px;border-radius:9px;background:rgba(120,160,185,.25);overflow:hidden}
-.flow i{display:block;height:100%;width:40%;border-radius:9px;background:linear-gradient(90deg,transparent,var(--cyan),#fff);animation:flow 1.1s cubic-bezier(.5,0,.5,1) infinite}
-@keyframes flow{from{transform:translateX(-100%)}to{transform:translateX(260%)}}
-.brand,.hero h3,.sec h4,dialog h2,.empty h3,.lp h3,nav button,.play,.tool,.tile b{font-family:var(--head)}
-@media (prefers-color-scheme:dark){nav.glass{background:linear-gradient(160deg,rgba(255,255,255,.16),rgba(255,255,255,.05));box-shadow:var(--bs),inset 0 2px 3px rgba(255,255,255,.45),0 30px 50px -16px var(--shadow)}nav button{text-shadow:0 1px 8px rgba(0,0,0,.5)}}
-[hidden]{display:none!important}
-#vi,#tind{top:5px;bottom:5px}
-.vt{display:flex;align-items:center;height:46px;padding:5px;gap:2px}
-.vt button{position:relative;z-index:1;height:36px;padding:0 18px;border-radius:999px;font-weight:600;opacity:.66;transition:opacity .25s}
-.vt button.on{opacity:1}
-.cf{position:relative}
-.cf::before{content:"";position:absolute;left:50%;top:26%;width:56%;aspect-ratio:1;transform:translate(-50%,-50%);background:radial-gradient(closest-side,var(--c,transparent),transparent);opacity:.32;filter:blur(34px);pointer-events:none}
-.cfwrap{position:relative;height:clamp(300px,46vh,460px);perspective:1400px;--s:clamp(200px,34vh,330px)}
-.cfrow{position:absolute;inset:0}
-.cc{position:absolute;left:50%;top:50%;width:var(--s);height:var(--s);cursor:pointer;-webkit-box-reflect:below 10px linear-gradient(transparent 68%,rgba(255,255,255,.24));transition:transform .65s cubic-bezier(.34,1.35,.5,1),opacity .4s,filter .4s}
-.cc .art{position:absolute;inset:0;aspect-ratio:auto}
-.cc.mid .art{box-shadow:inset 0 5px 4px rgba(255,255,255,.75),inset 0 0 0 6px rgba(255,255,255,.2),inset 0 -30px 36px -14px rgba(0,0,0,.4),0 40px 60px -24px var(--c,rgba(25,70,110,.5))}
-.cc.mid .pb{opacity:1;transform:none;pointer-events:auto}
-.cfa{position:absolute;top:50%;margin-top:-24px;width:48px;height:48px;font-size:26px;line-height:1;z-index:20}
-.cfa:disabled{opacity:.3;pointer-events:none}
-#prev{left:4px}#next{right:4px}
-.cfmeta{text-align:center;margin-top:4px}
-.dots{display:flex;gap:7px;justify-content:center;align-items:center;min-height:9px;margin:12px 0 12px;color:var(--mute);font-size:13px}
-.dots i{width:7px;height:7px;border-radius:9px;background:currentColor;opacity:.4;transition:width .35s,opacity .35s}
-.dots i.on{width:26px;opacity:1;background:var(--cyan)}
-#cft{font-size:clamp(26px,3.4vw,40px);letter-spacing:-.03em;font-family:var(--head)}
-.cfmeta small{display:block;color:var(--mute);margin:2px 0 16px}
-.cfmeta .acts{justify-content:center}
-.cf.swap .cc{animation:rise .7s cubic-bezier(.34,1.5,.5,1) backwards}
-.glass.pill:not(nav):not(#toast):not(.pb){background:linear-gradient(160deg,rgba(255,255,255,.88),rgba(255,255,255,.58));box-shadow:var(--bs),0 10px 22px -12px var(--shadow)}
-.search input,.tool,.play.dark,.cfa{color:#08141f}
-.vt button{opacity:.8}.vt button.on,nav button.on{opacity:1;color:#04323b}
-#vi,#ind,#tind{background:linear-gradient(180deg,#a6eef6,#27c4da);box-shadow:inset 0 1px 0 #fff,0 0 16px -4px var(--cyan)}
-#det{width:min(640px,94vw)}
-.qs{flex:1 1 100%}.qs h3{font-size:16px;margin:8px 0 10px;font-family:var(--head)}
-.qg{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
-.q{text-align:left;padding:14px 16px;border-radius:22px;background:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.75);box-shadow:inset 0 1px 0 #fff;transition:transform .2s,background .25s}
-.q:hover{transform:translateY(-2px)}
-.q b{display:block}.q small{color:var(--mute)}
-.q.on{background:linear-gradient(180deg,#c4f4fa,#7fe0ee);color:#05323a;box-shadow:inset 0 1px 0 #fff,0 0 0 2px var(--cyan)}
-.q.on small{color:#0b5563}
-@media (prefers-color-scheme:dark){
- .glass.pill:not(nav):not(#toast):not(.pb){background:linear-gradient(160deg,rgba(42,60,84,.9),rgba(24,38,56,.72))}
- .search input,.tool,.play.dark,.cfa{color:#f1f8fc}
- .q{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.18);box-shadow:none}
- .q.on{color:#05323a}}
-#dlg,#gdlg{max-height:92vh;overflow:auto}
-#dlg{width:min(580px,94vw)}#gdlg{width:min(680px,94vw)}
-.tabs{width:100%;justify-content:space-between}.tabs button{flex:1;padding:0 8px}
-.panes{margin-top:16px;min-height:340px}.pane{display:none}.pane.on{display:block}
-.sh{font-size:15px;margin:16px 4px 8px;font-family:var(--head)}
-.set{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:11px 16px;margin-bottom:8px;border-radius:22px;background:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.75);box-shadow:inset 0 1px 0 #fff}
-.set>span{font-weight:500}.set b{font-weight:600;text-align:right}
-.seg{display:flex;gap:3px;padding:3px;border-radius:999px;background:rgba(120,160,185,.2);flex-wrap:wrap;justify-content:flex-end}
-.seg button,.tg{padding:7px 14px;border-radius:999px;font-weight:600;font-size:14px;color:inherit}
-.tg{background:rgba(120,160,185,.2);min-width:64px}
-.seg button.on,.tg.on{background:linear-gradient(180deg,#a6eef6,#27c4da);color:#04323b}
-.sel{padding:8px 12px;border-radius:14px;background:rgba(255,255,255,.8);border:1px solid rgba(255,255,255,.9);color:#08141f;font:inherit}
-.rng{display:flex;align-items:center;gap:10px}.rng input{accent-color:#14bfd3;width:150px}.rng output{min-width:42px;text-align:right;font-weight:600}
-@media (prefers-color-scheme:dark){.set{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.16);box-shadow:none}.sel{background:rgba(30,46,66,.9);border-color:rgba(255,255,255,.2);color:#f1f8fc}}
-/* ===== Settings windows: solid, readable, grouped ===== */
-:root{--card:rgba(255,255,255,.97);--cardline:rgba(16,50,80,.14);--field:rgba(16,50,80,.08);--dlg:rgba(244,248,250,.97);--act1:#43d9ee;--act2:#12b4cc;--acttx:#02262d}
-@media (prefers-color-scheme:dark){:root{--card:rgba(255,255,255,.075);--cardline:rgba(255,255,255,.16);--field:rgba(255,255,255,.11);--dlg:rgba(13,23,37,.97);--mute:#aebfcc}#dlg,#gdlg,#det{color-scheme:dark}}
-#dlg.glass,#gdlg.glass,#det.glass{background:var(--dlg);color:var(--ink)}
-#dlg::before,#gdlg::before,#det::before{display:none}
-#dlg,#gdlg{overflow:hidden;max-height:90vh;border-radius:34px}
-#dlg[open],#gdlg[open]{display:flex;flex-direction:column}
-#dlg{width:min(600px,94vw)}#gdlg{width:min(720px,94vw)}
-.win{display:flex;flex-direction:column;min-height:0;flex:1;padding:0}
-.win .hd{padding:26px 30px 10px}.win .hd h2{margin-bottom:0}
-.win .hd .tabs{margin-top:18px}
-.win .bd{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding:4px 30px 22px;scrollbar-width:thin;scrollbar-color:rgba(120,160,185,.55) transparent}
-.win .ft{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:16px 30px 22px;border-top:1px solid var(--cardline)}
-.tabs{position:relative;background:var(--field);box-shadow:none;border-radius:999px;width:100%}
-.tabs button{flex:1;font-size:15px;opacity:.85}
-.sh{font-size:12px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--deep);margin:26px 6px 10px}
-.hint{font-size:13px;line-height:1.55;color:var(--mute);margin:12px 6px}
-.grp{background:var(--card);border:1px solid var(--cardline);border-radius:24px;overflow:hidden}
-.grp .set{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 18px;margin:0;padding:16px 20px;border:0;border-radius:0;border-bottom:1px solid var(--cardline);background:none;box-shadow:none}
-.grp .set:last-child{border-bottom:0}
-.set .lbl{display:flex;flex-direction:column;gap:3px;flex:1 1 220px;min-width:0}
-.set .lbl strong{font-size:15px;font-weight:600;color:var(--ink)}
-.set .lbl small{font-size:13px;line-height:1.4;color:var(--mute);overflow:hidden;text-overflow:ellipsis}
-#pc,#pg,#ms{white-space:nowrap}
-.set>span{font-weight:500}.set>b{font-weight:600;text-align:right}
-.set .acts{flex-wrap:wrap;justify-content:flex-end}
-.seg{background:var(--field);padding:4px;gap:4px;flex-wrap:wrap;justify-content:flex-end;max-width:100%}
-.seg button,.tg{padding:9px 16px;font-size:14px;font-weight:600;color:var(--ink);opacity:1;border-radius:999px}
-.tg{background:var(--field);min-width:76px}
-.seg button.on,.tg.on,.win .btn.on,.q.on{background:linear-gradient(180deg,var(--act1),var(--act2));color:var(--acttx);box-shadow:0 3px 12px -3px rgba(18,180,204,.75),inset 0 1px 0 rgba(255,255,255,.6)}
-.sel{padding:10px 14px;border-radius:14px;background:var(--field);border:1px solid var(--cardline);color:var(--ink);font:inherit;font-weight:600}
-.rng input{width:170px}.rng output{min-width:46px;font-weight:700}
-.win .btn{background:var(--field);color:var(--ink);border:1px solid var(--cardline);font-weight:600;padding:10px 18px}
-.win .btn.main{background:linear-gradient(180deg,var(--act1),var(--act2));color:var(--acttx);border-color:transparent}
-.win .btn.ghost{background:transparent}
-.win .btn.big{padding:13px 38px;font-size:16px}
-.qg{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px}
-.q{min-height:88px;padding:18px 20px;border-radius:20px;background:var(--card);border:1px solid var(--cardline);box-shadow:none;color:var(--ink);display:flex;flex-direction:column;gap:4px;justify-content:center}
-.q b{font-size:16px}.q small{font-size:14px;color:var(--mute)}
-.q.on{border-color:transparent}.q.on small{color:#0b4e5a}.q.on b::after{content:"  ✓"}
-#det{width:min(660px,94vw)}
-/* ===== Wii U Look: bright plaza with a soft floor, floating icons and little characters ===== */
-.bg{transition:opacity .6s}
-#wu{position:fixed;inset:0;z-index:1;overflow:hidden;background:radial-gradient(70% 55% at 50% 42%,#fff,#f8fbfa 60%,#f0f5f3)}
-.wfloor{position:absolute;inset:0;perspective:760px;overflow:hidden}
-.wplane{position:absolute;left:-60%;right:-60%;top:-20%;bottom:-70%;transform:rotateX(58deg);transform-origin:50% 38%;
- background-image:radial-gradient(ellipse 20px 13px at 50% 50%,rgba(120,145,140,.13) 0 62%,transparent 66%),radial-gradient(ellipse 20px 13px at 50% 50%,rgba(120,145,140,.13) 0 62%,transparent 66%);
- background-size:52px 34px;background-position:calc(var(--px,0px)*.6) 0,calc(26px + var(--px,0px)*.6) 17px;
- -webkit-mask-image:radial-gradient(70% 70% at 50% 45%,#000 40%,transparent 96%);mask-image:radial-gradient(70% 70% at 50% 45%,#000 40%,transparent 96%)}
-#wmii{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
-#wworld{position:absolute;inset:0}
-.wi{position:absolute;left:var(--fx);top:var(--fy);width:var(--sz);height:var(--sz);cursor:pointer;
- transform:translate(calc(-50% + var(--px,0px)*var(--d,1)),calc(-50% + var(--py,0px)*var(--d,1))) scale(var(--s,1));
- transition:left .8s cubic-bezier(.3,1.1,.5,1),top .8s cubic-bezier(.3,1.1,.5,1),transform .7s cubic-bezier(.3,1.4,.5,1),opacity .5s}
-.wi.off{opacity:0;pointer-events:none;--s:.3!important}
-.wpad{animation:wpad var(--dur,4.6s) ease-in-out infinite;animation-delay:var(--dl,0s);position:absolute;left:-14%;right:-14%;bottom:-30%;height:24%;border-radius:50%;background:radial-gradient(closest-side,rgba(255,255,255,.75),rgba(255,255,255,.2));border:2px solid rgba(150,165,170,.28)}
-.wi-in{position:absolute;inset:0;animation:wbob var(--dur,4.6s) ease-in-out infinite,wsway calc(var(--dur,4.6s)*1.7) ease-in-out infinite;animation-delay:var(--dl,0s)}
-@keyframes wbob{50%{translate:0 calc(var(--amp,9px)*-1)}}
-@keyframes wsway{0%,100%{rotate:calc(var(--rot,2deg)*-1)}50%{rotate:var(--rot,2deg)}}
-.wa{position:absolute;inset:0;border-radius:27%;background-size:cover;background-position:center;display:grid;place-items:center;overflow:hidden;
- border:5px solid rgba(255,255,255,.96);box-shadow:0 16px 24px -12px rgba(80,95,110,.5),inset 0 -14px 22px -10px rgba(0,0,0,.16),inset 0 3px 4px rgba(255,255,255,.7);
- transform:perspective(520px) translateY(var(--lift,0px)) scale(var(--sc,1)) rotateY(calc(var(--mxr,0)*11deg)) rotateX(calc(var(--myr,0)*-9deg));
- transition:transform .4s cubic-bezier(.3,1.7,.5,1),box-shadow .4s}
-.wa::before{content:"";position:absolute;inset:0;background:radial-gradient(110% 55% at 30% -8%,rgba(255,255,255,.55),transparent 58%)}
-.wa span{position:relative;font-size:clamp(34px,5vw,56px);font-weight:800;color:#fff;letter-spacing:-.04em;text-shadow:0 3px 14px rgba(0,0,0,.2)}
-.wi:hover .wa{--lift:-9px;--sc:1.08}
-.wi.on .wa{--lift:-14px;--sc:1.06}
-.wi:hover{z-index:70!important}
-.wi.on .wa{box-shadow:0 0 0 4px rgba(255,255,255,.95),0 0 0 8px rgba(120,175,215,.5),0 22px 30px -12px rgba(80,95,110,.5)}
-.wl{position:absolute;left:50%;top:calc(100% + 14px);transform:translateX(-50%);white-space:nowrap;font-size:13px;font-weight:600;color:#46525e;background:rgba(255,255,255,.94);padding:4px 14px;border-radius:999px;opacity:0;transition:opacity .3s;pointer-events:none;box-shadow:0 6px 14px -8px rgba(80,95,110,.5)}
-.wi:hover .wl{opacity:1}
-.wpg{position:absolute;left:28px;bottom:36px;display:flex;align-items:center;gap:12px;z-index:6}
-.wpg button{width:38px;height:38px;border-radius:50%;background:#fff;color:#46525e;font-size:22px;line-height:1;font-weight:700;box-shadow:0 6px 14px -8px rgba(80,95,110,.55),inset 0 1px 0 #fff;border:1px solid #e3e1da}
-.wpg button:disabled{opacity:.4}
-#wdots{display:flex;gap:9px}#wdots i{width:13px;height:13px;border-radius:50%;background:#d8dcdc;box-shadow:inset 0 1px 2px rgba(0,0,0,.12)}#wdots i.on{background:#8fc4e6;box-shadow:0 0 0 3px rgba(143,196,230,.35)}
-.wbar{position:absolute;left:50%;bottom:112px;transform:translateX(-50%);display:flex;align-items:center;gap:22px;padding:12px 14px 12px 28px;border-radius:999px;background:rgba(255,255,255,.94);border:1px solid #e6e4dd;box-shadow:0 14px 30px -14px rgba(80,95,110,.5),inset 0 1px 0 #fff;z-index:6;max-width:92vw}
-.wtt{min-width:0}.wtt h2{font-size:20px;letter-spacing:-.02em;font-family:var(--head);color:#2a3640;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:30vw}.wtt small{color:#6a7885}
-.wplay,.wdet{padding:12px 32px;border-radius:999px;font-weight:700;font-family:var(--head);font-size:16px}
-.wplay{background:linear-gradient(180deg,#a6d5f0,#6fb5e0);color:#fff;text-shadow:0 1px 2px rgba(40,90,130,.4);box-shadow:0 8px 16px -8px rgba(70,130,180,.7),inset 0 1px 0 rgba(255,255,255,.7)}
-.wdet{background:#f0efeb;color:#46525e}
-body.wiiu{--ink:#2a3640;--mute:#657381;--bg:#f7f6f2;--deep:#3d7fae;--shadow:rgba(90,100,115,.35);--card:rgba(255,255,255,.97);--cardline:rgba(40,60,80,.14);--field:rgba(40,60,80,.08);--dlg:rgba(247,248,249,.97);--panel:rgba(255,255,255,.6);--g1:rgba(255,255,255,.62);--g2:rgba(255,246,232,.18);color-scheme:light}
-body.wiiu #dlg,body.wiiu #gdlg,body.wiiu #det{color-scheme:light}
-body.wiiu .bg{opacity:0}
-body.wiiu .glass.pill:not(nav):not(#toast){background:linear-gradient(160deg,rgba(255,255,255,.96),rgba(255,255,255,.82));border-color:#e3e1da;box-shadow:0 8px 18px -10px rgba(90,100,115,.4),inset 0 1px 0 #fff}
-body.wiiu .search input,body.wiiu .tool,body.wiiu .vt button{color:#2a3640}
-body.wiiu .search input::placeholder{color:#8a96a1}
-body.wiiu #vi,body.wiiu #ind{background:linear-gradient(180deg,#b4dcf2,#7dbde4);box-shadow:inset 0 1px 0 #fff,0 4px 12px -4px rgba(110,170,210,.6)}
-body.wiiu .vt button.on,body.wiiu nav button.on{color:#16364a}
-body.wiiu nav.glass{background:rgba(255,255,255,.93);border-color:#e3e1da;box-shadow:0 14px 28px -12px rgba(90,100,115,.45),inset 0 1px 0 #fff}
-body.wiiu nav button{color:#46525e;text-shadow:none;opacity:.92}
-@keyframes wpad{50%{scale:.9;opacity:.75}}
-.wfloor::before{content:"";position:absolute;left:0;right:0;top:0;height:40%;z-index:2;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);-webkit-mask-image:linear-gradient(#000,transparent);mask-image:linear-gradient(#000,transparent);pointer-events:none}
-.wfloor::after{content:"";position:absolute;inset:0;z-index:3;background:linear-gradient(#f9fbfa,rgba(249,251,250,0) 40%);pointer-events:none}
-@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
-</style></head><body>
-<svg class="defs" aria-hidden="true"><filter id="refract" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
- <feTurbulence type="fractalNoise" baseFrequency=".006 .011" numOctaves="2" seed="4" result="n"/>
- <feDisplacementMap in="SourceGraphic" in2="n" scale="20" xChannelSelector="R" yChannelSelector="G" result="r"/>
- <feDisplacementMap in="SourceGraphic" in2="n" scale="30" xChannelSelector="R" yChannelSelector="G" result="g"/>
- <feDisplacementMap in="SourceGraphic" in2="n" scale="42" xChannelSelector="R" yChannelSelector="G" result="b"/>
- <feColorMatrix in="r" values="1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0" result="r1"/>
- <feColorMatrix in="g" values="0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 1 0" result="g1"/>
- <feColorMatrix in="b" values="0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 1 0" result="b1"/>
- <feBlend in="r1" in2="g1" mode="screen" result="rg"/><feBlend in="rg" in2="b1" mode="screen"/>
-</filter></svg>
-<div class="bg"><i></i><i></i><i></i><canvas id="pt"></canvas></div>
-<div class="page">
- <header>
-  <div class="brand">CosmoU<small>Wii U Library</small></div>
-  <label class="search glass pill"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="q" placeholder="Search games" aria-label="Search games"></label>
-  <button class="glass pill tool" id="sort" aria-label="Sort order"></button>
-  <div class="vt glass pill" id="vt"><span id="vi"></span><button data-m="covers">Covers</button><button data-m="grid">Grid</button><button data-m="wiiu">Wii U Look</button></div>
- </header>
- <section class="hero" id="hero" hidden><div class="bgimg" id="hbg"></div>
-  <div class="in"><div><small id="hl"></small><h3 id="ht"></h3></div>
-   <div class="acts"><button class="glass pill play dark" id="play">Play</button><button class="glass pill play dark" id="more">Details</button></div></div></section>
- <section class="cf" id="cf" hidden>
-  <div class="cfwrap"><div class="cfrow" id="cfrow"></div>
-   <button class="glass pill cfa" id="prev" aria-label="Previous game">‹</button><button class="glass pill cfa" id="next" aria-label="Next game">›</button></div>
-  <div class="cfmeta"><div class="dots" id="dots"></div><h2 id="cft"></h2><small id="cfm"></small>
-   <div class="acts"><button class="glass pill play dark" id="cfplay">Play</button><button class="glass pill play dark" id="cfmore">Details</button></div></div>
- </section>
- <div class="sec" id="sec"><h4 id="st">Library</h4><span id="count"></span></div>
- <div class="grid" id="grid"></div>
- <div class="empty glass" id="empty" hidden><div class="in" style="padding:0"><h3 id="et"></h3><p id="ep"></p><button class="btn main" id="ebtn">Choose games folder</button></div></div>
-</div>
-<section id="wu" hidden>
- <div class="wfloor"><div class="wplane" id="wplane"></div></div>
- <canvas id="wmii"></canvas>
- <div id="wworld"></div>
- <div class="wpg" id="wpg"><button id="wprev" aria-label="Previous page">−</button><span id="wdots"></span><button id="wnext" aria-label="Next page">+</button></div>
- <div class="wbar"><div class="wtt"><h2 id="wt"></h2><small id="wm"></small></div><div class="acts"><button class="wplay" id="wplay">Play</button><button class="wdet" id="wdet">Details</button></div></div>
-</section>
-<nav class="glass pill"><span id="ind"></span>
- <button data-v="lib" class="on">Library</button><button data-v="recent">Recently played</button><button data-v="set">Settings</button></nav>
-<dialog id="det" class="glass"><div class="in det"><div class="art" id="dc"></div><div class="t"><small id="df"></small><h2 id="dt"></h2>
- <div class="acts"><button class="glass pill play dark" id="dplay">Play</button><button class="btn" id="dfold">Show in folder</button><button class="btn" id="dx">Close</button></div></div>
- <div class="qs"><h3>Quick quality</h3><div class="qg" id="qg"></div><p class="hint">Sets the resolution when you press Play. It needs Cemu’s resolution graphic pack for this game (enable it once in Cemu under Options → Graphic packs). Click the selected tile again to switch it off.</p></div></div></dialog>
-<dialog id="dlg" class="glass"><div class="in win">
- <div class="hd"><h2>Settings</h2></div>
- <div class="bd">
-  <h3 class="sh">Emulator</h3>
-  <div class="grp">
-   <div class="set"><div class="lbl"><strong>Cemu</strong><small id="pc">Not installed</small></div><div class="acts"><button class="btn" id="upC">Download / update</button><button class="btn" id="pickC">Choose manually</button></div></div>
-   <div class="set"><div class="lbl"><strong>Games folder</strong><small id="pg">Not selected</small></div><button class="btn" id="pickG">Choose folder</button></div>
-   <div class="set"><div class="lbl"><strong>Graphics settings</strong><small>Graphics API, VSync, filters, quality, audio and overlay</small></div><button class="btn main" id="opG">Open</button></div>
-  </div>
-  <h3 class="sh">Library</h3>
-  <div class="grp">
-   <div class="set"><div class="lbl"><strong>Covers</strong><small>Your own PNG or JPG (named like the game) wins over automatic covers</small></div><button class="btn" id="oc">Open covers folder</button></div>
-   <div class="set"><div class="lbl"><strong>Automatic covers</strong><small>Icons from your game files, box art from GameTDB</small></div><button class="btn" id="ct">On</button></div>
-  </div>
-  <h3 class="sh">Sound</h3>
-  <div class="grp">
-   <div class="set"><div class="lbl"><strong>Background music</strong><small id="ms">No music found – put a file in the music folder</small></div><div class="acts"><button class="btn" id="mt">On</button><button class="btn" id="mf">Music folder</button></div></div>
-  </div>
-  <h3 class="sh">About</h3>
-  <div class="grp" id="c_about"></div>
-  <p class="hint">CosmoU is an independent launcher for Cemu, the open-source Wii U emulator (MPL 2.0). It does not include any games. Wii U and Nintendo are trademarks of Nintendo.</p>
- </div>
- <div class="ft"><span></span><button class="btn main big" id="close">Done</button></div>
-</div></dialog>
-<dialog id="gdlg" class="glass"><div class="in win">
- <div class="hd"><h2>Graphics settings</h2>
-  <div class="vt tabs" id="tabs" role="tablist"><span id="tind"></span><button data-t="graphics" class="on">Graphics</button><button data-t="audio">Audio</button><button data-t="overlay">Overlay</button><button data-t="input">Input</button></div></div>
- <div class="bd">
-  <div class="pane on" data-p="graphics"><p class="hint" id="gnote"></p><div id="c_graphics"></div>
-   <h3 class="sh">Default quality</h3><div class="qg" id="gq"></div>
-   <p class="hint">Used for every game that has no quality of its own (set in a game’s Details). It needs Cemu’s resolution graphic pack for the game.</p></div>
-  <div class="pane" data-p="audio"><div id="c_audio"></div><p class="hint">Choose the audio device in Cemu for now. CosmoU’s own music is in the main Settings.</p></div>
-  <div class="pane" data-p="overlay"><div id="c_overlay"></div></div>
-  <div class="pane" data-p="input"><div id="c_input"></div></div>
- </div>
- <div class="ft"><button class="btn ghost" id="rst">Reset to Cemu’s values</button><button class="btn main big" id="gclose">Done</button></div>
-</div></dialog>
-<div id="launch"><div class="glass lp"><div class="art" id="lc"></div><h3 id="ln"></h3><p>Starting…</p><div class="flow"><i></i></div></div></div>
-<div id="setup"><div class="glass lp"><h3 id="sh">Preparing Cemu…</h3><p id="sp"></p><div class="bar"><i id="sb"></i></div><div class="acts" id="sa"></div></div></div>
-<div id="toast" class="glass pill" role="status"></div>
-<script>
-const $=s=>document.querySelector(s);
-const demo=['Star Chaser','Cloud Racing','Deep Sea Expedition','Pixel Fortress','Night Train','Spark Flight','Moon Garden'].map(n=>({name:n,format:'Demo',path:''}));
-let games=[],cfg={},view='lib',sortMode='az',sel='',plays={};
-let musicOn=true,bgMusic=null,musicName='';
-try{musicOn=localStorage.getItem('cosmou.music')!=='false'}catch{}
-function syncMusic(){if(!bgMusic)return;if(musicOn)bgMusic.play().catch(()=>{});else bgMusic.pause()}
-function musicUi(){$('#mt').textContent=musicOn?'On':'Off';$('#mt').classList.toggle('on',musicOn);$('#ms').textContent=bgMusic?musicName:'No music found – put a file in the music folder'}
-async function initMusic(){
- const m=window.api?await api.getMusic():null;
- if(m&&m.url){bgMusic=new Audio(m.url);bgMusic.loop=true;bgMusic.volume=.35;musicName=m.name}
- musicUi();syncMusic()}
-try{plays=JSON.parse(localStorage.getItem('cosmou.plays')||'{}')}catch{}
-let mode='covers';try{const vm=localStorage.getItem('cosmou.viewMode');if(vm==='grid'||vm==='wiiu')mode=vm}catch{}
-const hue=s=>{let h=0;for(const c of s)h=(h*31+c.charCodeAt(0))%360;return h};
-const colors={};
-const glow=g=>g.color||colors[g.name]||`hsl(${hue(g.name)} 85% 58%)`;
-function sample(g){if(!g.cover||colors[g.name])return;const i=new Image();i.onload=()=>{try{const c=document.createElement('canvas');c.width=c.height=8;const x=c.getContext('2d');x.drawImage(i,0,0,8,8);const d=x.getImageData(0,0,8,8).data;let r=0,y=0,b=0;for(let k=0;k<d.length;k+=4){r+=d[k];y+=d[k+1];b+=d[k+2]}const n=d.length/4;colors[g.name]=`rgb(${r/n|0} ${y/n|0} ${b/n|0})`;render()}catch{}};i.src=g.cover}
-function paint(el,g,initials=true){
- el.replaceChildren();el.style.background='';el.style.backgroundImage='';
- if(g.cover){el.style.backgroundImage=`url("${g.cover}")`;return}
- const h=hue(g.name);el.style.background=`linear-gradient(135deg,hsl(${h} 78% 66%),hsl(${(h+55)%360} 80% 48%))`;
- if(initials){const s=document.createElement('span');s.textContent=g.name.split(/\s+/).slice(0,2).map(w=>w[0]).join('');el.append(s)}}
-function toast(t,ms=3500){const e=$('#toast');e.textContent=t;e.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove('on'),ms)}
-const cur=()=>games.find(g=>g.name===sel);
-function list(){
- const q=$('#q').value.trim().toLowerCase();
- let l=games.filter(g=>g.name.toLowerCase().includes(q));
- if(view==='recent')l=l.filter(g=>plays[g.name]);
- const t=view==='recent'||sortMode==='recent';
- return l.sort((a,b)=>t?(plays[b.name]||0)-(plays[a.name]||0)||a.name.localeCompare(b.name):a.name.localeCompare(b.name))}
-function render(){
- const l=list();
- if(!cur())sel=(games.slice().sort((a,b)=>(plays[b.name]||0)-(plays[a.name]||0)||a.name.localeCompare(b.name))[0]||{}).name||'';
- if(mode!=='grid'&&l.length&&!l.some(x=>x.name===sel))sel=l[0].name;
- const g=cur();$('#hero').hidden=!g||mode!=='grid';
- if(g){$('#hero').style.setProperty('--c',glow(g));paint($('#hbg'),{...g,cover:g.hero||g.cover},false);$('#ht').textContent=g.name;$('#hl').textContent=(plays[g.name]?'Recently played':'Selected')+' · '+g.format}
- $('#st').textContent=view==='recent'?'Recently played':'Library';
- $('#count').textContent=l.length+(l.length===1?' game':' games');
- $('#sort').textContent=sortMode==='az'?'A–Z':'Recent';
- const em=!l.length,q=$('#q').value.trim();
- $('#empty').hidden=!em;
- $('#grid').hidden=mode!=='grid';$('#sec').hidden=mode!=='grid';$('#cf').hidden=mode!=='covers'||em;$('#wu').hidden=mode!=='wiiu'||em;
- document.body.classList.toggle('wiiu',mode==='wiiu'&&!em);
- if(mode==='covers')buildCovers(l);
- if(mode==='wiiu'&&!em){buildWiiU(l);startMii()}else stopMii();
- if(em){$('#et').textContent=q?'No matches':view==='recent'?'Nothing played yet':'Your library is empty';
-  $('#ep').textContent=q?'Try a different title.':view==='recent'?'Games you launch will show up here.':'Choose the folder with your Wii U games and they appear here.';
-  $('#ebtn').hidden=!!q||view==='recent'}
- const gr=$('#grid');gr.replaceChildren();
- l.forEach((x,i)=>{const t=document.createElement('button');t.className='tile'+(x.name===sel?' on':'');t.style.setProperty('--i',Math.min(i,14));t.style.setProperty('--c',glow(x));t.onpointerleave=()=>{t.style.setProperty('--rx','0deg');t.style.setProperty('--ry','0deg')};
-  const a=document.createElement('div');a.className='art';paint(a,x);
-  const b=document.createElement('b');b.textContent=x.name;t.append(a,b);
-  if(x.name===sel){const r=document.createElement('div');r.className='ring';t.append(r)}
-  t.onclick=()=>openDetail(x);gr.append(t)})}
-const WU_PER=9,wuEls=new Map(),wuLay={};
-const halton=(i,b)=>{let f=1,r=0;while(i>0){f/=b;r+=f*(i%b);i=Math.floor(i/b)}return r};
-const wsc=y=>.6+(y-.2)/.4*.55;
-function wuLayout(n,page,base,W,H){
- // organic scatter over the floor, relaxed so icons never overlap
- const pts=Array.from({length:n},(_,k)=>({x:.1+.8*halton(k+1+page*13,2),y:.22+.38*halton(k+1+page*13,3)}));
- for(let it=0;it<70;it++){
-  for(let a=0;a<n;a++)for(let b=a+1;b<n;b++){
-   const A=pts[a],B=pts[b],dx=(B.x-A.x)*W,dy=(B.y-A.y)*H,d=Math.hypot(dx,dy)||1,min=base*(wsc(A.y)+wsc(B.y))*.56+14;
-   if(d<min){const p=(min-d)/2/d;A.x-=dx*p/W;A.y-=dy*p/H;B.x+=dx*p/W;B.y+=dy*p/H}}
-  for(const p of pts){p.x=Math.max(.08,Math.min(.92,p.x));p.y=Math.max(.2,Math.min(.62,p.y))}}
- return pts}
-function buildWiiU(l){
- const world=$('#wworld'),keep=new Set(l.map(x=>x.name));
- for(const [k,e] of wuEls)if(!keep.has(k)){e.remove();wuEls.delete(k)}
- const W=innerWidth,H=innerHeight,idx=Math.max(0,l.findIndex(x=>x.name===sel)),page=Math.floor(idx/WU_PER),pages=Math.ceil(l.length/WU_PER),base=Math.max(104,Math.min(176,H*.2));
- let selX=W/2,selY=H*.4;
- l.forEach((g,i)=>{
-  let e=wuEls.get(g.name);
-  if(!e){e=document.createElement('div');e.className='wi';
-   e.innerHTML='<div class="wpad"></div><div class="wi-in"><div class="wa"></div></div><span class="wl"></span>';
-   e.querySelector('.wl').textContent=g.name;
-   e.onclick=()=>{if(sel!==g.name){sel=g.name;render()}};
-   e.ondblclick=()=>{if(sel===g.name)launch(cur())};
-   world.append(e);wuEls.set(g.name,e)}
-  paint(e.querySelector('.wa'),g);
-  const pg=Math.floor(i/WU_PER),nOn=Math.min(WU_PER,l.length-pg*WU_PER),key=pg+'_'+nOn+'_'+W+'_'+H;
-  const lay=(wuLay[key]=wuLay[key]||wuLayout(nOn,pg,base,W,H)),p=lay[i%WU_PER],on=g.name===sel;
-  const j=q=>{const v=Math.sin((i+1)*12.9898+q*78.233)*43758.5453;return v-Math.floor(v)-.5};
-  const fy=p.y+(on?.05:0);
-  e.style.setProperty('--sz',base+'px');e.style.setProperty('--fx',p.x*100+'%');e.style.setProperty('--fy',fy*100+'%');
-  e.style.setProperty('--s',wsc(p.y)*(1+j(8)*.16)*(on?1.35:1));e.style.setProperty('--d',.5+p.y*1.3);
-  e.style.setProperty('--dur',(4.6+j(4)*2.8)+'s');e.style.setProperty('--dl',(-(j(5)+.5)*7)+'s');e.style.setProperty('--amp',(7+(j(6)+.5)*8)+'px');e.style.setProperty('--rot',(1.2+(j(7)+.5)*2.2)+'deg');
-  e.style.zIndex=on?60:Math.round(p.y*40);
-  e.classList.toggle('on',on);e.classList.toggle('off',pg!==page);
-  if(on){selX=p.x*W;selY=fy*H}});
- const cg=l[idx];if(cg){$('#wt').textContent=cg.name;$('#wm').textContent=(plays[cg.name]?'Recently played · ':'')+cg.format}
- $('#wpg').hidden=pages<2;const dots=$('#wdots');dots.replaceChildren();
- for(let q=0;q<pages;q++){const d=document.createElement('i');if(q===page)d.className='on';dots.append(d)}
- $('#wprev').disabled=page<=0;$('#wnext').disabled=page>=pages-1;
- mii.fx=selX;mii.fy=selY;
- if(mii.sel!==sel){mii.sel=sel;const now=performance.now();
-  mii.list.slice().sort((a,b)=>Math.hypot(a.x-selX,a.y-selY)-Math.hypot(b.x-selX,b.y-selY)).slice(0,6).forEach(m=>{m.st='look';m.t0=now;m.until=now+2600})}}
-// --- "Cosmo buddies": original little characters that wander all over the plaza ---
-const mii={on:false,list:[],last:0,W:0,H:0,px:0,py:0,sel:'',fx:0,fy:0};
-const FACE=['#ffd9c2','#cdeedd','#d9d2f6','#cfe7fa','#fbeab4','#f9cfe0'],BODY=['#f29a86','#7fcaa4','#9b8fe0','#6fb2e8','#f0c85a','#ee8fb6'];
-const ds=(y,H)=>Math.max(.5,Math.min(1.35,.5+(y/H-.12)*1.05));
-function fitMii(reset){
- const c=$('#wmii'),dpr=Math.min(2,devicePixelRatio||1);mii.W=innerWidth;mii.H=innerHeight;
- c.width=mii.W*dpr;c.height=mii.H*dpr;c.getContext('2d').setTransform(dpr,0,0,dpr,0,0);
- if(reset||!mii.list.length)mii.list=Array.from({length:26},(_,i)=>{const x=mii.W*(.05+.9*Math.random()),y=mii.H*(.2+.7*Math.random());
-  return{x,y,tx:x,ty:y,v:0,st:'idle',until:performance.now()+Math.random()*2000,t0:0,ph:Math.random()*6,c:i%6,acc:i%3,lx:0}})}
-function miiNext(m,now){
- const r=Math.random(),W=mii.W,H=mii.H;
- if(r<.45){m.st='walk';m.tx=Math.max(W*.04,Math.min(W*.96,m.x+(Math.random()-.5)*W*.35));m.ty=Math.max(H*.2,Math.min(H*.92,m.y+(Math.random()-.5)*H*.3))}
- else{m.st=r<.6?'wave':r<.72?'hop':r<.85?'look':'idle';m.t0=now;m.until=now+(m.st==='wave'?1900:m.st==='hop'?1000:m.st==='look'?2200:1200+Math.random()*2200)}}
-function rr(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath()}
-function drawBuddy(c,m,t,u,refl){
- const walk=m.st==='walk'&&m.v>3,sw=Math.sin(t*9+m.ph),face=FACE[m.c],body=BODY[m.c];
- c.save();c.translate(m.x,m.y);
- if(refl){c.scale(1,-1);c.globalAlpha=.13}else{c.fillStyle='rgba(70,85,95,.15)';c.beginPath();c.ellipse(0,0,9*u,3*u,0,0,7);c.fill()}
- const hop=m.st==='hop'?-Math.abs(Math.sin((t*1000-m.t0)/1000*Math.PI*2.2))*7*u:0;
- c.translate(0,hop+(walk?-Math.abs(sw)*1.3*u:-Math.sin(t*2+m.ph)*.35*u));
- c.fillStyle='#8d97a4';
- rr(c,-4.9*u,-6*u-(walk?Math.max(0,sw)*1.8*u:0),3.8*u,6*u,1.8*u);c.fill();
- rr(c,1.1*u,-6*u-(walk?Math.max(0,-sw)*1.8*u:0),3.8*u,6*u,1.8*u);c.fill();
- c.fillStyle=body;rr(c,-6.4*u,-20*u,12.8*u,15*u,6*u);c.fill();
- c.lineCap='round';c.lineWidth=3*u;c.strokeStyle=body;
- const sa=walk?sw*.55:0;
- c.beginPath();c.moveTo(-6*u,-16.5*u);c.lineTo(-8.8*u+Math.sin(sa)*1.6*u,-10*u);c.stroke();
- c.beginPath();c.moveTo(6*u,-16.5*u);
- let hx=8.8*u-Math.sin(sa)*1.6*u,hy=-10*u;
- if(m.st==='wave'){const a=-1.25+Math.sin(t*13)*.4;hx=6*u+Math.cos(a)*9*u;hy=-16.5*u+Math.sin(a)*9*u}
- c.lineTo(hx,hy);c.stroke();
- c.fillStyle=face;c.beginPath();c.arc(hx,hy,1.9*u,0,7);c.arc(-8.8*u+Math.sin(sa)*1.6*u,-10*u,1.9*u,0,7);c.fill();
- // big round head with soft highlight
- const hy0=-30*u;
- c.fillStyle=face;c.beginPath();c.arc(0,hy0,11*u,0,7);c.fill();
- c.fillStyle='rgba(255,255,255,.45)';c.beginPath();c.ellipse(-4.2*u,hy0-5.6*u,4*u,2.4*u,-.5,0,7);c.fill();
- // little accessory: star antenna, leaf tuft or bow
- c.strokeStyle='#9aa5b2';c.lineWidth=.9*u;
- if(m.acc===0){c.beginPath();c.moveTo(0,hy0-10.6*u);c.lineTo(1.6*u,hy0-16*u);c.stroke();c.fillStyle='#ffd35e';c.beginPath();c.arc(1.8*u,hy0-17*u,2.3*u,0,7);c.fill()}
- else if(m.acc===1){c.fillStyle=body;c.beginPath();c.ellipse(-2.2*u,hy0-12.4*u,2.2*u,3.6*u,-.5,0,7);c.ellipse(2.2*u,hy0-12.4*u,2.2*u,3.6*u,.5,0,7);c.fill()}
- else{c.fillStyle=body;c.beginPath();c.arc(-3.6*u,hy0-10.8*u,2.6*u,0,7);c.arc(3.6*u,hy0-10.8*u,2.6*u,0,7);c.fill();c.fillStyle='#fff';c.beginPath();c.arc(0,hy0-10.8*u,1.4*u,0,7);c.fill()}
- // face
- const bl=Math.abs(Math.sin(t*.7+m.ph))>.985?.15:1,lx=m.lx*1.6*u;
- c.fillStyle='#2b2f36';c.beginPath();c.ellipse(-3.6*u+lx,hy0+.6*u,1.2*u,1.8*u*bl,0,0,7);c.ellipse(3.6*u+lx,hy0+.6*u,1.2*u,1.8*u*bl,0,0,7);c.fill();
- c.fillStyle='rgba(240,120,120,.3)';c.beginPath();c.ellipse(-6.4*u+lx*.5,hy0+3.6*u,1.9*u,1.2*u,0,0,7);c.ellipse(6.4*u+lx*.5,hy0+3.6*u,1.9*u,1.2*u,0,0,7);c.fill();
- c.strokeStyle='#8a5050';c.lineWidth=.9*u;c.beginPath();c.arc(lx*.6,hy0+3.4*u,2.2*u,.15*Math.PI,.85*Math.PI);c.stroke();
- c.restore()}
-function miiFrame(now){
- if(!mii.on)return;
- const c=$('#wmii'),x=c.getContext('2d'),dt=Math.min(.05,(now-mii.last)/1000||0),t=now/1000;mii.last=now;
- for(const m of mii.list){
-  const sp=mii.H/720*30*ds(m.y,mii.H);let lxT=0;
-  if(m.st==='walk'){const dx=m.tx-m.x,dy=m.ty-m.y,d=Math.hypot(dx,dy);
-   if(d<4){m.v*=.8;miiNext(m,now)}else{m.v+=(sp-m.v)*Math.min(1,dt*4);const k=Math.min(1,d/40);m.x+=dx/d*m.v*k*dt;m.y+=dy/d*m.v*k*dt;lxT=Math.sign(dx)}}
-  else{m.v*=.85;if(now>m.until)miiNext(m,now);if(m.st==='look')lxT=Math.max(-1,Math.min(1,(mii.fx-m.x)/180))}
-  m.lx+=(lxT-m.lx)*Math.min(1,dt*6)}
- x.clearRect(0,0,mii.W,mii.H);
- const o=mii.list.slice().sort((a,b)=>a.y-b.y);
- for(const refl of [true,false])for(const m of o){const d=ds(m.y,mii.H);x.save();x.translate(mii.px*d,mii.py*d);drawBuddy(x,m,t,mii.H/720*1.15*d,refl);x.restore()}
- requestAnimationFrame(miiFrame)}
-function startMii(){
- if(mii.on)return;mii.on=true;fitMii();mii.last=performance.now();
- if(matchMedia('(prefers-reduced-motion:reduce)').matches){const x=$('#wmii').getContext('2d');const o=mii.list.slice().sort((a,b)=>a.y-b.y);
-  for(const refl of [true,false])for(const m of o)drawBuddy(x,m,0,mii.H/720*1.15*ds(m.y,mii.H),refl);mii.on=false;return}
- requestAnimationFrame(miiFrame)}
-function stopMii(){mii.on=false}
-const covEls=new Map();
-function buildCovers(l){
- const row=$('#cfrow'),keep=new Set(l.map(x=>x.name));
- for(const [k,e] of covEls)if(!keep.has(k)){e.remove();covEls.delete(k)}
- const idx=Math.max(0,l.findIndex(x=>x.name===sel));
- l.forEach((x,i)=>{
-  let e=covEls.get(x.name);
-  if(!e){e=document.createElement('div');e.className='cc';
-   const a=document.createElement('div');a.className='art';e.append(a);
-   e.onclick=()=>{if(sel!==x.name){sel=x.name;render()}};
-   e.ondblclick=()=>{if(sel===x.name)launch(cur())};
-   row.append(e);covEls.set(x.name,e)}
-  paint(e.firstChild,x);e.style.setProperty('--c',glow(x));
-  const o=i-idx,a=Math.abs(o);
-  e.style.transform=`translate(-50%,-50%) translateX(${o*86}%) scale(${a===0?1:a===1?.74:.6}) rotateY(${Math.max(-1,Math.min(1,-o))*10}deg)`;
-  e.style.opacity=a>1?0:a?.8:1;e.style.zIndex=10-a;e.style.filter=a?'saturate(.7)':'none';e.style.pointerEvents=a>1?'none':'auto';
-  e.classList.toggle('mid',a===0)});
- const cg=l[idx];
- if(cg){$('#cft').textContent=cg.name;$('#cfm').textContent=(plays[cg.name]?'Recently played · ':'')+cg.format;$('#cf').style.setProperty('--c',glow(cg))}
- const dots=$('#dots');dots.replaceChildren();
- if(l.length>1&&l.length<=9)l.forEach((_,i)=>{const d=document.createElement('i');if(i===idx)d.className='on';dots.append(d)});
- else dots.textContent=l.length>1?`${idx+1} / ${l.length}`:'';
- $('#prev').disabled=idx<=0;$('#next').disabled=idx>=l.length-1}
-function step(d){const l=list(),i=l.findIndex(x=>x.name===sel),n=Math.max(0,Math.min(l.length-1,i+d));if(l[n]&&l[n].name!==sel){sel=l[n].name;render()}}
-function vind(){const b=document.querySelector('#vt button.on'),i=$('#vi');if(b){i.style.left=b.offsetLeft+'px';i.style.width=b.offsetWidth+'px'}}
-function syncMode(){document.querySelectorAll('#vt button').forEach(x=>x.classList.toggle('on',x.dataset.m===mode));vind()}
-const QUALITY={Native:[1280,720],Performance:[960,540],Balanced:[1600,900],Quality:[1920,1080],Ultra:[2560,1440]};
-function qTiles(g){
- const key=g.tid||g.name,cur=(cfg.gameSettings||{})[key],box=$('#qg');box.replaceChildren();
- for(const [n,[w,h]] of Object.entries(QUALITY)){
-  const b=document.createElement('button');b.className='q'+(cur===n?' on':'');
-  const t=document.createElement('b');t.textContent=n;const s=document.createElement('small');s.textContent=`${w}×${h}`;b.append(t,s);
-  b.onclick=async()=>{const v=cur===n?'':n;
-   if(window.api)cfg=await api.setGameSetting(key,v);else cfg.gameSettings={...(cfg.gameSettings||{}),[key]:v};
-   qTiles(g)};
-  box.append(b)}}
-function startToast(g,r){
- const q=r.preset&&QUALITY[r.preset];
- const M={applied:`${g.name} is starting · ${r.preset} (${q&&q.join('×')}) applied`,
-  nearest:`${g.name} is starting · closest available resolution applied`,
-  'no-entry':'Starting without a resolution change. Enable the resolution graphic pack for this game in Cemu once (Options → Graphic packs).',
-  'no-pack':'Starting without a resolution change. No resolution graphic pack found. Download the community graphic packs in Cemu (Options → Graphic packs).',
-  'no-settings':'Starting without a resolution change. Cemu’s settings file was not found. Start Cemu once first.',
-  error:'Starting without a resolution change. Something went wrong.'};
- const ok=!r.note||r.note==='applied'||r.note==='nearest';
- toast(r.note&&M[r.note]?M[r.note]:g.name+' is starting…',ok?3500:8000)}
-let tab='graphics',cs={found:false,current:{},overrides:{},defaultQuality:''};
-const POS=[['Disabled',0],['Top left',1],['Top center',2],['Top right',3],['Bottom left',4],['Bottom center',5],['Bottom right',6]];
-const NOTPOS=POS.slice(1),FILT=[['Bilinear',0],['Bicubic',1],['Hermite',2],['Nearest',3]];
-const B=(g,k,label,d)=>({g,k,label,d,type:'bool'});
-const SCHEMA={
- graphics:[
-  {g:'Rendering',k:'api',label:'Graphics API',d:'Vulkan is usually the faster choice on modern graphics cards.',type:'seg',opts:[['Vulkan',1],['OpenGL',0]]},
-  {g:'Rendering',k:'vsync',label:'VSync',d:'Prevents screen tearing but can add input delay.',type:'seg',opts:[['Off',0],['On',1]]},
-  B('Rendering','asyncCompile','Async shader compile','Compiles shaders in the background to reduce stutter.'),
-  {g:'Scaling',k:'upscale',label:'Upscale filter',d:'Used when the picture is enlarged.',type:'seg',opts:FILT},
-  {g:'Scaling',k:'downscale',label:'Downscale filter',d:'Used when the picture is shrunk.',type:'seg',opts:FILT},
-  {g:'Scaling',k:'scaling',label:'Fullscreen scaling',d:'Keep the aspect ratio or stretch to fill the screen.',type:'seg',opts:[['Keep aspect ratio',0],['Stretch',1]]}],
- audio:[{g:'Cemu audio',k:'tvVolume',label:'Game volume',d:'Volume of the game sound (TV).',type:'range',min:0,max:100,step:5,unit:'%'}],
- overlay:[
-  {g:'Performance overlay',k:'ovPos',label:'Position',d:'Where the overlay appears while you play.',type:'sel',opts:POS},
-  {g:'Performance overlay',k:'ovScale',label:'Size',type:'range',min:50,max:300,step:10,unit:'%'},
-  B('Performance overlay','ovFps','FPS'),B('Performance overlay','ovDraw','Draw calls per frame'),B('Performance overlay','ovCpu','CPU usage'),B('Performance overlay','ovCpuCore','CPU per core usage'),
-  B('Performance overlay','ovRam','RAM usage'),B('Performance overlay','ovVram','VRAM usage'),B('Performance overlay','ovDebug','Debug'),
-  {g:'Notifications',k:'ntPos',label:'Position',type:'sel',opts:NOTPOS},{g:'Notifications',k:'ntScale',label:'Size',type:'range',min:50,max:300,step:10,unit:'%'},
-  B('Notifications','ntCtrl','Controller profiles'),B('Notifications','ntBat','Low battery'),B('Notifications','ntShader','Shader compiler'),B('Notifications','ntFriend','Friend list')]};
-function ctl(it){
- const val=()=>it.k in (cs.overrides||{})?cs.overrides[it.k]:cs.current[it.k];
- const row=document.createElement('div');row.className='set';
- const lab=document.createElement('div');lab.className='lbl';const st=document.createElement('strong');st.textContent=it.label;lab.append(st);
- if(it.d){const sm=document.createElement('small');sm.textContent=it.d;lab.append(sm)}
- row.append(lab);
- const set=async v=>{if(window.api)cs=await api.setCemuSetting(it.k,v);else cs.overrides={...cs.overrides,[it.k]:v};renderPane(tab)};
- let c;
- if(it.type==='seg'){c=document.createElement('div');c.className='seg';for(const [n,v] of it.opts){const b=document.createElement('button');b.textContent=n;if(val()===v)b.className='on';b.onclick=()=>set(v);c.append(b)}}
- else if(it.type==='bool'){c=document.createElement('button');c.className='tg'+(val()?' on':'');c.textContent=val()?'On':'Off';c.onclick=()=>set(!val())}
- else if(it.type==='sel'){c=document.createElement('select');c.className='sel';for(const [n,v] of it.opts){const o=document.createElement('option');o.value=v;o.textContent=n;c.append(o)}c.value=String(val()??it.opts[0][1]);c.onchange=()=>set(+c.value)}
- else{c=document.createElement('div');c.className='rng';const r=document.createElement('input');r.type='range';r.min=it.min;r.max=it.max;r.step=it.step;r.value=val()??it.max;
-  const o=document.createElement('output');o.textContent=r.value+it.unit;r.oninput=()=>{o.textContent=r.value+it.unit};r.onchange=()=>set(+r.value);c.append(r,o)}
- row.append(c);return row}
-function gqTiles(){
- const box=$('#gq');box.replaceChildren();
- for(const [n,[w,h]] of Object.entries(QUALITY)){
-  const b=document.createElement('button');b.className='q'+(cs.defaultQuality===n?' on':'');
-  const t=document.createElement('b');t.textContent=n;const sm=document.createElement('small');sm.textContent=`${w}×${h}`;b.append(t,sm);
-  b.onclick=async()=>{const v=cs.defaultQuality===n?'':n;if(window.api)cs=await api.setDefaultQuality(v);else cs.defaultQuality=v;gqTiles()};
-  box.append(b)}}
-let inSlot=0,inInfo=null;
-const IN_TYPE_LABEL={'Wii U GamePad':'Wii U GamePad','Wii U Pro Controller':'Wii U Pro Controller','Wii U Classic Controller':'Classic Controller','Wiimote':'Wii Remote + Nunchuk'};
-const IN_API_LABEL={Keyboard:'Keyboard',XInput:'XInput (Xbox controller)',SDLController:'SDL (DualSense, Switch Pro, …)',DirectInput:'DirectInput',DSUController:'DSU (motion server)'};
-async function inCall(fn){if(window.api){inInfo=await fn();if(inInfo.error)toast(inInfo.error,6000)}else{inInfo=inInfo||{};}}
-async function renderInput(box){
- if(!inInfo||inInfo.slot!==inSlot){if(window.api)inInfo=await api.inputGet(inSlot);else inInfo={found:true,slot:inSlot,configured:inSlot<2,type:'Wii U GamePad',api:inSlot?'XInput':'Keyboard',name:'',profiles:['Keyboard','Xbox Controller'],types:Object.keys(IN_TYPE_LABEL),apis:Object.keys(IN_API_LABEL)}}
- const i=inInfo;box.replaceChildren();
- const hint=t=>{const p=document.createElement('p');p.className='hint';p.textContent=t;return p};
- const row=(label,sub,el)=>{const r=document.createElement('div');r.className='set';const l=document.createElement('div');l.className='lbl';const b=document.createElement('strong');b.textContent=label;l.append(b);if(sub){const m=document.createElement('small');m.textContent=sub;l.append(m)}const a=document.createElement('div');a.className='acts';a.append(...[].concat(el));r.append(l,a);return r};
- const btn=(t,cls,fn)=>{const b=document.createElement('button');b.className='btn '+(cls||'');b.textContent=t;b.onclick=fn;return b};
- const sel=(list,labels,val,key)=>{const c=document.createElement('select');c.className='sel';const all=val&&!list.includes(val)?[...list,val]:list;for(const v of all){const o=document.createElement('option');o.value=v;o.textContent=labels[v]||v;c.append(o)}c.value=val||list[0];c.disabled=!i.configured;
-  c.onchange=async()=>{if(window.api)await inCall(()=>api.inputSet(inSlot,key,c.value));else i[key]=c.value;renderInput(box)};return c};
- if(!i.found){box.append(hint('Cemu’s data folder wasn’t found yet. Install Cemu in Settings and start it once, then come back here.'));return}
- const h=document.createElement('h3');h.className='sh';h.textContent='Controller';box.append(h);
- const tabs=document.createElement('div');tabs.className='qg';tabs.style.gridTemplateColumns='repeat(4,1fr)';tabs.style.marginBottom='16px';
- for(let n=0;n<8;n++){const b=document.createElement('button');b.className='q'+(n===inSlot?' on':'');b.textContent='Controller '+(n+1);b.onclick=()=>{inSlot=n;inInfo=null;renderInput(box)};tabs.append(b)}
- box.append(tabs);
- const g=document.createElement('div');g.className='grp';
- if(!i.configured)g.append(row('Not set up yet','Cemu has no settings for this controller. Assign it once in Cemu, then it appears here.',[]));
- g.append(row('Emulated controller','What the game sees',sel(i.types,IN_TYPE_LABEL,i.type,'type')));
- g.append(row('Controller API','How your device is read',sel(i.apis,IN_API_LABEL,i.api,'api')));
- box.append(g);
- const h2=document.createElement('h3');h2.className='sh';h2.textContent='Profiles';box.append(h2);
- const g2=document.createElement('div');g2.className='grp';
- const ps=document.createElement('select');ps.className='sel';const none=document.createElement('option');none.value='';none.textContent=i.profiles.length?'Choose a profile…':'No profiles yet';ps.append(none);
- for(const n of i.profiles){const o=document.createElement('option');o.value=n;o.textContent=n;ps.append(o)}
- const act=a=>async()=>{const name=a==='save'?(prompt0.value||ps.value):ps.value;if(!name){toast(a==='save'?'Type a profile name first.':'Choose a profile first.');return}
-  if(window.api)await inCall(()=>api.inputProfile(inSlot,a,name));else{if(a==='save'&&!i.profiles.includes(name))i.profiles.push(name);if(a==='delete')i.profiles=i.profiles.filter(x=>x!==name)}
-  toast(a==='save'?'Profile saved.':a==='load'?'Profile loaded.':'Profile deleted.');renderInput(box)};
- const prompt0=document.createElement('input');prompt0.type='text';prompt0.placeholder='Profile name';prompt0.maxLength=40;prompt0.className='sel';prompt0.style.width='150px';
- g2.append(row('Saved profiles','Copies Cemu’s controller file',[ps,btn('Load','',act('load')),btn('Delete','ghost',act('delete'))]));
- g2.append(row('Save current setup as…','e.g. Keyboard, Xbox Controller, DualSense',[prompt0,btn('Save','main',act('save'))]));
- box.append(g2);
- const bw=document.createElement('div');bw.style.cssText='margin:18px 0 6px;display:flex;justify-content:center';
- bw.append(btn('Configure buttons in Cemu','main big',async()=>{if(!window.api){toast('This only works in the desktop app.');return}const r=await api.inputOpenCemu();toast(r.ok?'Cemu opened. Go to Options → Input settings, assign the buttons, then close Cemu.':r.error,7000)}));
- box.append(bw);
- box.append(hint('The button mapping (A, B, sticks, D-pad …) is still done in Cemu. Close Cemu before changing things here, otherwise it overwrites them when it quits. If you change the API, map the buttons again in Cemu, because mappings belong to one API.'))}
-function renderPane(t){
- const box=$('#c_'+t);if(!box)return;box.replaceChildren();
- if(t==='about'){const la=cfg.lastApply;
-  const line=(a,b)=>{const r=document.createElement('div');r.className='set';const x=document.createElement('span');x.textContent=a;const y=document.createElement('b');y.textContent=b;r.append(x,y);box.append(r)};
-  line('CosmoU','Version 0.6.0');
-  line('Cemu',cfg.cemuPath?(cfg.cemuManaged?'Managed by CosmoU':'Chosen manually')+(cfg.cemuVersion?' · '+cfg.cemuVersion:''):'Not installed');
-  line('Last launch',la?`${la.applied.length} settings applied`+(la.missing.length?`, ${la.missing.length} not found in Cemu’s file`:''):'No game started yet');return}
- if(t==='input'){renderInput(box);return}
- const items=SCHEMA[t];if(!items)return;
- let grp=null,last=null;
- for(const it of items){
-  if(it.g!==last){last=it.g;const h=document.createElement('h3');h.className='sh';h.textContent=it.g;box.append(h);grp=document.createElement('div');grp.className='grp';box.append(grp)}
-  grp.append(ctl(it))}
- if(t==='graphics'){gqTiles();$('#gnote').textContent=cs.found?'These values are written into Cemu’s settings when you press Play.':'Cemu’s settings file wasn’t found yet. Start Cemu once, then CosmoU can apply these options.';$('#gnote').hidden=false}}
-async function openSettings(){fill();if(window.api)cfg=await api.getSettings();renderPane('about');$('#dlg').showModal()}
-async function openGraphics(){if(window.api)cs=await api.cemuSettingsGet();else if(!cs.found)cs={found:true,overrides:{},defaultQuality:'Ultra',current:{api:1,vsync:0,asyncCompile:true,upscale:1,downscale:0,scaling:0,tvVolume:60,ovPos:1,ovScale:100,ovFps:true,ntPos:1,ntScale:100,ntCtrl:true,ntShader:true,ntFriend:true}};showTab(tab);$('#gdlg').showModal();tind()}
-function tind(){const b=document.querySelector('#tabs button.on'),i=$('#tind');if(b){i.style.left=b.offsetLeft+'px';i.style.width=b.offsetWidth+'px'}}
-function showTab(t){tab=t;if(t==='input')inInfo=null;document.querySelectorAll('#tabs button').forEach(x=>x.classList.toggle('on',x.dataset.t===t));document.querySelectorAll('.pane').forEach(p=>p.classList.toggle('on',p.dataset.p===t));
- $('#rst').hidden=!SCHEMA[t];renderPane(t);tind()}
-function openDetail(g){qTiles(g);sel=g.name;paint($('#dc'),g);$('#dc').style.setProperty('--c',glow(g));$('#dt').textContent=g.name;$('#df').textContent=g.format;$('#det').showModal();render()}
-async function launch(g){
- if(!g)return;if(bgMusic)bgMusic.pause();$('#ln').textContent=g.name;paint($('#lc'),g);$('#launch').classList.add('on');
- await new Promise(r=>setTimeout(r,1400));
- let r={ok:true};
- if(window.api)r=await api.play({path:g.path,tid:g.tid||'',key:g.tid||g.name});else toast('This is the preview. Launching only works in the desktop app.');
- if(window.api){if(r.ok){plays[g.name]=Date.now();try{localStorage.setItem('cosmou.plays',JSON.stringify(plays))}catch{}startToast(g,r)}else{toast(r.error);syncMusic()}}
- setTimeout(()=>{$('#launch').classList.remove('on');render()},500)}
-async function load(){if(window.api){cfg=await api.getSettings();games=await api.scan()}else games=demo;games.forEach(sample);render();$('#grid').classList.add('swap')}
-const fill=()=>{$('#pc').textContent=cfg.cemuPath?(cfg.cemuManaged?'Managed by CosmoU'+(cfg.cemuVersion?' · '+cfg.cemuVersion:'')+' · ':'')+cfg.cemuPath:'Not installed';$('#pg').textContent=cfg.gamesDir||'Not selected';$('#ct').textContent=cfg.onlineCovers===false?'Off':'On';$('#ct').classList.toggle('on',cfg.onlineCovers!==false)};
-const need=()=>window.api||(toast('This only works in the desktop app.'),false);
-async function pickFolder(){if(need()){cfg=await api.pickFolder();fill();await load()}}
-function ind(){const b=document.querySelector('nav button.on'),i=$('#ind');i.style.left=b.offsetLeft+'px';i.style.width=b.offsetWidth+'px'}
-document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
- if(b.dataset.v==='set'){openSettings();return}
- view=b.dataset.v;document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('on',x===b));ind();render();
- for(const t of [$('#grid'),$('#cf')]){t.classList.remove('swap');void t.offsetWidth;t.classList.add('swap')}});
-document.querySelectorAll('#vt button').forEach(b=>b.onclick=()=>{
- if(mode===b.dataset.m)return;mode=b.dataset.m;try{localStorage.setItem('cosmou.viewMode',mode)}catch{}
- syncMode();render();const t=$(mode==='grid'?'#grid':mode==='wiiu'?'#wu':'#cf');t.classList.remove('swap');void t.offsetWidth;t.classList.add('swap')});
-$('#prev').onclick=()=>step(-1);$('#next').onclick=()=>step(1);
-$('#cfplay').onclick=()=>launch(cur());$('#cfmore').onclick=()=>cur()&&openDetail(cur());
-let swipeX=null,wheelT=0;
-$('#cfrow').addEventListener('pointerdown',e=>{swipeX=e.clientX});
-$('#cfrow').addEventListener('pointerup',e=>{if(swipeX!==null&&Math.abs(e.clientX-swipeX)>60)step(e.clientX<swipeX?1:-1);swipeX=null});
-$('#cf').addEventListener('wheel',e=>{if(Math.abs(e.deltaX)<=Math.abs(e.deltaY)&&!e.shiftKey)return;if(Date.now()-wheelT<280)return;wheelT=Date.now();step((e.deltaX||e.deltaY)>0?1:-1)},{passive:true});
-addEventListener('keydown',e=>{
- if(mode==='grid'||document.querySelector('dialog[open]')||$('#launch').classList.contains('on')||$('#setup').classList.contains('on')||e.target.tagName==='INPUT')return;
- if(e.key==='ArrowRight'||(mode==='wiiu'&&e.key==='ArrowDown'))step(1);else if(e.key==='ArrowLeft'||(mode==='wiiu'&&e.key==='ArrowUp'))step(-1);else if(e.key==='Enter'&&e.target===document.body)launch(cur())});
-$('#wplay').onclick=()=>launch(cur());$('#wdet').onclick=()=>cur()&&openDetail(cur());
-const wpage=d=>{const l=list(),i=Math.max(0,l.findIndex(x=>x.name===sel)),p=Math.floor(i/WU_PER)+d,t=l[p*WU_PER];if(t){sel=t.name;render()}};
-$('#wprev').onclick=()=>wpage(-1);$('#wnext').onclick=()=>wpage(1);
-$('#wu').addEventListener('pointermove',e=>{const u=$('#wu'),nx=e.clientX/innerWidth-.5,ny=e.clientY/innerHeight-.5;u.style.setProperty('--px',nx*-40+'px');u.style.setProperty('--py',ny*-24+'px');u.style.setProperty('--mxr',nx*2);u.style.setProperty('--myr',ny*2);mii.px=nx*-30;mii.py=ny*-18});
-$('#q').oninput=render;
-$('#sort').onclick=()=>{sortMode=sortMode==='az'?'recent':'az';render()};
-$('#play').onclick=()=>launch(cur());
-$('#more').onclick=()=>cur()&&openDetail(cur());
-$('#dplay').onclick=()=>{$('#det').close();launch(cur())};
-$('#dfold').onclick=()=>{const g=cur();if(g&&need())api.showInFolder(g.path)};
-$('#dx').onclick=()=>$('#det').close();
-$('#close').onclick=()=>$('#dlg').close();
-$('#opG').onclick=openGraphics;$('#gclose').onclick=()=>$('#gdlg').close();
-document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>showTab(b.dataset.t));
-$('#rst').onclick=async()=>{for(const it of SCHEMA[tab]||[]){if(it.type==='head')continue;if(window.api)cs=await api.setCemuSetting(it.k,null);else delete cs.overrides[it.k]}renderPane(tab)};
-$('#ebtn').onclick=pickFolder;$('#pickG').onclick=pickFolder;
-$('#pickC').onclick=async()=>{if(need()){cfg=await api.pickCemu();fill()}};
-$('#mt').onclick=()=>{musicOn=!musicOn;try{localStorage.setItem('cosmou.music',String(musicOn))}catch{}musicUi();syncMusic()};
-addEventListener('blur',()=>bgMusic&&bgMusic.pause());addEventListener('focus',syncMusic);
-addEventListener('pointerdown',syncMusic,{once:true});
-$('#upC').onclick=()=>{if(need()){$('#dlg').close();installCemu()}};
-$('#ct').onclick=async()=>{if(need()){cfg=await api.setOnlineCovers(cfg.onlineCovers===false);fill();load()}};
-let covT;if(window.api)api.onCoversUpdated(()=>{clearTimeout(covT);covT=setTimeout(load,800)});
-$('#mf').onclick=()=>need()&&api.openMusicFolder();
-$('#oc').onclick=()=>need()&&api.openCovers();
-for(const d of document.querySelectorAll('dialog'))d.addEventListener('click',e=>{if(e.target===d)d.close()});
-addEventListener('pointermove',e=>{
- const tl=e.target.closest&&e.target.closest('.tile');if(tl){const r=tl.getBoundingClientRect();tl.style.setProperty('--ry',((e.clientX-r.left)/r.width-.5)*14+'deg');tl.style.setProperty('--rx',((e.clientY-r.top)/r.height-.5)*-14+'deg')}
- const g=e.target.closest&&e.target.closest('.glass');
- if(g){const r=g.getBoundingClientRect();g.style.setProperty('--mx',e.clientX-r.left+'px');g.style.setProperty('--my',e.clientY-r.top+'px')}
- const h=$('#hero');if(h.contains(e.target)){const r=h.getBoundingClientRect();h.style.setProperty('--px',((e.clientX-r.left)/r.width-.5)*-18+'px');h.style.setProperty('--py',((e.clientY-r.top)/r.height-.5)*-12+'px')}});
-addEventListener('resize',()=>{ind();vind();if(mode==='wiiu'){buildWiiU(list());fitMii(true)}});
-(function(){const c=$('#pt'),x=c.getContext('2d');if(matchMedia('(prefers-reduced-motion:reduce)').matches)return;
- let w,h;const P=Array.from({length:26},()=>({x:Math.random(),y:Math.random(),r:1+Math.random()*2.2,v:.00008+Math.random()*.00014,p:Math.random()*6}));
- const fit=()=>{w=c.width=innerWidth;h=c.height=innerHeight};fit();addEventListener('resize',fit);
- (function t(n){x.clearRect(0,0,w,h);for(const p of P){p.y-=p.v*16;if(p.y<-.02)p.y=1.02;const a=.25+.2*Math.sin(n/1400+p.p);
-  x.beginPath();x.arc(p.x*w+Math.sin(n/2600+p.p)*14,p.y*h,p.r,0,7);x.fillStyle=`rgba(255,255,255,${a})`;x.shadowBlur=10;x.shadowColor='rgba(80,220,240,.8)';x.fill()}requestAnimationFrame(t)})(0)})();
-function setupUi(h,p,pct,btns){
- $('#sh').textContent=h;$('#sp').textContent=p;$('#sb').style.width=pct+'%';
- const key=btns.join();if(setupUi.k===key)return;setupUi.k=key;
- const defs={cancel:['Cancel',()=>api.cemuCancel()],retry:['Try again',installCemu],
-  manual:['Choose Cemu.exe manually',async()=>{cfg=await api.pickCemu();fill();$('#setup').classList.remove('on')}],close:['Close',()=>$('#setup').classList.remove('on')]};
- const box=$('#sa');box.replaceChildren();
- btns.forEach(k=>{const b=document.createElement('button');b.className='btn';b.textContent=defs[k][0];b.onclick=defs[k][1];box.append(b)})}
-async function installCemu(){
- setupUi.k='';$('#setup').classList.add('on');
- setupUi('Preparing Cemu…','CosmoU needs Cemu to run games. Downloading the latest version from the official Cemu GitHub page.',0,['cancel']);
- const r=await api.cemuInstall();
- if(r.ok){cfg=await api.getSettings();fill();setupUi('Cemu is ready.','You can choose your games folder now.',100,[]);setTimeout(()=>$('#setup').classList.remove('on'),1500)}
- else if(r.cancelled)$('#setup').classList.remove('on');
- else setupUi('Couldn’t get Cemu',(r.error||'Something went wrong.')+' You can try again or choose Cemu.exe yourself.',0,['retry','manual','close'])}
-async function initCemu(){if(!window.api)return;cfg=await api.getSettings();const st=await api.cemuStatus();if(!st.installed)installCemu()}
-if(window.api)api.onCemuProgress(d=>{
- if(d.stage==='download'){const mb=n=>(n/1048576).toFixed(1);setupUi('Preparing Cemu…',d.total?`Downloading… ${mb(d.got)} of ${mb(d.total)} MB`:`Downloading… ${mb(d.got)} MB`,d.percent||0,['cancel'])}
- else setupUi('Preparing Cemu…',d.text||'',d.stage==='extract'?100:0,d.stage==='extract'?[]:['cancel'])});
-load();initMusic();initCemu();requestAnimationFrame(()=>{ind();syncMode()});
-</script></body></html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>CosmoU</title>
+    <link rel="stylesheet" href="css/cosmou.css" />
+  </head>
+  <body>
+    <svg class="defs" aria-hidden="true">
+      <filter id="refract" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+        <feTurbulence type="fractalNoise" baseFrequency=".006 .011" numOctaves="2" seed="4" result="n" />
+        <feDisplacementMap in="SourceGraphic" in2="n" scale="20" xChannelSelector="R" yChannelSelector="G" result="r" />
+        <feDisplacementMap in="SourceGraphic" in2="n" scale="30" xChannelSelector="R" yChannelSelector="G" result="g" />
+        <feDisplacementMap in="SourceGraphic" in2="n" scale="42" xChannelSelector="R" yChannelSelector="G" result="b" />
+        <feColorMatrix in="r" values="1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0" result="r1" />
+        <feColorMatrix in="g" values="0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 1 0" result="g1" />
+        <feColorMatrix in="b" values="0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 1 0" result="b1" />
+        <feBlend in="r1" in2="g1" mode="screen" result="rg" />
+        <feBlend in="rg" in2="b1" mode="screen" />
+      </filter>
+    </svg>
+    <div class="bg"><i></i><i></i><i></i><canvas id="pt"></canvas></div>
+    <div class="page">
+      <header>
+        <div class="brand">CosmoU<small>Wii U Library</small></div>
+        <label class="search glass pill"
+          ><svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+          >
+            <circle cx="11" cy="11" r="7" />
+            <path d="m20 20-3.5-3.5" /></svg
+          ><input id="q" placeholder="Search games" aria-label="Search games"
+        /></label>
+        <button class="glass pill tool" id="sort" aria-label="Sort order"></button>
+        <div class="vt glass pill" id="vt">
+          <span id="vi"></span><button data-m="covers">Covers</button><button data-m="grid">Grid</button
+          ><button data-m="wiiu">Wii U Look</button>
+        </div>
+      </header>
+      <section class="hero" id="hero" hidden>
+        <div class="bgimg" id="hbg"></div>
+        <div class="in">
+          <div>
+            <small id="hl"></small>
+            <h3 id="ht"></h3>
+          </div>
+          <div class="acts">
+            <button class="glass pill play dark" id="play">Play</button
+            ><button class="glass pill play dark" id="more">Details</button>
+          </div>
+        </div>
+      </section>
+      <section class="cf" id="cf" hidden>
+        <div class="cfwrap">
+          <div class="cfrow" id="cfrow"></div>
+          <button class="glass pill cfa" id="prev" aria-label="Previous game">‹</button
+          ><button class="glass pill cfa" id="next" aria-label="Next game">›</button>
+        </div>
+        <div class="cfmeta">
+          <div class="dots" id="dots"></div>
+          <h2 id="cft"></h2>
+          <small id="cfm"></small>
+          <div class="acts">
+            <button class="glass pill play dark" id="cfplay">Play</button
+            ><button class="glass pill play dark" id="cfmore">Details</button>
+          </div>
+        </div>
+      </section>
+      <div class="sec" id="sec">
+        <h4 id="st">Library</h4>
+        <span id="count"></span>
+      </div>
+      <div class="grid" id="grid"></div>
+      <div class="empty glass" id="empty" hidden>
+        <div class="in" style="padding: 0">
+          <h3 id="et"></h3>
+          <p id="ep"></p>
+          <button class="btn main" id="ebtn">Choose games folder</button>
+        </div>
+      </div>
+    </div>
+    <section id="wu" hidden>
+      <div class="wfloor"><div class="wplane" id="wplane"></div></div>
+      <canvas id="wmii"></canvas>
+      <div id="wworld"></div>
+      <div class="wpg" id="wpg">
+        <button id="wprev" aria-label="Previous page">−</button><span id="wdots"></span
+        ><button id="wnext" aria-label="Next page">+</button>
+      </div>
+      <button class="wbud" id="wbud">+ Make a buddy</button>
+      <div class="wbar">
+        <div class="wtt">
+          <h2 id="wt"></h2>
+          <small id="wm"></small>
+        </div>
+        <div class="acts"><button class="wplay" id="wplay">Play</button><button class="wdet" id="wdet">Details</button></div>
+      </div>
+    </section>
+    <nav class="glass pill">
+      <span id="ind"></span> <button data-v="lib" class="on">Library</button><button data-v="recent">Recently played</button
+      ><button data-v="set">Settings</button>
+    </nav>
+    <dialog id="det" class="glass">
+      <div class="in det">
+        <div class="box3d" id="dc"></div>
+        <div class="t">
+          <small id="df"></small>
+          <h2 id="dt"></h2>
+          <div class="acts">
+            <button class="glass pill play dark" id="dplay">Play</button><button class="btn" id="dgp">Graphic packs</button
+            ><button class="btn" id="dao">Auto-optimize</button><button class="btn" id="dedit" hidden>Edit</button
+            ><button class="btn" id="dfold">Show in folder</button><button class="btn" id="dx">Close</button>
+          </div>
+          <p class="hint" id="dgps" style="margin: 12px 2px 0"></p>
+          <div class="aor" id="daor" hidden></div>
+        </div>
+        <div class="qs" id="dqs">
+          <h3>Quick quality</h3>
+          <div class="qg" id="qg"></div>
+          <p class="hint">
+            Sets the resolution when you press Play. It needs the resolution graphic pack for this game – turn it on under Graphic
+            packs. Click the selected tile again to switch it off.
+          </p>
+        </div>
+      </div>
+    </dialog>
+    <dialog id="dlg" class="glass">
+      <div class="in win">
+        <div class="hd"><h2>Settings</h2></div>
+        <div class="bd">
+          <h3 class="sh">Emulator</h3>
+          <div class="grp">
+            <div class="set">
+              <div class="lbl"><strong>Cemu</strong><small id="pc">Not installed</small></div>
+              <div class="acts">
+                <button class="btn" id="upC">Download / update</button><button class="btn" id="pickC">Choose manually</button>
+              </div>
+            </div>
+            <div class="set">
+              <div class="lbl"><strong>Games folder</strong><small id="pg">Not selected</small></div>
+              <button class="btn" id="pickG">Choose folder</button>
+            </div>
+            <div class="set">
+              <div class="lbl">
+                <strong>Graphics settings</strong><small>Graphics API, VSync, filters, quality, audio and overlay</small>
+              </div>
+              <button class="btn main" id="opG">Open</button>
+            </div>
+          </div>
+          <h3 class="sh">Appearance</h3>
+          <div class="grp">
+            <div class="set">
+              <div class="lbl">
+                <strong>Style</strong><small>Classic Wii U is opaque and glossy like the original console menu</small>
+              </div>
+              <div class="seg" id="sty">
+                <button data-s="glass">Liquid Glass</button><button data-s="classic">Classic Wii U</button>
+              </div>
+            </div>
+            <div class="set">
+              <div class="lbl"><strong>Buddies</strong><small>Make your own characters for the Wii U Look plaza</small></div>
+              <button class="btn" id="obud">Buddy maker</button>
+            </div>
+          </div>
+          <h3 class="sh">Library</h3>
+          <div class="grp">
+            <div class="set">
+              <div class="lbl">
+                <strong>Covers</strong><small>Your own PNG or JPG (named like the game) wins over automatic covers</small>
+              </div>
+              <button class="btn" id="oc">Open covers folder</button>
+            </div>
+            <div class="set">
+              <div class="lbl"><strong>Other apps</strong><small>Add other emulators or PC games to your library</small></div>
+              <button class="btn" id="addapp">Add app</button>
+            </div>
+            <div class="set">
+              <div class="lbl">
+                <strong>Automatic covers</strong><small>Icons from your game files, box art from GameTDB</small>
+              </div>
+              <button class="btn" id="ct">On</button>
+            </div>
+          </div>
+          <h3 class="sh">Sound</h3>
+          <div class="grp">
+            <div class="set">
+              <div class="lbl">
+                <strong>Background music</strong><small id="ms">No music found – put a file in the music folder</small>
+              </div>
+              <div class="acts"><button class="btn" id="mt">On</button><button class="btn" id="mf">Music folder</button></div>
+            </div>
+          </div>
+          <h3 class="sh">About</h3>
+          <div class="grp" id="c_about"></div>
+          <div class="grp" style="margin-top: 12px">
+            <div class="set">
+              <div class="lbl">
+                <strong>Found a bug or have an idea?</strong
+                ><small>Collects your Cemu and Windows version so the report is useful</small>
+              </div>
+              <button class="btn main" id="fbo">Send feedback</button>
+            </div>
+          </div>
+          <p class="hint">
+            CosmoU is an independent launcher for Cemu, the open-source Wii U emulator (MPL 2.0). It does not include any games.
+            Wii U and Nintendo are trademarks of Nintendo.
+          </p>
+        </div>
+        <div class="ft"><span></span><button class="btn main big" id="close">Done</button></div>
+      </div>
+    </dialog>
+    <dialog id="gdlg" class="glass">
+      <div class="in win">
+        <div class="hd">
+          <h2>Graphics settings</h2>
+          <div class="vt tabs" id="tabs" role="tablist">
+            <span id="tind"></span><button data-t="graphics" class="on">Graphics</button><button data-t="audio">Audio</button
+            ><button data-t="overlay">Overlay</button><button data-t="input">Input</button>
+          </div>
+        </div>
+        <div class="bd">
+          <div class="pane on" data-p="graphics">
+            <p class="hint" id="gnote"></p>
+            <div id="c_graphics"></div>
+            <h3 class="sh">Default quality</h3>
+            <div class="qg" id="gq"></div>
+            <p class="hint">
+              Used for every game that has no quality of its own (set in a game’s Details). It needs Cemu’s resolution graphic
+              pack for the game.
+            </p>
+          </div>
+          <div class="pane" data-p="audio">
+            <div id="c_audio"></div>
+            <p class="hint">Choose the audio device in Cemu for now. CosmoU’s own music is in the main Settings.</p>
+          </div>
+          <div class="pane" data-p="overlay"><div id="c_overlay"></div></div>
+          <div class="pane" data-p="input"><div id="c_input"></div></div>
+        </div>
+        <div class="ft">
+          <button class="btn ghost" id="rst">Reset to Cemu’s values</button><button class="btn main big" id="gclose">Done</button>
+        </div>
+      </div>
+    </dialog>
+    <dialog id="gpdlg" class="glass">
+      <div class="in win">
+        <div class="hd">
+          <h2>Graphic packs</h2>
+          <small class="gpst" id="gpg"></small>
+          <div class="gpbar">
+            <div class="seg" id="gpf"></div>
+            <input class="sel" id="gpq" placeholder="Search packs" aria-label="Search packs" />
+          </div>
+        </div>
+        <div class="bd" id="gpl"></div>
+        <div class="ft">
+          <div style="display: flex; align-items: center; gap: 12px; min-width: 0">
+            <button class="btn" id="gpdl">Download / update packs</button><span class="gpst" id="gpv"></span>
+          </div>
+          <button class="btn main big" id="gpx">Done</button>
+        </div>
+      </div>
+    </dialog>
+    <dialog id="fbdlg" class="glass">
+      <div class="in win">
+        <div class="hd">
+          <h2>Send feedback</h2>
+          <p class="hint" style="margin: 8px 0 0">
+            Your system info is already filled in. Add what happened, then copy it into Discord or Reddit, or open a GitHub issue.
+          </p>
+        </div>
+        <div class="bd" style="padding-top: 14px">
+          <textarea id="fbtxt" spellcheck="false" aria-label="Feedback text"></textarea>
+        </div>
+        <div class="ft">
+          <div class="acts">
+            <button class="btn" id="fbc">Copy</button><button class="btn" id="fbi">Open GitHub issue</button>
+          </div>
+          <button class="btn main big" id="fbx">Done</button>
+        </div>
+      </div>
+    </dialog>
+    <dialog id="appdlg" class="glass">
+      <div class="in win">
+        <div class="hd">
+          <h2 id="apt">Add app</h2>
+          <p class="hint" style="margin: 8px 0 0">
+            Add another emulator or a PC game. It shows up in your library next to your Wii U games.
+          </p>
+        </div>
+        <div class="bd">
+          <div class="grp" style="margin-top: 10px">
+            <div class="set">
+              <div class="lbl"><strong>Program</strong><small id="app_p">No program chosen</small></div>
+              <button class="btn" id="app_pick">Choose…</button>
+            </div>
+            <div class="set">
+              <div class="lbl"><strong>Name</strong><small>Shown in your library</small></div>
+              <input class="sel" id="app_n" maxlength="60" style="width: 240px" />
+            </div>
+            <div class="set">
+              <div class="lbl"><strong>Launch options</strong><small>Optional, for example -fullscreen</small></div>
+              <input class="sel" id="app_a" maxlength="300" style="width: 240px" />
+            </div>
+            <div class="set">
+              <div class="lbl"><strong>Cover</strong><small id="app_c">Generated from the name</small></div>
+              <button class="btn" id="app_cov">Choose image…</button>
+            </div>
+          </div>
+        </div>
+        <div class="ft">
+          <button class="btn ghost" id="app_rm">Remove from library</button>
+          <div class="acts">
+            <button class="btn" id="app_x">Cancel</button><button class="btn main big" id="app_s">Save</button>
+          </div>
+        </div>
+      </div>
+    </dialog>
+    <dialog id="bdlg" class="glass">
+      <div class="in win">
+        <div class="hd">
+          <h2>Buddy maker</h2>
+          <p class="hint" style="margin: 8px 0 0">
+            Make your own little characters. They walk around the Wii U Look plaza with their name tag. Changes are saved right
+            away.
+          </p>
+        </div>
+        <div class="bd">
+          <div class="bm">
+            <div class="bmp"><canvas id="bcv" width="440" height="520"></canvas></div>
+            <div class="bmc">
+              <label class="bml">Name<input class="sel" id="b_n" maxlength="14" placeholder="Buddy name" /></label>
+              <div class="bml">
+                Skin
+                <div class="sw" id="b_fc"></div>
+              </div>
+              <div class="bml">
+                Outfit
+                <div class="sw" id="b_bc"></div>
+              </div>
+              <div class="bml">
+                Eyes
+                <div class="seg" id="b_ey"></div>
+              </div>
+              <div class="bml">
+                Mouth
+                <div class="seg" id="b_mo"></div>
+              </div>
+              <div class="bml">
+                Extra
+                <div class="seg" id="b_ac"></div>
+              </div>
+            </div>
+          </div>
+          <h3 class="sh">Your buddies <span id="b_cnt"></span></h3>
+          <div class="bl" id="b_list"></div>
+        </div>
+        <div class="ft">
+          <div class="acts">
+            <button class="btn" id="b_new">New buddy</button><button class="btn ghost" id="b_del">Delete</button>
+          </div>
+          <button class="btn main big" id="b_x">Done</button>
+        </div>
+      </div>
+    </dialog>
+    <div id="launch">
+      <div class="glass lp">
+        <div class="art" id="lc"></div>
+        <h3 id="ln"></h3>
+        <p>Starting…</p>
+        <div class="flow"><i></i></div>
+      </div>
+    </div>
+    <div id="setup">
+      <div class="glass lp">
+        <h3 id="sh">Preparing Cemu…</h3>
+        <p id="sp"></p>
+        <div class="bar"><i id="sb"></i></div>
+        <div class="acts" id="sa"></div>
+      </div>
+    </div>
+    <div id="toast" class="glass pill" role="status"></div>
+    <script src="js/core.js"></script>
+    <script src="js/wiiu-look.js"></script>
+    <script src="js/covers.js"></script>
+    <script src="js/settings.js"></script>
+    <script src="js/details.js"></script>
+    <script src="js/feedback-style-controller.js"></script>
+    <script src="js/optimize-apps.js"></script>
+    <script src="js/buddies.js"></script>
+    <script src="js/app.js"></script>
+  </body>
+</html>
