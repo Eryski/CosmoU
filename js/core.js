@@ -145,8 +145,12 @@ function render() {
   $('#cf').hidden = mode !== 'covers' || em;
   $('#wu').hidden = mode !== 'wiiu' || em;
   document.body.classList.toggle('wiiu', mode === 'wiiu' && !em);
+  document.body.classList.toggle('wuhome', mode === 'wiiu' && !em && wuView === 'home');
   if (mode === 'covers') buildCovers(l);
-  if (mode === 'wiiu' && !em) {
+  if (mode === 'wiiu' && !em && wuView === 'home') {
+    stopMii();
+    buildHome(l);
+  } else if (mode === 'wiiu' && !em) {
     buildWiiU(l);
     startMii();
   } else stopMii();

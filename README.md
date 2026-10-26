@@ -2,9 +2,9 @@
 
 A free Windows launcher for the [Cemu](https://cemu.info) Wii U emulator with a Wii U-inspired home menu.
 
-- Covers, Grid and Wii U Look views, with your own buddies walking around the plaza (Buddy maker)
+- Covers, Grid and Wii U Look views – the Wii U Look has two layouts: the Plaza with your own buddies (Buddy maker) or a Home Menu tile grid like the console
 - Two styles: Liquid Glass or Classic Wii U (opaque and glossy like the original menu)
-- 3D Wii U cases in the game details and when you point at a cover
+- Real 3D Wii U cases (front, spine and back) with the game disc, in the details and when you point at a cover
 - Graphic pack manager per game: turn resolution, FPS++, mods, cheats and fixes on or off and pick presets, download the community packs in one click
 - Auto-optimize: picks resolution, Vulkan, async shaders and fitting graphic packs for your graphics card
 - Add other apps (emulators, PC games) to your library

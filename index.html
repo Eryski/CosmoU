@@ -95,6 +95,23 @@
         ><button id="wnext" aria-label="Next page">+</button>
       </div>
       <button class="wbud" id="wbud">+ Make a buddy</button>
+      <button class="wbud wtohome" id="wtohome">Home Menu</button>
+      <div id="whome">
+        <div class="wh-top">
+          <button class="wh-av" id="whav" aria-label="Buddy maker"><canvas id="whavc" width="160" height="160"></canvas></button>
+          <div class="wh-head">
+            <div class="wh-dots" id="whdots"></div>
+            <div class="wh-title" id="whtitle"></div>
+          </div>
+        </div>
+        <div class="wh-stage">
+          <button class="wh-arrow l" id="whprev" aria-label="Previous page"></button>
+          <div class="wh-grid" id="whgrid"></div>
+          <button class="wh-arrow r" id="whnext" aria-label="Next page"></button>
+        </div>
+        <div class="wh-dock" id="whdock"></div>
+        <button class="wh-swap" id="whswap" aria-label="Switch to Plaza" title="Switch to Plaza"></button>
+      </div>
       <div class="wbar">
         <div class="wtt">
           <h2 id="wt"></h2>
@@ -167,6 +184,12 @@
             <div class="set">
               <div class="lbl"><strong>Buddies</strong><small>Make your own characters for the Wii U Look plaza</small></div>
               <button class="btn" id="obud">Buddy maker</button>
+            </div>
+            <div class="set">
+              <div class="lbl">
+                <strong>Wii U Look layout</strong><small>Plaza with floating icons, or the Home Menu tile grid</small>
+              </div>
+              <div class="seg" id="wul"><button data-l="plaza">Plaza</button><button data-l="home">Home Menu</button></div>
             </div>
             <div class="set">
               <div class="lbl">
@@ -407,6 +430,7 @@
     <script src="js/feedback-style-controller.js"></script>
     <script src="js/optimize-apps.js"></script>
     <script src="js/buddies.js"></script>
+    <script src="js/wiiu-home.js"></script>
     <script src="js/app.js"></script>
   </body>
 </html>

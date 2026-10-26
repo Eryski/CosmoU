@@ -121,6 +121,8 @@ function padTick(now) {
     b: b(1),
     y: b(3),
     st: b(9),
+    lb: b(4),
+    rb: b(5),
   };
   const hit = k => {
     if (!s[k]) {
@@ -150,8 +152,13 @@ function padTick(now) {
         launch(cur());
       }
     } else {
-      if (fire.l || (mode !== 'covers' && fire.u)) step(-1);
-      if (fire.r || (mode !== 'covers' && fire.d)) step(1);
+      if (isHome()) {
+        for (const k of ['l', 'r', 'u', 'd']) if (fire[k]) homeStep(k);
+        if (fire.lb || fire.rb) whTurn(fire.rb ? 1 : -1);
+      } else {
+        if (fire.l || (mode !== 'covers' && fire.u)) step(-1);
+        if (fire.r || (mode !== 'covers' && fire.d)) step(1);
+      }
       if (fire.a) launch(cur());
       if (fire.y && cur()) openDetail(cur());
       if (fire.st) openSettings();

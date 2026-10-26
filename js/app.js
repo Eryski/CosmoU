@@ -132,7 +132,10 @@ addEventListener('keydown', e => {
     e.target.tagName === 'INPUT'
   )
     return;
-  if (e.key === 'ArrowRight' || (mode === 'wiiu' && e.key === 'ArrowDown')) step(1);
+  const hk = isHome() && { ArrowRight: 'r', ArrowLeft: 'l', ArrowUp: 'u', ArrowDown: 'd' }[e.key];
+  if (hk) homeStep(hk);
+  else if (isHome() && (e.key === 'PageDown' || e.key === 'PageUp')) whTurn(e.key === 'PageDown' ? 1 : -1);
+  else if (e.key === 'ArrowRight' || (mode === 'wiiu' && e.key === 'ArrowDown')) step(1);
   else if (e.key === 'ArrowLeft' || (mode === 'wiiu' && e.key === 'ArrowUp')) step(-1);
   else if (e.key === 'Enter' && e.target === document.body) launch(cur());
 });
@@ -259,7 +262,8 @@ addEventListener('pointermove', e => {
 addEventListener('resize', () => {
   ind();
   vind();
-  if (mode === 'wiiu') {
+  if (isHome()) buildHome(list());
+  else if (mode === 'wiiu') {
     buildWiiU(list());
     fitMii(true);
   }

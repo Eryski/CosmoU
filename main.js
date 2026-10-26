@@ -177,6 +177,7 @@ function scan(dir) {
       manual || urlIf(path.join(autoDir(), key + '-cover.jpg')) || urlIf(path.join(autoDir(), key + '-box.png')) || urlIf(icon);
     g.full = manual ? '' : urlIf(path.join(autoDir(), key + '-full.jpg'));
     g.disc = urlIf(path.join(autoDir(), key + '-disc.png'));
+    g.icon = urlIf(icon);
     g.hero = urlIf(path.join(autoDir(), key + '-hero.png'));
     g.color = fs.existsSync(icon) ? avgColor(icon) : '';
   }
