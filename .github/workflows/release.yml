@@ -1,10 +1,12 @@
-# Builds the Windows installer + portable .exe and publishes them as a GitHub Release.
-# Runs when a version tag like v0.8.1 is pushed (the tag must match the version in package.json).
+# Builds the Windows installer + portable .exe and attaches them to a GitHub Release.
+# How to use: on GitHub go to Releases → "Draft a new release", create a tag like v0.8.1
+# (it should match the version in package.json) and press "Publish release".
+# The build starts automatically and the two .exe files appear in the release after a few minutes.
 name: Build release
 
 on:
-  push:
-    tags: ['v*']
+  release:
+    types: [published]
 
 permissions:
   contents: write
@@ -25,11 +27,9 @@ jobs:
       - name: Build installer and portable exe
         run: npm run dist
 
-      - name: Publish release
+      - name: Attach files to the release
         uses: softprops/action-gh-release@v2
         with:
-          name: CosmoU ${{ github.ref_name }}
-          generate_release_notes: true
           files: |
             dist/CosmoU-Setup-*.exe
             dist/CosmoU-Portable-*.exe

@@ -29,7 +29,7 @@ npm run preview  # single-file browser preview with demo games
 ```
 
 ## Making a release
-Set the version in `package.json`, commit, then push a matching tag (for example `git tag v0.8.1 && git push origin v0.8.1`). GitHub Actions builds both .exe files and publishes the release.
+Set the version in `package.json` and push. Then on GitHub open **Releases → Draft a new release**, create a matching tag (for example `v0.8.1`) and press **Publish release**. GitHub Actions builds both .exe files and attaches them to the release.
 
 ## Project layout
 ```
