@@ -855,7 +855,7 @@ function parseRulesFull(txt) {
           .filter(Boolean);
       else if (k === 'name') d.name = unq(v);
       else if (k === 'path') d.path = unq(v);
-      else if (k === 'description') d.desc = unq(v);
+      else if (k === 'description') d.desc = unq(v).replace(/\s*\|\s*/g, ' ').trim();
     } else if (sec === 'preset' && cur && (k === 'name' || k === 'category' || k === 'default')) cur[k] = unq(v);
   }
   return d;

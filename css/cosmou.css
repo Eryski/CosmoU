@@ -1881,6 +1881,14 @@ body.wiiu nav button {
   filter: blur(3px);
   z-index: -1;
 }
+/* Wii U Look is always light, also when Windows is in dark mode */
+body.wiiu .play.dark,
+body.wiiu .cfa,
+body.wiiu .search input,
+body.wiiu .tool {
+  color: #2a3640;
+  text-shadow: none;
+}
 /* ===== 3D case on hover ===== */
 .hbox {
   position: fixed;
