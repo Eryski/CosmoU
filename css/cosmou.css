@@ -1725,8 +1725,8 @@ body.wiiu nav button {
 /* ===== 3D Wii U case (detail view) ===== */
 .box3d {
   --bw: 190px;
-  --bh: calc(var(--bw) * 1.4);
-  --bd: 20px;
+  --bh: calc(var(--bw) * 1.406);
+  --bd: calc(var(--bw) * 0.125);
   position: relative;
   width: calc(var(--bw) + 40px);
   height: calc(var(--bh) + 56px);
@@ -1868,6 +1868,84 @@ body.wiiu nav button {
 }
 .bx-u {
   transform: rotateX(-90deg) translateZ(calc(var(--bh) / 2));
+}
+.box3d.disc {
+  width: calc(var(--bw) * 1.62);
+  place-items: start;
+  padding-left: 14px;
+}
+/* real case art: GameTDB full cover = back | spine | front */
+.box3d.full .bx-f {
+  background: var(--full) 100% 0 / 212.5% 100% no-repeat;
+}
+.box3d.full .bx-b {
+  background: var(--full) 0 0 / 212.5% 100% no-repeat;
+}
+.box3d.full .bx-s {
+  background: var(--full) 50% 0 / 1700% 100% no-repeat;
+}
+.box3d.full .bx-s span {
+  display: none;
+}
+.box3d.full .bx-t,
+.box3d.full .bx-u,
+.box3d.full .bx-r {
+  background: linear-gradient(90deg, #0f7fbd, #1d9ad6);
+}
+/* the game disc slides out of the case */
+.bx-c > i.bx-d {
+  width: calc(var(--bw) * 0.86);
+  height: calc(var(--bw) * 0.86);
+  margin: calc(var(--bw) * -0.43) 0 0 calc(var(--bw) * -0.43);
+  border-radius: 50%;
+  backface-visibility: visible;
+  transform: translateY(calc(var(--bh) * -0.08));
+}
+.bx-d b {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: center / cover no-repeat;
+  box-shadow: 0 6px 18px -6px rgba(0, 0, 0, 0.45);
+  animation: discspin 9s linear infinite;
+}
+.bx-d b::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 20deg,
+    transparent,
+    rgba(255, 255, 255, 0.35) 8%,
+    transparent 18%,
+    transparent 50%,
+    rgba(255, 255, 255, 0.25) 58%,
+    transparent 68%
+  );
+  mix-blend-mode: screen;
+}
+#det[open] .bx-d {
+  animation: discout 1.1s 0.85s cubic-bezier(0.3, 1.25, 0.45, 1) both;
+}
+@keyframes discout {
+  from {
+    transform: translateY(calc(var(--bh) * -0.08));
+  }
+  to {
+    transform: translateY(calc(var(--bh) * -0.08)) translateX(calc(var(--bw) * 0.56));
+  }
+}
+#det[open] .bx-d {
+  transform: translateY(calc(var(--bh) * -0.08)) translateX(calc(var(--bw) * 0.56));
+}
+@keyframes discspin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.hbox .bx-d {
+  display: none;
 }
 .box3d::after {
   content: '';

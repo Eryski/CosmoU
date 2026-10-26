@@ -172,14 +172,18 @@ function scan(dir) {
       cacheTga(path.join(g.dir, 'meta', 'bootTvTex.tga'), path.join(autoDir(), key + '-hero.png'));
     }
     const icon = path.join(autoDir(), key + '-icon.png');
-    g.cover = manualCover(g.name) || urlIf(path.join(autoDir(), key + '-box.png')) || urlIf(icon);
+    const manual = manualCover(g.name);
+    g.cover =
+      manual || urlIf(path.join(autoDir(), key + '-cover.jpg')) || urlIf(path.join(autoDir(), key + '-box.png')) || urlIf(icon);
+    g.full = manual ? '' : urlIf(path.join(autoDir(), key + '-full.jpg'));
+    g.disc = urlIf(path.join(autoDir(), key + '-disc.png'));
     g.hero = urlIf(path.join(autoDir(), key + '-hero.png'));
     g.color = fs.existsSync(icon) ? avgColor(icon) : '';
   }
   return out.sort((a, b) => a.name.localeCompare(b.name));
 }
 
-// Optional online box art from GameTDB (one request at a time, results cached, misses remembered for 7 days)
+// Optional online case art from GameTDB (one request at a time, results cached, misses remembered for 7 days)
 const boxBusy = new Set(),
   boxJobs = [];
 let boxRunning = false;
@@ -206,12 +210,24 @@ function fetchImage(url, dest) {
     req.on('error', () => resolve(false));
   });
 }
+// Wii U art on GameTDB: front cover + full wrap-around cover (back | spine | front) as .jpg, disc as .png.
+const artFile = (tid, kind) =>
+  path.join(autoDir(), tid + (kind === 'disc' ? '-disc.png' : kind === 'full' ? '-full.jpg' : '-cover.jpg'));
+const artMiss = tid => path.join(autoDir(), tid + '-art.miss');
+function artRegions(L) {
+  if (L === 'E') return ['US', 'EN'];
+  if (L === 'J') return ['JA'];
+  const loc = String(app.getLocale() || '')
+    .slice(0, 2)
+    .toUpperCase();
+  const pal = ['EN', 'DE', 'FR', 'ES', 'IT', 'NL', 'PT', 'RU', 'AU'];
+  return [...new Set([pal.includes(loc) ? loc : 'EN', ...pal, 'US'])];
+}
 function queueBoxArt(list) {
   for (const g of list) {
     if (!g.meta || !g.meta.code || !g.tid || boxBusy.has(g.tid)) continue;
-    const dest = path.join(autoDir(), g.tid + '-box.png'),
-      miss = dest + '.miss';
-    if (fs.existsSync(dest)) continue;
+    if (fs.existsSync(artFile(g.tid, 'cover'))) continue;
+    const miss = artMiss(g.tid);
     if (fs.existsSync(miss) && Date.now() - fs.statSync(miss).mtimeMs < 7 * 864e5) continue;
     boxBusy.add(g.tid);
     boxJobs.push(g);
@@ -223,22 +239,25 @@ async function runBox() {
   while (boxJobs.length) {
     const g = boxJobs.shift(),
       id = g.meta.code + (g.meta.maker || '01'),
-      L = g.meta.code[3];
-    const regions = L === 'E' ? ['US', 'EN'] : L === 'J' ? ['JA'] : ['EN', 'EU'];
-    const dest = path.join(autoDir(), g.tid + '-box.png');
-    let ok = false;
+      base = 'https://art.gametdb.com/wiiu/';
+    let region = '';
     for (const kind of ['coverHQ', 'cover']) {
-      for (const r of regions) {
-        ok = await fetchImage(`https://art.gametdb.com/wiiu/${kind}/${r}/${id}.png`, dest);
-        if (ok) break;
+      for (const r of artRegions(g.meta.code[3])) {
+        if (await fetchImage(`${base}${kind}/${r}/${id}.jpg`, artFile(g.tid, 'cover'))) {
+          region = r;
+          break;
+        }
       }
-      if (ok) break;
+      if (region) break;
     }
-    if (ok) {
+    if (region) {
+      const tries = [...new Set([region, 'EN', 'US'])];
+      for (const r of tries) if (await fetchImage(`${base}coverfullHQ/${r}/${id}.jpg`, artFile(g.tid, 'full'))) break;
+      for (const r of tries) if (await fetchImage(`${base}disc/${r}/${id}.png`, artFile(g.tid, 'disc'))) break;
       if (mainWin && !mainWin.isDestroyed()) mainWin.webContents.send('covers-updated');
     } else {
       try {
-        fs.writeFileSync(dest + '.miss', String(Date.now()));
+        fs.writeFileSync(artMiss(g.tid), String(Date.now()));
       } catch {}
     }
     boxBusy.delete(g.tid);
@@ -855,7 +874,10 @@ function parseRulesFull(txt) {
           .filter(Boolean);
       else if (k === 'name') d.name = unq(v);
       else if (k === 'path') d.path = unq(v);
-      else if (k === 'description') d.desc = unq(v).replace(/\s*\|\s*/g, ' ').trim();
+      else if (k === 'description')
+        d.desc = unq(v)
+          .replace(/\s*\|\s*/g, ' ')
+          .trim();
     } else if (sec === 'preset' && cur && (k === 'name' || k === 'category' || k === 'default')) cur[k] = unq(v);
   }
   return d;

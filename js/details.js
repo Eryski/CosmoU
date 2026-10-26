@@ -76,6 +76,22 @@ function box3d(el, g) {
   el.innerHTML =
     '<div class="bx-c"><i class="bx-b"></i><i class="bx-r"></i><i class="bx-t"></i><i class="bx-u"></i><i class="bx-s"><span></span></i><i class="bx-f"></i></div>';
   el.querySelector('.bx-s span').textContent = g.name;
+  el.classList.remove('full', 'disc');
+  el.style.removeProperty('--full');
+  if (g.disc && el.id === 'dc') {
+    const d = document.createElement('i');
+    d.className = 'bx-d';
+    const b = document.createElement('b');
+    b.style.backgroundImage = `url("${g.disc}")`;
+    d.append(b);
+    el.querySelector('.bx-c').prepend(d);
+    el.classList.add('disc');
+  }
+  if (g.full) {
+    el.classList.add('full');
+    el.style.setProperty('--full', `url("${g.full}")`);
+    return;
+  }
   const f = el.querySelector('.bx-f');
   const asIcon = () => {
     f.className = 'bx-f icon';
