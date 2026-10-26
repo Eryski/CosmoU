@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog, shell, nativeImage } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, shell, nativeImage, nativeTheme } = require('electron');
 const fs = require('fs'),
   path = require('path'),
   { pathToFileURL } = require('url'),
@@ -269,6 +269,7 @@ async function runBox() {
 
 app.whenReady().then(() => {
   fs.mkdirSync(coversDir(), { recursive: true });
+  applyTheme(read().theme);
   const win = new BrowserWindow({
     width: 1280,
     height: 800,
@@ -320,6 +321,11 @@ ipcMain.handle('pickFolder', async () => {
   return s;
 });
 ipcMain.handle('play', (_, arg) => {
+  const r = playGame(arg);
+  if (r.ok && arg && typeof arg === 'object') recordPlay(arg.name);
+  return r;
+});
+function playGame(arg) {
   if (arg && typeof arg === 'object' && arg.appId) return launchApp(arg.appId);
   const gamePath = typeof arg === 'string' ? arg : arg && arg.path;
   const s = read();
@@ -340,7 +346,7 @@ ipcMain.handle('play', (_, arg) => {
   } catch {}
   spawn(s.cemuPath, ['-g', gamePath, '-f'], { detached: true, stdio: 'ignore', cwd: path.dirname(s.cemuPath) }).unref();
   return { ok: true, note, preset };
-});
+}
 
 ipcMain.handle('showInFolder', (_, p) => {
   if (typeof p === 'string' && fs.existsSync(p)) shell.showItemInFolder(p);
@@ -1372,3 +1378,74 @@ ipcMain.handle('appGet', (_, id) => {
 });
 
 ipcMain.handle('openDiscord', () => shell.openExternal('https://discord.gg/BZry7jGjr7'));
+
+// ---------- Recently played: saved on disk by the main process, so it survives restarts and updates ----------
+function recordPlay(name) {
+  if (typeof name !== 'string' || !name || name.length > 200) return;
+  const s = read();
+  write({ ...s, plays: { ...(s.plays || {}), [name]: Date.now() } });
+}
+ipcMain.handle('mergePlays', (_, p) => {
+  const s = read(),
+    plays = { ...(s.plays || {}) };
+  if (p && typeof p === 'object')
+    for (const [k, v] of Object.entries(p)) if (typeof k === 'string' && Number.isFinite(+v) && !(plays[k] >= +v)) plays[k] = +v;
+  write({ ...s, plays });
+  return plays;
+});
+
+// ---------- Theme: System / Light / Dark ----------
+function applyTheme(t) {
+  nativeTheme.themeSource = t === 'light' || t === 'dark' ? t : 'system';
+}
+ipcMain.handle('setTheme', (_, t) => {
+  const v = t === 'light' || t === 'dark' ? t : 'system';
+  applyTheme(v);
+  write({ ...read(), theme: v });
+  return v;
+});
+
+// ---------- Update checker (GitHub releases) ----------
+const RELEASES = 'https://github.com/Eryski/CosmoU/releases/latest';
+const verParts = v =>
+  String(v || '')
+    .replace(/^v/i, '')
+    .split(/[.-]/)
+    .slice(0, 3)
+    .map(n => parseInt(n, 10) || 0);
+const newer = (a, b) => {
+  const x = verParts(a),
+    y = verParts(b);
+  for (let i = 0; i < 3; i++) if (x[i] !== y[i]) return x[i] > y[i];
+  return false;
+};
+function latestRelease() {
+  return new Promise(resolve => {
+    const req = https.get(
+      'https://api.github.com/repos/Eryski/CosmoU/releases/latest',
+      { headers: { 'User-Agent': 'CosmoU', Accept: 'application/vnd.github+json' } },
+      res => {
+        let body = '';
+        res.setEncoding('utf8');
+        res.on('data', c => (body += c));
+        res.on('end', () => {
+          try {
+            resolve(res.statusCode === 200 ? JSON.parse(body) : null);
+          } catch {
+            resolve(null);
+          }
+        });
+      },
+    );
+    req.setTimeout(10000, () => req.destroy());
+    req.on('error', () => resolve(null));
+  });
+}
+ipcMain.handle('checkUpdate', async () => {
+  const current = app.getVersion(),
+    rel = await latestRelease();
+  if (!rel || !rel.tag_name) return { ok: false, current, error: 'Couldn’t reach GitHub. Check your internet connection.' };
+  const latest = rel.tag_name.replace(/^v/i, '');
+  return { ok: true, current, latest, available: newer(latest, current), notes: String(rel.body || '').slice(0, 1500) };
+});
+ipcMain.handle('openReleases', () => shell.openExternal(RELEASES));

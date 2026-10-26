@@ -1,6 +1,7 @@
 // CosmoU – Game details: 3D Wii U case and the graphic pack manager.
 function openDetail(g) {
   hoverOff();
+  blip('open');
   const app = g.kind === 'app';
   qTiles(g);
   sel = g.name;

@@ -71,6 +71,7 @@ function step(d) {
     n = Math.max(0, Math.min(l.length - 1, i + d));
   if (l[n] && l[n].name !== sel) {
     sel = l[n].name;
+    blip('move');
     render();
   }
 }

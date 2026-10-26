@@ -44,7 +44,8 @@ function setWuLayout(v) {
   } catch {}
   syncWuLayoutUi();
   hoverOff();
-  render();
+  blip('page');
+  withVT(render);
 }
 const whItems = l => [{ sys: 'settings', name: 'Settings' }, ...l, { sys: 'add', name: 'Add app' }];
 function whSize() {
@@ -90,6 +91,7 @@ function buildHome(l) {
         if (sel === it.name) launch(it);
         else {
           sel = it.name;
+          blip('move');
           render();
         }
       };
@@ -129,6 +131,7 @@ function buildHome(l) {
   const g = cur();
   $('#whtitle').textContent = g ? g.name : '';
   drawAvatar();
+  startAvatar();
 }
 function whTurn(d) {
   const items = whItems(list()),
@@ -136,6 +139,7 @@ function whTurn(d) {
     p = Math.max(0, Math.min(pages - 1, whPage + d));
   if (p === whPage) return;
   whPage = p;
+  blip('page');
   const first = items.slice(p * WH_PER, (p + 1) * WH_PER).find(x => !x.sys);
   if (first) sel = first.name;
   render();
@@ -156,6 +160,7 @@ function homeStep(dir) {
   const t = l[n - 1];
   if (t && t.name !== sel) {
     sel = t.name;
+    blip('move');
     render();
   }
 }

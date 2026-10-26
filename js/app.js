@@ -9,6 +9,7 @@ addEventListener('gamepadconnected', e => {
 async function launch(g) {
   if (!g) return;
   hoverOff();
+  blip('start');
   if (bgMusic) bgMusic.pause();
   $('#ln').textContent = g.name;
   paint($('#lc'), g);
@@ -16,7 +17,11 @@ async function launch(g) {
   await new Promise(r => setTimeout(r, 1400));
   let r = { ok: true };
   if (window.api)
-    r = await api.play(g.kind === 'app' ? { appId: g.appId } : { path: g.path, tid: g.tid || '', key: g.tid || g.name });
+    r = await api.play(
+      g.kind === 'app'
+        ? { appId: g.appId, name: g.name }
+        : { path: g.path, tid: g.tid || '', key: g.tid || g.name, name: g.name },
+    );
   else toast('This is the preview. Launching only works in the desktop app.');
   if (window.api) {
     if (r.ok) {
@@ -39,6 +44,11 @@ async function load() {
   if (window.api) {
     cfg = await api.getSettings();
     games = await api.scan();
+    const local = Object.keys(plays).some(k => !(cfg.plays || {})[k]);
+    plays = local ? await api.mergePlays(plays) : { ...(cfg.plays || {}) };
+    try {
+      localStorage.setItem('cosmou.plays', JSON.stringify(plays));
+    } catch {}
   } else games = demo;
   games.forEach(sample);
   render();
@@ -73,31 +83,38 @@ document.querySelectorAll('nav button').forEach(
         openSettings();
         return;
       }
-      view = b.dataset.v;
+      if (view === b.dataset.v) return;
+      blip('page');
       document.querySelectorAll('nav button').forEach(x => x.classList.toggle('on', x === b));
       ind();
-      render();
-      for (const t of [$('#grid'), $('#cf')]) {
-        t.classList.remove('swap');
-        void t.offsetWidth;
-        t.classList.add('swap');
-      }
+      withVT(() => {
+        view = b.dataset.v;
+        render();
+        for (const t of [$('#grid'), $('#cf')]) {
+          t.classList.remove('swap');
+          void t.offsetWidth;
+          t.classList.add('swap');
+        }
+      });
     }),
 );
 document.querySelectorAll('#vt button').forEach(
   b =>
     (b.onclick = () => {
       if (mode === b.dataset.m) return;
-      mode = b.dataset.m;
-      try {
-        localStorage.setItem('cosmou.viewMode', mode);
-      } catch {}
-      syncMode();
-      render();
-      const t = $(mode === 'grid' ? '#grid' : mode === 'wiiu' ? '#wu' : '#cf');
-      t.classList.remove('swap');
-      void t.offsetWidth;
-      t.classList.add('swap');
+      blip('page');
+      withVT(() => {
+        mode = b.dataset.m;
+        try {
+          localStorage.setItem('cosmou.viewMode', mode);
+        } catch {}
+        syncMode();
+        render();
+        const t = $(mode === 'grid' ? '#grid' : mode === 'wiiu' ? '#wu' : '#cf');
+        t.classList.remove('swap');
+        void t.offsetWidth;
+        t.classList.add('swap');
+      });
     }),
 );
 $('#prev').onclick = () => step(-1);
@@ -374,7 +391,7 @@ if (window.api)
     } else setupUi('Preparing Cemu…', d.text || '', d.stage === 'extract' ? 100 : 0, d.stage === 'extract' ? [] : ['cancel']);
   });
 applyStyle();
-load();
+load().then(initPolish);
 initMusic();
 initCemu();
 requestAnimationFrame(() => {
