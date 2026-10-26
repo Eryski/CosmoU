@@ -2492,28 +2492,38 @@ body.wuhome #whome {
   display: grid;
   grid-template-rows: 136px 1fr 118px;
   background:
-    radial-gradient(60% 50% at 70% 20%, rgba(255, 255, 255, 0.9), transparent 70%),
-    repeating-linear-gradient(-58deg, transparent 0 46px, rgba(150, 165, 175, 0.07) 46px 92px), linear-gradient(#fbfcfc, #e9edef);
+    radial-gradient(70% 60% at 50% 42%, #ffffff 0%, rgba(255, 255, 255, 0.7) 45%, transparent 80%),
+    linear-gradient(180deg, #f7f8f8 0%, #eef0f1 55%, #e7eaeb 100%);
+  overflow: hidden;
 }
+/* soft blurry grey shapes at the edges, like the console's home screen */
 body.wuhome #whome::before,
 body.wuhome #whome::after {
   content: '';
   position: absolute;
   pointer-events: none;
-  border-radius: 50%;
-  border: 2px solid rgba(160, 175, 185, 0.18);
+  z-index: -1;
+  filter: blur(22px);
+  opacity: 1;
 }
 body.wuhome #whome::before {
-  width: 46vh;
-  height: 46vh;
-  left: -12vh;
-  bottom: 8vh;
+  left: -6vw;
+  top: 14vh;
+  width: 22vw;
+  height: 72vh;
+  background:
+    radial-gradient(40% 18% at 40% 18%, rgba(150, 162, 170, 0.6), transparent 70%),
+    radial-gradient(34% 14% at 62% 46%, rgba(160, 171, 178, 0.55), transparent 70%),
+    radial-gradient(44% 16% at 30% 78%, rgba(155, 166, 173, 0.55), transparent 70%);
 }
 body.wuhome #whome::after {
-  width: 30vh;
-  height: 30vh;
-  right: 8vw;
-  top: -10vh;
+  right: -5vw;
+  top: 6vh;
+  width: 18vw;
+  height: 80vh;
+  background:
+    radial-gradient(40% 14% at 60% 22%, rgba(165, 175, 182, 0.5), transparent 70%),
+    radial-gradient(36% 16% at 40% 64%, rgba(160, 171, 178, 0.5), transparent 70%);
 }
 body.wuhome #wu .wfloor,
 body.wuhome #wmii,
