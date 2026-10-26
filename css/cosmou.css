@@ -2972,3 +2972,234 @@ body.wuhome #whome::after {
 .updx:hover {
   background: var(--field);
 }
+/* ===================================================================
+   DARK THEME for the Wii U Look (Plaza + Home Menu) and Classic style.
+   html.dark is set when the window is dark (System dark or Theme: Dark).
+   =================================================================== */
+html.dark body.wiiu {
+  --ink: #e8f0f5;
+  --mute: #9fb1bf;
+  --bg: #10161d;
+  --deep: #5cc8ec;
+  --shadow: rgba(0, 0, 0, 0.6);
+  --card: rgba(255, 255, 255, 0.06);
+  --cardline: rgba(255, 255, 255, 0.12);
+  --field: rgba(255, 255, 255, 0.09);
+  --dlg: rgba(20, 27, 36, 0.97);
+  --panel: rgba(26, 34, 45, 0.9);
+  color-scheme: dark;
+}
+html.dark body.wiiu #dlg,
+html.dark body.wiiu #gdlg,
+html.dark body.wiiu #det,
+html.dark body.wiiu #gpdlg,
+html.dark body.wiiu #fbdlg,
+html.dark body.wiiu #appdlg,
+html.dark body.wiiu #bdlg {
+  color-scheme: dark;
+}
+html.dark #wu {
+  background: radial-gradient(70% 55% at 50% 42%, #2b3541, #1c232b 60%, #12171d);
+}
+html.dark .wplane {
+  background-image:
+    radial-gradient(ellipse 20px 13px at 50% 50%, rgba(190, 215, 230, 0.08) 0 62%, transparent 66%),
+    radial-gradient(ellipse 20px 13px at 50% 50%, rgba(190, 215, 230, 0.08) 0 62%, transparent 66%);
+}
+html.dark .wfloor::after {
+  background: linear-gradient(#1d242c, rgba(29, 36, 44, 0) 40%);
+}
+html.dark .wpad {
+  background: radial-gradient(closest-side, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.03));
+  border-color: rgba(255, 255, 255, 0.1);
+}
+html.dark .wa {
+  border-color: #3a4652;
+  box-shadow:
+    0 16px 24px -12px rgba(0, 0, 0, 0.7),
+    inset 0 -14px 22px -10px rgba(0, 0, 0, 0.3),
+    inset 0 3px 4px rgba(255, 255, 255, 0.15);
+}
+html.dark .wi.on .wa {
+  box-shadow:
+    0 0 0 4px #3a4652,
+    0 0 0 8px rgba(92, 200, 236, 0.55),
+    0 22px 30px -12px rgba(0, 0, 0, 0.7);
+}
+html.dark .wl,
+html.dark .wbud,
+html.dark .wpg button,
+html.dark .wbar {
+  background: rgba(30, 38, 47, 0.95);
+  color: #dbe5ec;
+  border-color: #36424e;
+  box-shadow: 0 10px 22px -12px rgba(0, 0, 0, 0.7);
+}
+html.dark #wdots i {
+  background: #3a4652;
+}
+html.dark .wtt h2 {
+  color: #eef4f8;
+}
+html.dark .wtt small {
+  color: #9fb1bf;
+}
+html.dark .wdet {
+  background: #2c3743;
+  color: #dbe5ec;
+}
+html.dark body.wiiu .glass.pill:not(nav):not(#toast),
+html.dark body.wiiu nav.glass {
+  background: linear-gradient(160deg, rgba(44, 56, 70, 0.96), rgba(30, 40, 52, 0.92));
+  border-color: #36424e;
+  box-shadow:
+    0 10px 22px -12px rgba(0, 0, 0, 0.7),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+html.dark body.wiiu .search input,
+html.dark body.wiiu .tool,
+html.dark body.wiiu .vt button,
+html.dark body.wiiu nav button,
+html.dark body.wiiu .play.dark,
+html.dark body.wiiu .cfa {
+  color: #e8f0f5;
+}
+html.dark body.wiiu .search input::placeholder {
+  color: #8496a4;
+}
+html.dark body.wiiu .vt button.on,
+html.dark body.wiiu nav button.on {
+  color: #06283a;
+}
+/* Home Menu, dark */
+html.dark body.wuhome #whome {
+  background:
+    radial-gradient(70% 60% at 50% 42%, #2b3541 0%, rgba(43, 53, 65, 0.55) 45%, transparent 80%),
+    linear-gradient(180deg, #1d242c 0%, #171d24 55%, #12171c 100%);
+}
+html.dark body.wuhome #whome::before,
+html.dark body.wuhome #whome::after {
+  opacity: 0.35;
+}
+html.dark .wh-t,
+html.dark .wh-av,
+html.dark .wh-swap {
+  background: linear-gradient(160deg, #36414d, #262f39);
+  box-shadow:
+    0 0 0 1px #3d4955,
+    inset 0 2px 0 rgba(255, 255, 255, 0.08),
+    0 10px 18px -10px rgba(0, 0, 0, 0.7);
+}
+html.dark .wh-t.sys .wh-a {
+  background: linear-gradient(160deg, #323d48, #28313b);
+}
+html.dark .wh-t.on {
+  background: linear-gradient(160deg, #1f4a5a, #173a48);
+}
+html.dark .wh-av canvas {
+  background: radial-gradient(80% 70% at 50% 30%, #3d4855, #2a333d);
+}
+html.dark .wh-arrow::before {
+  background: linear-gradient(#4a5765, #36414d);
+}
+html.dark .wh-title {
+  color: #c5d2db;
+}
+html.dark .wh-dots i {
+  background: #3a4652;
+}
+html.dark .wh-dots i.on {
+  background: #1fb8e2;
+}
+html.dark .wh-dk span {
+  background: #26303a;
+  color: #e8f0f5;
+}
+/* Classic Wii U style, dark: glossy dark grey instead of white */
+html.dark body.classic {
+  --ink: #e6edf2;
+  --mute: #a3b2bd;
+  --bg: #14191f;
+  --card: #1f262e;
+  --cardline: #36414c;
+  --field: #2a333d;
+  --dlg: #1b2128;
+  --panel: #1b2128;
+  color-scheme: dark;
+}
+html.dark body.classic #dlg,
+html.dark body.classic #gdlg,
+html.dark body.classic #det,
+html.dark body.classic #gpdlg,
+html.dark body.classic #fbdlg,
+html.dark body.classic #appdlg,
+html.dark body.classic #bdlg {
+  color-scheme: dark;
+}
+html.dark body.classic .bg {
+  background: linear-gradient(#1d232a, #12161b);
+}
+html.dark body.classic .glass,
+html.dark body.classic .glass.pill:not(nav):not(#toast):not(.pb),
+html.dark body.classic nav.glass {
+  --bs: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 0 0 1px #45505b, 0 8px 16px -10px rgba(0, 0, 0, 0.6);
+  background: linear-gradient(180deg, #3a444f 0%, #323b45 45%, #2a323b 55%, #2e363f 100%);
+  box-shadow: var(--bs);
+}
+html.dark body.classic .search input,
+html.dark body.classic .tool,
+html.dark body.classic .vt button,
+html.dark body.classic nav button,
+html.dark body.classic .cfa,
+html.dark body.classic .play.dark {
+  color: #e6edf2;
+}
+html.dark body.classic .btn,
+html.dark body.classic .win .btn,
+html.dark body.classic .wdet {
+  background: linear-gradient(#3a444f, #2c343d);
+  color: #e6edf2;
+  border-color: #45505b;
+  box-shadow: 0 0 0 1px #45505b;
+}
+html.dark body.classic .set,
+html.dark body.classic .q,
+html.dark body.classic .empty {
+  background: #1f262e;
+  border-color: #36414c;
+}
+html.dark body.classic .grp .set {
+  background: none;
+}
+html.dark body.classic .sel {
+  background: #2a333d;
+  border-color: #45505b;
+  color: #e6edf2;
+}
+html.dark body.classic .tile b {
+  background: linear-gradient(#323b45, #2a323b);
+  color: #e6edf2;
+  box-shadow: 0 0 0 1px #45505b;
+}
+html.dark body.classic .art {
+  box-shadow:
+    0 0 0 5px #3a444f,
+    0 0 0 6px #4f5b67,
+    0 14px 22px -12px rgba(0, 0, 0, 0.7) !important;
+}
+html.dark body.classic .hero {
+  box-shadow:
+    0 0 0 5px #3a444f,
+    0 0 0 6px #4f5b67,
+    0 26px 40px -24px rgba(0, 0, 0, 0.7);
+}
+html.dark body.wiiu .glass::before {
+  opacity: 0.12;
+}
+html.dark body.wiiu .glass::after {
+  opacity: 0.25;
+}
+.win .bd:focus,
+.win .bd:focus-visible {
+  outline: none;
+}

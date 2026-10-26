@@ -64,6 +64,11 @@ $('#uis').onclick = () => {
 soundUi();
 
 // --- Theme: System / Light / Dark ---
+// The main process sets nativeTheme, which flips prefers-color-scheme; html.dark mirrors it for the Wii U Look and Classic style.
+const darkMq = matchMedia('(prefers-color-scheme: dark)');
+const syncDark = () => document.documentElement.classList.toggle('dark', darkMq.matches);
+darkMq.addEventListener('change', syncDark);
+syncDark();
 let theme = 'system';
 function themeUi() {
   document.querySelectorAll('#thm button').forEach(b => b.classList.toggle('on', b.dataset.t === theme));

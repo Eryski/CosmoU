@@ -435,7 +435,7 @@ function renderPane(t) {
       r.append(x, y);
       box.append(r);
     };
-    line('CosmoU', 'Version 0.9.0');
+    line('CosmoU', 'Version 0.9.1');
     line(
       'Cemu',
       cfg.cemuPath
