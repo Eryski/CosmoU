@@ -1881,6 +1881,34 @@ body.wiiu nav button {
   filter: blur(3px);
   z-index: -1;
 }
+/* ===== 3D case on hover ===== */
+.hbox {
+  position: fixed;
+  z-index: 40;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, -58%) scale(0.55);
+  transition:
+    opacity 0.22s,
+    transform 0.5s cubic-bezier(0.3, 1.45, 0.5, 1);
+  filter: drop-shadow(0 22px 26px rgba(20, 40, 60, 0.35));
+}
+.hbox.on {
+  opacity: 1;
+  transform: translate(-50%, -58%) scale(1);
+}
+.hbox.on .bx-c {
+  animation: hboxin 0.75s cubic-bezier(0.2, 1.1, 0.3, 1) both;
+}
+@keyframes hboxin {
+  from {
+    transform: rotateX(4deg) rotateY(0deg);
+  }
+}
+.hvc-src {
+  opacity: 0.2 !important;
+  transition: opacity 0.25s;
+}
 /* ===== Graphic pack manager + feedback windows ===== */
 #gpdlg,
 #fbdlg,

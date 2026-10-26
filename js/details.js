@@ -1,5 +1,6 @@
 // CosmoU – Game details: 3D Wii U case and the graphic pack manager.
 function openDetail(g) {
+  hoverOff();
   const app = g.kind === 'app';
   qTiles(g);
   sel = g.name;
@@ -15,6 +16,62 @@ function openDetail(g) {
   if (!app) gpSummary(g);
 }
 // --- 3D Wii U case: box art fills the front, square icons get a white case with a blue band ---
+// --- 3D case on hover (grid tiles, middle cover, Wii U Look icons) ---
+let hoverCases = true;
+try {
+  hoverCases = localStorage.getItem('cosmou.hoverCases') !== 'false';
+} catch {}
+const hb = { t: 0, tgt: null };
+function hoverCase(target, g) {
+  clearTimeout(hb.t);
+  if (!hoverCases || matchMedia('(hover: none)').matches) return;
+  hb.t = setTimeout(() => {
+    if (!target.isConnected || !target.matches(':hover') || document.querySelector('dialog[open]')) return;
+    const r = target.getBoundingClientRect(),
+      el = $('#hbox'),
+      bw = Math.round(Math.min(210, Math.max(110, r.width * 0.78)));
+    box3d(el, g);
+    el.style.setProperty('--bw', bw + 'px');
+    el.style.left = r.left + r.width / 2 + 'px';
+    el.style.top = r.top + r.height / 2 + 'px';
+    hb.tgt = target;
+    target.classList.add('hvc-src');
+    el.classList.add('on');
+  }, 420);
+}
+function hoverOff() {
+  clearTimeout(hb.t);
+  const el = $('#hbox');
+  if (el) el.classList.remove('on');
+  if (hb.tgt) hb.tgt.classList.remove('hvc-src');
+  hb.tgt = null;
+}
+addEventListener('pointermove', e => {
+  if (!hb.tgt) return;
+  const r = hb.tgt.getBoundingClientRect(),
+    c = $('#hbox .bx-c');
+  if (!c) return;
+  c.style.setProperty('--tx', ((e.clientX - r.left) / r.width - 0.2).toFixed(3));
+  c.style.setProperty('--ty', ((e.clientY - r.top) / r.height - 0.5).toFixed(3));
+});
+for (const ev of ['pointerdown', 'wheel', 'keydown', 'blur']) addEventListener(ev, hoverOff, true);
+document.addEventListener('scroll', hoverOff, true);
+$('#hbox').addEventListener('animationend', e => {
+  if (e.target.classList.contains('bx-c')) e.target.style.animation = 'none';
+});
+function hoverUi() {
+  $('#hvc').textContent = hoverCases ? 'On' : 'Off';
+  $('#hvc').classList.toggle('on', hoverCases);
+}
+$('#hvc').onclick = () => {
+  hoverCases = !hoverCases;
+  try {
+    localStorage.setItem('cosmou.hoverCases', String(hoverCases));
+  } catch {}
+  hoverUi();
+  hoverOff();
+};
+hoverUi();
 function box3d(el, g) {
   el.innerHTML =
     '<div class="bx-c"><i class="bx-b"></i><i class="bx-r"></i><i class="bx-t"></i><i class="bx-u"></i><i class="bx-s"><span></span></i><i class="bx-f"></i></div>';

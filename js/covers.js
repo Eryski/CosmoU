@@ -29,6 +29,10 @@ function buildCovers(l) {
       e.ondblclick = () => {
         if (sel === x.name) launch(cur());
       };
+      e.onpointerenter = () => {
+        if (e.classList.contains('mid')) hoverCase(e, x);
+      };
+      e.onpointerleave = hoverOff;
       row.append(e);
       covEls.set(x.name, e);
     }

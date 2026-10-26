@@ -8,6 +8,7 @@ addEventListener('gamepadconnected', e => {
 });
 async function launch(g) {
   if (!g) return;
+  hoverOff();
   if (bgMusic) bgMusic.pause();
   $('#ln').textContent = g.name;
   paint($('#lc'), g);

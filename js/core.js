@@ -169,7 +169,9 @@ function render() {
     t.onpointerleave = () => {
       t.style.setProperty('--rx', '0deg');
       t.style.setProperty('--ry', '0deg');
+      hoverOff();
     };
+    t.onpointerenter = () => hoverCase(t, x);
     const a = document.createElement('div');
     a.className = 'art';
     paint(a, x);

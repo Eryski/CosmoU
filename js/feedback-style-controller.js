@@ -1,4 +1,5 @@
 // CosmoU – Feedback window, Liquid Glass / Classic Wii U style switch and controller navigation.
+const DISCORD_URL = 'https://discord.gg/BZry7jGjr7';
 // --- Feedback ---
 function gpuName() {
   try {
@@ -61,6 +62,18 @@ $('#fbc').onclick = async () => {
     document.execCommand('copy');
     toast('Copied.');
   }
+};
+$('#fbd').onclick = async () => {
+  try {
+    await navigator.clipboard.writeText($('#fbtxt').value);
+  } catch {}
+  if (window.api) api.openDiscord();
+  else window.open(DISCORD_URL, '_blank');
+  toast('Copied. Paste it into #bug-reports on Discord.', 6000);
+};
+$('#dsc').onclick = () => {
+  if (window.api) api.openDiscord();
+  else window.open(DISCORD_URL, '_blank');
 };
 $('#fbi').onclick = () => {
   if (need()) api.openIssue($('#fbtxt').value);

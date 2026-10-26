@@ -168,6 +168,12 @@
               <div class="lbl"><strong>Buddies</strong><small>Make your own characters for the Wii U Look plaza</small></div>
               <button class="btn" id="obud">Buddy maker</button>
             </div>
+            <div class="set">
+              <div class="lbl">
+                <strong>3D cases on hover</strong><small>Covers turn into a Wii U case when you point at them</small>
+              </div>
+              <button class="tg" id="hvc">On</button>
+            </div>
           </div>
           <h3 class="sh">Library</h3>
           <div class="grp">
@@ -206,6 +212,10 @@
                 ><small>Collects your Cemu and Windows version so the report is useful</small>
               </div>
               <button class="btn main" id="fbo">Send feedback</button>
+            </div>
+            <div class="set">
+              <div class="lbl"><strong>Community</strong><small>News, help and sharing setups on the CosmoU Discord</small></div>
+              <button class="btn" id="dsc">Join the Discord</button>
             </div>
           </div>
           <p class="hint">
@@ -272,7 +282,8 @@
         <div class="hd">
           <h2>Send feedback</h2>
           <p class="hint" style="margin: 8px 0 0">
-            Your system info is already filled in. Add what happened, then copy it into Discord or Reddit, or open a GitHub issue.
+            Your system info is already filled in. Add what happened, then post it in the #bug-reports channel on Discord, on
+            Reddit, or as a GitHub issue.
           </p>
         </div>
         <div class="bd" style="padding-top: 14px">
@@ -280,7 +291,8 @@
         </div>
         <div class="ft">
           <div class="acts">
-            <button class="btn" id="fbc">Copy</button><button class="btn" id="fbi">Open GitHub issue</button>
+            <button class="btn" id="fbc">Copy</button><button class="btn" id="fbd">Copy &amp; open Discord</button
+            ><button class="btn" id="fbi">Open GitHub issue</button>
           </div>
           <button class="btn main big" id="fbx">Done</button>
         </div>
@@ -385,6 +397,7 @@
         <div class="acts" id="sa"></div>
       </div>
     </div>
+    <div class="box3d hbox" id="hbox" aria-hidden="true"></div>
     <div id="toast" class="glass pill" role="status"></div>
     <script src="js/core.js"></script>
     <script src="js/wiiu-look.js"></script>

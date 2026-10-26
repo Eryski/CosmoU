@@ -1,12 +1,12 @@
 {
  "name": "cosmou",
  "productName": "CosmoU",
- "version": "0.8.0",
+ "version": "0.8.1",
  "description": "CosmoU – a Wii U style launcher for Cemu",
  "main": "main.js",
  "scripts": {
   "start": "electron .",
-  "dist": "electron-builder",
+  "dist": "electron-builder --win --publish never",
   "preview": "node scripts/build-preview.js"
  },
  "devDependencies": {
@@ -63,7 +63,11 @@
   },
   "nsis": {
    "oneClick": false,
-   "allowToChangeInstallationDirectory": true
+   "allowToChangeInstallationDirectory": true,
+   "artifactName": "CosmoU-Setup-${version}.exe"
+  },
+  "portable": {
+   "artifactName": "CosmoU-Portable-${version}.exe"
   }
  }
 }

@@ -1347,3 +1347,5 @@ ipcMain.handle('appGet', (_, id) => {
   const a = (read().customApps || []).find(x => x.id === id);
   return a ? { ...a, coverUrl: a.cover && fs.existsSync(a.cover) ? pathToFileURL(a.cover).href : '' } : null;
 });
+
+ipcMain.handle('openDiscord', () => shell.openExternal('https://discord.gg/BZry7jGjr7'));

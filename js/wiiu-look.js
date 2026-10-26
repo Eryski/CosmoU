@@ -75,6 +75,8 @@ function buildWiiU(l) {
           render();
         }
       };
+      e.onpointerenter = () => hoverCase(e.querySelector('.wa'), g);
+      e.onpointerleave = hoverOff;
       e.ondblclick = () => {
         if (sel === g.name) launch(cur());
       };

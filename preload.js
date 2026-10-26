@@ -25,6 +25,7 @@ contextBridge.exposeInMainWorld('api', {
   onGpProgress: cb => r.on('gp-progress', (_, d) => cb(d)),
   feedbackInfo: () => r.invoke('feedbackInfo'),
   openIssue: b => r.invoke('openIssue', b),
+  openDiscord: () => r.invoke('openDiscord'),
   autoOptimize: (t, n, k, gpu) => r.invoke('autoOptimize', t, n, k, gpu),
   appPick: () => r.invoke('appPick'),
   appCoverPick: () => r.invoke('appCoverPick'),
