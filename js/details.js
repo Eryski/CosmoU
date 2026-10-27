@@ -26,10 +26,13 @@ const hb = { t: 0, tgt: null };
 function hoverCase(target, g) {
   clearTimeout(hb.t);
   if (!hoverCases || matchMedia('(hover: none)').matches) return;
+  const r0 = target.getBoundingClientRect();
   hb.t = setTimeout(() => {
     if (!target.isConnected || !target.matches(':hover') || document.querySelector('dialog[open]')) return;
-    const r = target.getBoundingClientRect(),
-      el = $('#hbox'),
+    const r = target.getBoundingClientRect();
+    // still moving (cover flow animation, scrolling): don't show a case at a stale position
+    if (Math.abs(r.left - r0.left) > 3 || Math.abs(r.top - r0.top) > 3) return hoverCase(target, g);
+    const el = $('#hbox'),
       bw = Math.round(Math.min(210, Math.max(110, r.width * 0.78)));
     box3d(el, g);
     el.style.setProperty('--bw', bw + 'px');
@@ -51,11 +54,16 @@ addEventListener('pointermove', e => {
   if (!hb.tgt) return;
   const r = hb.tgt.getBoundingClientRect(),
     c = $('#hbox .bx-c');
+  // the cover moved away from under the case, or the pointer left it: hide
+  if (!hb.tgt.isConnected || e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom)
+    return hoverOff();
+  $('#hbox').style.left = r.left + r.width / 2 + 'px';
+  $('#hbox').style.top = r.top + r.height / 2 + 'px';
   if (!c) return;
   c.style.setProperty('--tx', ((e.clientX - r.left) / r.width - 0.2).toFixed(3));
   c.style.setProperty('--ty', ((e.clientY - r.top) / r.height - 0.5).toFixed(3));
 });
-for (const ev of ['pointerdown', 'wheel', 'keydown', 'blur']) addEventListener(ev, hoverOff, true);
+for (const ev of ['pointerdown', 'wheel', 'keydown', 'blur', 'resize']) addEventListener(ev, hoverOff, true);
 document.addEventListener('scroll', hoverOff, true);
 $('#hbox').addEventListener('animationend', e => {
   if (e.target.classList.contains('bx-c')) e.target.style.animation = 'none';

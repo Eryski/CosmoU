@@ -139,6 +139,8 @@ function list() {
   );
 }
 function render() {
+  // the floating 3D case belongs to the old layout: drop it before anything moves
+  if (typeof hoverOff === 'function') hoverOff();
   const l = list();
   if (!cur())
     sel =

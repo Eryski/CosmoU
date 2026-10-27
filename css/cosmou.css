@@ -2860,12 +2860,12 @@ body.wuhome header > * {
 .tile b {
   transition: transform 0.35s cubic-bezier(0.3, 1.6, 0.5, 1);
 }
+/* pressed: shrink a little with the separate `scale` property, so the cover flow position (transform) stays */
 .tile:active,
 .wh-t:active,
 .wh-dk:active,
 .cc:active {
-  transform: scale(0.96) !important;
-  transition-duration: 0.08s;
+  scale: 0.96;
 }
 .cc:not(.mid):hover {
   filter: saturate(0.95) brightness(1.04) !important;
