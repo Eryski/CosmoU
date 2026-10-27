@@ -17,6 +17,7 @@ function buildCovers(l) {
     if (!e) {
       e = document.createElement('div');
       e.className = 'cc';
+      e.dataset.g = x.name;
       const a = document.createElement('div');
       a.className = 'art';
       e.append(a);
@@ -39,18 +40,22 @@ function buildCovers(l) {
     paint(e.firstChild, x);
     e.style.setProperty('--c', glow(x));
     const o = i - idx,
-      a = Math.abs(o);
-    e.style.transform = `translate(-50%,-50%) translateX(${o * 86}%) scale(${a === 0 ? 1 : a === 1 ? 0.74 : 0.6}) rotateY(${Math.max(-1, Math.min(1, -o)) * 10}deg)`;
-    e.style.opacity = a > 1 ? 0 : a ? 0.8 : 1;
+      a = Math.abs(o),
+      sg = Math.sign(o),
+      // two covers on each side: the far ones smaller, dimmer and tucked behind
+      px = sg * [0, 86, 150, 196][Math.min(a, 3)];
+    e.style.transform = `translate(-50%,-50%) translateX(${px}%) scale(${[1, 0.74, 0.56, 0.44][Math.min(a, 3)]}) rotateY(${Math.max(-1, Math.min(1, -o)) * (a > 1 ? 16 : 10)}deg)`;
+    e.style.opacity = a > 2 ? 0 : a === 2 ? 0.42 : a ? 0.8 : 1;
     e.style.zIndex = 10 - a;
-    e.style.filter = a ? 'saturate(.7)' : 'none';
-    e.style.pointerEvents = a > 1 ? 'none' : 'auto';
+    e.style.filter = a > 1 ? 'saturate(.55) blur(.6px)' : a ? 'saturate(.7)' : 'none';
+    e.style.pointerEvents = a > 2 ? 'none' : 'auto';
+    e.classList.toggle('fav', favs.has(x.name));
     e.classList.toggle('mid', a === 0);
   });
   const cg = l[idx];
   if (cg) {
     $('#cft').textContent = cg.name;
-    $('#cfm').textContent = (plays[cg.name] ? 'Recently played · ' : '') + cg.format;
+    coverMeta(cg, idx, l.length);
     $('#cf').style.setProperty('--c', glow(cg));
   }
   const dots = $('#dots');
@@ -64,6 +69,24 @@ function buildCovers(l) {
   else dots.textContent = l.length > 1 ? `${idx + 1} / ${l.length}` : '';
   $('#prev').disabled = idx <= 0;
   $('#next').disabled = idx >= l.length - 1;
+}
+// the line under the title: format, play time, last played and favorite, as small chips
+function coverMeta(g, idx, n, box = $('#cfm')) {
+  const p = typeof playLog === 'object' && playLog.playtime ? playLog.playtime[g.name] : null,
+    chip = (t, cls) => {
+      const s = document.createElement('span');
+      s.className = 'cmc' + (cls ? ' ' + cls : '');
+      s.textContent = t;
+      return s;
+    };
+  box.replaceChildren();
+  if (favs.has(g.name)) box.append(chip('★ Favorite', 'fav'));
+  box.append(chip(g.kind === 'app' ? 'App' : g.format || 'Wii U'));
+  if (p && p.sec) box.append(chip('⏱ ' + fmtDur(p.sec)));
+  if (p && p.last) box.append(chip('Last played ' + dayName(p.last)));
+  else if (plays[g.name]) box.append(chip('Last played ' + dayName(plays[g.name])));
+  else box.append(chip('Not played yet', 'dim'));
+  if (n > 1 && idx >= 0) box.append(chip(idx + 1 + ' of ' + n, 'dim'));
 }
 function step(d) {
   const l = list(),

@@ -185,10 +185,6 @@ $('#wu').addEventListener('pointermove', e => {
   mii.py = ny * -18;
 });
 $('#q').oninput = render;
-$('#sort').onclick = () => {
-  sortMode = sortMode === 'az' ? 'recent' : 'az';
-  render();
-};
 $('#play').onclick = () => launch(cur());
 $('#more').onclick = () => cur() && openDetail(cur());
 $('#dplay').onclick = () => {
@@ -201,16 +197,15 @@ $('#dfold').onclick = () => {
 };
 $('#dx').onclick = () => $('#det').close();
 $('#close').onclick = () => $('#dlg').close();
-$('#opG').onclick = openGraphics;
-$('#gclose').onclick = () => $('#gdlg').close();
-document.querySelectorAll('#tabs button').forEach(b => (b.onclick = () => showTab(b.dataset.t)));
+// back to Cemu's own values for the Cemu settings of the open category
 $('#rst').onclick = async () => {
-  for (const it of SCHEMA[tab] || []) {
-    if (it.type === 'head') continue;
+  const t = sxOf(sxCat)[4];
+  for (const it of SCHEMA[t] || []) {
     if (window.api) cs = await api.setCemuSetting(it.k, null);
     else delete cs.overrides[it.k];
   }
-  renderPane(tab);
+  renderPane(t);
+  toast('✓ Back to Cemu’s values');
 };
 $('#ebtn').onclick = pickFolder;
 $('#pickG').onclick = pickFolder;
@@ -403,6 +398,8 @@ applyStyle();
 load().then(() => {
   initPolish();
   noteNewGames();
+  playFromSteam();
+  setTimeout(buddyHello, lsGet('boot', true) ? 2700 : 700);
 });
 initMusic();
 initCemu();

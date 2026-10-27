@@ -1,0 +1,17 @@
+{
+  "name": "My Theme",
+  "author": "Your name",
+  "inspired": "PlayStation 4 dashboard",
+  "mode": "both",
+  "colors": {
+    "background": "#0b1a3a",
+    "card": "#16315f",
+    "selection": "#4da3ff",
+    "text": "#f2f7ff"
+  },
+  "background": "gradient",
+  "selection": "glow",
+  "font": "normal",
+  "corners": "rounded",
+  "music": "music.ogg"
+}

@@ -16,6 +16,22 @@
           <feFuncB type="discrete" tableValues="0.059 0.188 0.059 0.059" />
         </feComponentTransfer>
       </filter>
+      <filter id="gwpal" color-interpolation-filters="sRGB">
+        <feColorMatrix type="matrix" values="0.3 0.59 0.11 0 0 0.3 0.59 0.11 0 0 0.3 0.59 0.11 0 0 0 0 0 1 0" />
+        <feComponentTransfer>
+          <feFuncR type="discrete" tableValues="0.106 0.365 0.655 0.788" />
+          <feFuncG type="discrete" tableValues="0.11 0.38 0.678 0.804" />
+          <feFuncB type="discrete" tableValues="0.094 0.329 0.596 0.725" />
+        </feComponentTransfer>
+      </filter>
+      <filter id="gppal" color-interpolation-filters="sRGB">
+        <feColorMatrix type="matrix" values="0.3 0.59 0.11 0 0 0.3 0.59 0.11 0 0 0.3 0.59 0.11 0 0 0 0 0 1 0" />
+        <feComponentTransfer>
+          <feFuncR type="discrete" tableValues="0.122 0.302 0.545 0.769" />
+          <feFuncG type="discrete" tableValues="0.122 0.325 0.584 0.812" />
+          <feFuncB type="discrete" tableValues="0.122 0.235 0.427 0.631" />
+        </feComponentTransfer>
+      </filter>
       <filter id="vbpal" color-interpolation-filters="sRGB">
         <feColorMatrix type="matrix" values="0.3 0.59 0.11 0 0 0.3 0.59 0.11 0 0 0.3 0.59 0.11 0 0 0 0 0 1 0" />
         <feComponentTransfer>
@@ -52,13 +68,26 @@
           >
             <circle cx="11" cy="11" r="7" />
             <path d="m20 20-3.5-3.5" /></svg
-          ><input id="q" placeholder="Search games" aria-label="Search games"
-        /></label>
+          ><input id="q" placeholder="Search games" aria-label="Search games" /><kbd class="qk" aria-hidden="true">/</kbd></label
+        >
         <button class="glass pill tool" id="sort" aria-label="Sort order"></button>
         <div class="vt glass pill" id="vt">
           <span id="vi"></span><button data-m="covers">Covers</button><button data-m="grid">Grid</button
           ><button data-m="wiiu">Wii U Look</button>
         </div>
+        <button class="glass pill tool qmb" id="qmb" aria-label="Quick Menu" title="Quick Menu (Q)">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <circle cx="6" cy="6" r="2.2" />
+            <circle cx="12" cy="6" r="2.2" />
+            <circle cx="18" cy="6" r="2.2" />
+            <circle cx="6" cy="12" r="2.2" />
+            <circle cx="12" cy="12" r="2.2" />
+            <circle cx="18" cy="12" r="2.2" />
+            <circle cx="6" cy="18" r="2.2" />
+            <circle cx="12" cy="18" r="2.2" />
+            <circle cx="18" cy="18" r="2.2" />
+          </svg>
+        </button>
       </header>
       <section class="hero" id="hero" hidden>
         <div class="bgimg" id="hbg"></div>
@@ -66,6 +95,7 @@
           <div>
             <small id="hl"></small>
             <h3 id="ht"></h3>
+            <div class="hmeta" id="hmeta"></div>
           </div>
           <div class="acts">
             <button class="glass pill play dark" id="play">Play</button
@@ -110,23 +140,35 @@
         <button id="wprev" aria-label="Previous page">−</button><span id="wdots"></span
         ><button id="wnext" aria-label="Next page">+</button>
       </div>
+      <button class="wbud wpost" id="wpost">✎ Post</button>
       <button class="wbud" id="wbud">+ Make a buddy</button>
       <button class="wbud wtohome" id="wtohome">Home Menu</button>
       <div id="whome">
-        <div class="wh-top">
-          <button class="wh-av" id="whav" aria-label="Buddy maker"><canvas id="whavc" width="160" height="160"></canvas></button>
-          <div class="wh-head">
-            <div class="wh-dots" id="whdots"></div>
-            <div class="wh-title" id="whtitle"></div>
+        <div class="wh-shapes" id="whshapes" aria-hidden="true"></div>
+        <div class="wh-bar">
+          <div class="wh-card wh-clock" id="whclock"><b></b><small></small></div>
+          <div class="wh-card wh-batt" id="whbatt" title="Battery">
+            <i class="bt"><i></i></i><small></small>
           </div>
         </div>
-        <div class="wh-stage">
-          <button class="wh-arrow l" id="whprev" aria-label="Previous page"></button>
-          <div class="wh-grid" id="whgrid"></div>
-          <button class="wh-arrow r" id="whnext" aria-label="Next page"></button>
+        <div class="wh-side l">
+          <button class="wh-sb" id="whlogo" aria-label="CosmoU menu" title="CosmoU"><img src="build/icon.png" alt="" /></button>
+          <button class="wh-sb wh-av" id="whav" aria-label="Buddy maker">
+            <canvas id="whavc" width="160" height="160"></canvas>
+          </button>
+          <button class="wh-sb" id="whset" aria-label="Settings" title="Settings"></button>
         </div>
-        <div class="wh-dock" id="whdock"></div>
-        <button class="wh-swap" id="whswap" aria-label="Switch to Plaza" title="Switch to Plaza"></button>
+        <div class="wh-stage"><div class="wh-grid" id="whgrid"></div></div>
+        <div class="wh-side r">
+          <button class="wh-sb" id="whpad" aria-label="Controllers" title="Controllers"></button>
+          <button class="wh-sb" id="whpow" aria-label="Power" title="Power"></button>
+          <button class="wh-sb" id="whfr" aria-label="Plaza" title="Plaza"></button>
+        </div>
+        <div class="wh-foot">
+          <div class="wh-title" id="whtitle"></div>
+          <div class="wh-dots" id="whdots"></div>
+        </div>
+        <div class="wh-menu" id="whmenu" role="menu" hidden></div>
       </div>
       <div class="wbar">
         <div class="wtt">
@@ -144,19 +186,66 @@
       <span id="ind"></span> <button data-v="lib" class="on">Library</button><button data-v="recent">Recently played</button
       ><button data-v="set">Settings</button>
     </nav>
-    <dialog id="det" class="glass">
+    <dialog id="det" class="glass" aria-labelledby="dt">
       <div class="in det">
-        <div class="box3d" id="dc"></div>
-        <div class="t">
-          <small id="df"></small>
-          <h2 id="dt"></h2>
-          <div class="acts">
-            <button class="glass pill play dark" id="dplay">Play</button><button class="btn" id="dgp">Graphic packs</button
-            ><button class="btn" id="dao">Auto-optimize</button><button class="btn" id="dedit" hidden>Edit</button
-            ><button class="btn" id="dfold">Show in folder</button><button class="btn" id="dx">Close</button>
+        <button class="dx" id="dx" aria-label="Close" title="Close (Esc)">
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.6"
+            stroke-linecap="round"
+          >
+            <path d="M6 6l12 12M18 6 6 18" />
+          </svg>
+        </button>
+        <div class="dhead">
+          <div class="box3d" id="dc"></div>
+          <div class="t">
+            <small id="df"></small>
+            <h2 id="dt"></h2>
+            <div class="dchips" id="dchips"></div>
+            <small id="dpt" class="dpt"></small>
+            <div class="acts dmain">
+              <button class="glass pill play dark" id="dplay" autofocus>Play</button
+              ><button class="btn dfav" id="dfav" aria-pressed="false">
+                <span class="st">☆</span><span class="lb">Favorite</span>
+              </button>
+            </div>
           </div>
-          <p class="hint" id="dgps" style="margin: 12px 2px 0"></p>
-          <div class="aor" id="daor" hidden></div>
+        </div>
+        <div class="dstats" id="dstats"></div>
+        <div class="dtools" id="dtools">
+          <button class="dtl" id="dgp">
+            <i class="mi" data-ic="packs"></i><span><b>Graphic packs</b><small id="dgps">Resolution, FPS and fixes</small></span>
+          </button>
+          <button class="dtl" id="dao">
+            <i class="mi" data-ic="most"></i><span><b>Auto-optimize</b><small>Best settings for your PC</small></span>
+          </button>
+          <button class="dtl" id="dedit" hidden>
+            <i class="mi" data-ic="edit"></i><span><b>Edit app</b><small>Name, program and picture</small></span>
+          </button>
+          <button class="dtl" id="dfold">
+            <i class="mi" data-ic="folder"></i><span><b>Show in folder</b><small id="dpath">Open the game files</small></span>
+          </button>
+          <button class="dtl" id="dsteam">
+            <i class="mi" data-ic="steam"></i><span><b>Add to Steam</b><small>Start it from Steam or a Steam Deck</small></span>
+          </button>
+        </div>
+        <div class="aor" id="daor" hidden></div>
+        <div class="sv" id="dsv">
+          <div class="svh"><b>Save data</b><small id="dsvs"></small></div>
+          <div class="acts">
+            <button class="btn" id="dsvb">Back up now</button><button class="btn" id="dsvr">Restore…</button>
+          </div>
+        </div>
+        <div class="sv" id="dup">
+          <div class="svh"><b>Updates &amp; DLC</b><small id="dups"></small></div>
+          <div class="acts">
+            <button class="btn main" id="dupi" hidden>Install</button><button class="btn" id="dupm">Manage…</button>
+          </div>
         </div>
         <div class="qs" id="dqs">
           <h3>Quick quality</h3>
@@ -168,176 +257,403 @@
         </div>
       </div>
     </dialog>
-    <dialog id="dlg" class="glass">
-      <div class="in win">
-        <div class="hd"><h2>Settings</h2></div>
-        <div class="bd">
-          <h3 class="sh">Emulator</h3>
-          <div class="grp">
-            <div class="set">
-              <div class="lbl"><strong>Cemu</strong><small id="pc">Not installed</small></div>
-              <div class="acts">
-                <button class="btn" id="upC">Download / update</button><button class="btn" id="pickC">Choose manually</button>
+    <dialog id="dlg" class="glass sdlg" aria-label="Settings">
+      <div class="in win sx">
+        <aside class="sx-side">
+          <h2>Settings</h2>
+          <label class="sx-q"
+            ><svg
+              width="17"
+              height="17"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.2"
+              stroke-linecap="round"
+            >
+              <circle cx="11" cy="11" r="7" />
+              <path d="m20 20-3.5-3.5" /></svg
+            ><input
+              id="sq"
+              type="search"
+              placeholder="Search settings"
+              aria-label="Search settings"
+              autocomplete="off"
+              spellcheck="false"
+          /></label>
+          <div class="sx-nav" id="sxnav" role="tablist" aria-orientation="vertical" aria-label="Settings categories"></div>
+          <small class="sx-ver" id="sxver"></small>
+        </aside>
+        <section class="sx-main">
+          <header class="sx-hd">
+            <div>
+              <h3 id="sxt"></h3>
+              <p id="sxd"></p>
+            </div>
+            <button class="btn ghost" id="rst" hidden>Reset to Cemu’s values</button>
+          </header>
+          <div class="bd sx-bd" id="sxbd">
+            <!-- Cemu & Games -->
+            <div class="pane" data-c="general">
+              <div class="sx-ph"><b>Cemu &amp; Games</b></div>
+              <div class="sx-stat" id="sxstat"></div>
+              <h3 class="sh">Cemu</h3>
+              <div class="grp">
+                <div class="set" data-k="emulator install download version update manual exe">
+                  <div class="lbl"><strong>Cemu</strong><small id="pc">Not installed</small></div>
+                  <div class="acts">
+                    <button class="btn" id="upC">Download / update</button><button class="btn" id="pickC">Choose manually</button>
+                  </div>
+                </div>
+              </div>
+              <h3 class="sh">Library</h3>
+              <div class="grp">
+                <div class="set" data-k="games folder path directory library location">
+                  <div class="lbl"><strong>Games folder</strong><small id="pg">Not selected</small></div>
+                  <button class="btn" id="pickG">Choose folder</button>
+                </div>
+                <div class="set" data-k="rescan refresh reload new games scan">
+                  <div class="lbl"><strong>Rescan library</strong><small>Look for new games in your games folder</small></div>
+                  <button class="btn" id="rescan">Rescan</button>
+                </div>
+                <div class="set" data-k="other apps emulators pc games dolphin yuzu add program">
+                  <div class="lbl"><strong>Other apps</strong><small>Add other emulators or PC games to your library</small></div>
+                  <button class="btn" id="addapp">Add app</button>
+                </div>
+                <div class="set" data-k="updates dlc install patch add-on mlc">
+                  <div class="lbl">
+                    <strong>Updates &amp; DLC</strong
+                    ><small>Finds update and DLC folders and installs them where Cemu looks</small>
+                  </div>
+                  <button class="btn" id="oupd">Manage</button>
+                </div>
+                <div class="set" data-k="steam big picture deck shortcut library non-steam">
+                  <div class="lbl"><strong>Steam</strong><small>Add CosmoU or single games to your Steam library</small></div>
+                  <button class="btn" id="osteam">Add to Steam</button>
+                </div>
+              </div>
+              <h3 class="sh">Covers</h3>
+              <div class="grp">
+                <div class="set" data-k="automatic covers box art gametdb icons online download">
+                  <div class="lbl">
+                    <strong>Automatic covers</strong><small>Icons from your game files, box art from GameTDB</small>
+                  </div>
+                  <button class="tg" id="ct">On</button>
+                </div>
+                <div class="set" data-k="own covers images png jpg folder custom art">
+                  <div class="lbl">
+                    <strong>Your own covers</strong><small>A PNG or JPG named like the game wins over automatic covers</small>
+                  </div>
+                  <button class="btn" id="oc">Open covers folder</button>
+                </div>
               </div>
             </div>
-            <div class="set">
-              <div class="lbl"><strong>Games folder</strong><small id="pg">Not selected</small></div>
-              <button class="btn" id="pickG">Choose folder</button>
-            </div>
-            <div class="set">
-              <div class="lbl">
-                <strong>Graphics settings</strong><small>Graphics API, VSync, filters, quality, audio and overlay</small>
+            <!-- Appearance -->
+            <div class="pane" data-c="look">
+              <div class="sx-ph"><b>Appearance</b></div>
+              <h3 class="sh">Theme</h3>
+              <div class="grp">
+                <div
+                  class="set thset"
+                  data-k="theme skin style look colors switch ds 3ds n64 gamecube game boy nes snes virtual boy wii plaza liquid glass"
+                >
+                  <div class="lbl">
+                    <strong>Theme</strong><small>Every theme works with Covers, Grid and Wii U Look, in light and dark.</small>
+                  </div>
+                  <div class="thf" id="thf" aria-label="Theme groups"></div>
+                  <div class="themes" id="themes" role="radiogroup" aria-label="Theme"></div>
+                </div>
+                <div class="set" data-k="own theme custom import add file share music pack download community">
+                  <div class="lbl">
+                    <strong>Own theme</strong
+                    ><small>Add a theme file you downloaded (it can bring its own music), or share the one you are using</small>
+                  </div>
+                  <div class="acts">
+                    <button class="btn" id="otadd">Add own theme…</button><button class="btn" id="otshare" hidden>Share</button
+                    ><button class="btn" id="otdel" hidden>Remove</button>
+                  </div>
+                  <p class="otmsg" id="otmsg" role="status" aria-live="polite"></p>
+                </div>
+                <div class="set" data-k="light dark mode night system windows appearance">
+                  <div class="lbl"><strong>Light or dark</strong><small>Follow Windows, or always light or dark</small></div>
+                  <div class="seg" id="thm">
+                    <button data-t="system">System</button><button data-t="light">Light</button
+                    ><button data-t="dark">Dark</button>
+                  </div>
+                </div>
               </div>
-              <button class="btn main" id="opG">Open</button>
+              <h3 class="sh">Views</h3>
+              <div class="grp">
+                <div class="set" data-k="wii u look layout plaza home menu tiles grid">
+                  <div class="lbl">
+                    <strong>Wii U Look layout</strong><small>Plaza with floating icons, or the Home Menu tile grid</small>
+                  </div>
+                  <div class="seg" id="wul"><button data-l="plaza">Plaza</button><button data-l="home">Home Menu</button></div>
+                </div>
+                <div class="set" data-k="3d cases hover box case disc">
+                  <div class="lbl">
+                    <strong>3D cases on hover</strong><small>Covers turn into a Wii U case when you point at them</small>
+                  </div>
+                  <button class="tg" id="hvc">On</button>
+                </div>
+                <div class="set" data-k="startup animation intro boot jingle splash">
+                  <div class="lbl">
+                    <strong>Startup animation</strong><small>A short intro with a jingle that matches your theme</small>
+                  </div>
+                  <button class="tg" id="bootc">On</button>
+                </div>
+              </div>
             </div>
+            <!-- Graphics (Cemu) -->
+            <div class="pane" data-c="graphics">
+              <div class="sx-ph"><b>Graphics</b></div>
+              <p class="hint" id="gnote"></p>
+              <div id="c_graphics"></div>
+              <h3 class="sh">Default quality</h3>
+              <div class="grp sx-q-grp">
+                <div class="set" data-k="default quality resolution 720p 1080p 1440p 4k native performance balanced ultra">
+                  <div class="lbl">
+                    <strong>Resolution for all games</strong
+                    ><small
+                      >Used when a game has no quality of its own (set in its Details). Needs the game’s resolution graphic
+                      pack.</small
+                    >
+                  </div>
+                  <div class="qg" id="gq"></div>
+                </div>
+              </div>
+            </div>
+            <!-- Sound -->
+            <div class="pane" data-c="sound">
+              <div class="sx-ph"><b>Sound &amp; Music</b></div>
+              <h3 class="sh">Menu music</h3>
+              <div class="grp">
+                <div class="set" data-k="background music menu song on off">
+                  <div class="lbl">
+                    <strong>Background music</strong><small id="ms">No music found – put a file in the music folder</small>
+                  </div>
+                  <button class="tg" id="mt">On</button>
+                </div>
+                <div class="set" data-k="music volume loud quiet">
+                  <div class="lbl"><strong>Music volume</strong><small>How loud the menu music plays</small></div>
+                  <div class="rng">
+                    <input type="range" id="mvol" min="0" max="100" step="5" aria-label="Music volume" /><output
+                      id="mvolo"
+                    ></output>
+                  </div>
+                </div>
+                <div class="set" data-k="music file own song mp3 ogg choose folder theme tune">
+                  <div class="lbl">
+                    <strong>Music file</strong><small>Each theme has its own tune, or choose your own MP3 or OGG</small>
+                  </div>
+                  <div class="acts">
+                    <button class="btn" id="mpick">Choose file</button><button class="btn" id="mreset">CosmoU music</button
+                    ><button class="btn" id="mf">Music folder</button>
+                  </div>
+                </div>
+              </div>
+              <h3 class="sh">Sounds</h3>
+              <div class="grp">
+                <div class="set" data-k="ui sounds clicks effects sfx">
+                  <div class="lbl">
+                    <strong>UI sounds</strong><small>Soft clicks when you move, turn pages and start a game</small>
+                  </div>
+                  <button class="tg" id="uis">On</button>
+                </div>
+              </div>
+              <div id="c_audio"></div>
+              <p class="hint">The audio device for games is chosen in Cemu.</p>
+            </div>
+            <!-- Overlay (Cemu) -->
+            <div class="pane" data-c="overlay">
+              <div class="sx-ph"><b>Overlay</b></div>
+              <div id="c_overlay"></div>
+            </div>
+            <!-- Controllers & TV -->
+            <div class="pane" data-c="controls">
+              <div class="sx-ph"><b>Controllers &amp; TV</b></div>
+              <h3 class="sh">TV mode</h3>
+              <div class="grp">
+                <div class="set" data-k="tv mode fullscreen big couch steam deck controller f11">
+                  <div class="lbl">
+                    <strong>TV mode</strong
+                    ><small>Full screen, bigger and made for a controller. Select (or F11) switches it on and off</small>
+                  </div>
+                  <button class="btn" id="tvgo">Start TV mode</button>
+                </div>
+                <div class="set" data-k="start in tv mode fullscreen steam deck">
+                  <div class="lbl"><strong>Start in TV mode</strong><small>Good for a TV or a Steam Deck</small></div>
+                  <button class="tg" id="tvst">Off</button>
+                </div>
+                <div class="set" data-k="keyboard shortcuts keys hotkeys help controller buttons">
+                  <div class="lbl">
+                    <strong>Keyboard shortcuts</strong
+                    ><small>Every key and controller button CosmoU knows · press ? anywhere</small>
+                  </div>
+                  <button class="btn" id="okeys">Show</button>
+                </div>
+              </div>
+              <div id="c_input"></div>
+            </div>
+            <!-- Buddies & Plaza -->
+            <div class="pane" data-c="plaza">
+              <div class="sx-ph"><b>Buddies &amp; Plaza</b></div>
+              <div class="sx-stat" id="sxpstat"></div>
+              <h3 class="sh">Buddies</h3>
+              <div class="grp">
+                <div class="set" data-k="buddy maker mii character avatar hair hat glasses">
+                  <div class="lbl">
+                    <strong>Buddy maker</strong><small>Make your own characters with hair, hats and glasses</small>
+                  </div>
+                  <button class="btn main" id="obud">Open Buddy maker</button>
+                </div>
+                <div class="set" data-k="hello greeting welcome start buddy wave">
+                  <div class="lbl">
+                    <strong>Buddy says hello</strong><small>Your first buddy waves and greets you when CosmoU starts</small>
+                  </div>
+                  <button class="tg" id="hlo">On</button>
+                </div>
+              </div>
+              <h3 class="sh">Plaza</h3>
+              <div class="grp">
+                <div class="set" data-k="plaza posts miiverse speech bubbles write message">
+                  <div class="lbl"><strong>Plaza posts</strong><small>Write what your buddies say in the Plaza</small></div>
+                  <button class="btn" id="opost">Write a post</button>
+                </div>
+              </div>
+            </div>
+            <!-- Saves & Data -->
+            <div class="pane" data-c="data">
+              <div class="sx-ph"><b>Saves &amp; Data</b></div>
+              <h3 class="sh">Save data</h3>
+              <div class="grp">
+                <div class="set" data-k="backup saves save data automatic before playing">
+                  <div class="lbl">
+                    <strong>Back up saves before playing</strong><small>Keeps the last 10 automatic backups per game</small>
+                  </div>
+                  <button class="tg" id="svauto">On</button>
+                </div>
+                <div class="set" data-k="save backups folder zip restore">
+                  <div class="lbl">
+                    <strong>Save backups</strong><small>All backups are zip files in CosmoU’s saves folder</small>
+                  </div>
+                  <button class="btn" id="svfold">Open saves folder</button>
+                </div>
+              </div>
+              <h3 class="sh">Play time</h3>
+              <div class="grp">
+                <div class="set" data-k="daily log play time hours statistics week">
+                  <div class="lbl">
+                    <strong>Daily Log</strong><small>How long you played each game, and this week at a glance</small>
+                  </div>
+                  <button class="btn" id="olog">Open Daily Log</button>
+                </div>
+              </div>
+              <h3 class="sh">Your settings</h3>
+              <div class="grp">
+                <div class="set" data-k="export import settings backup json transfer other pc">
+                  <div class="lbl">
+                    <strong>Settings backup</strong
+                    ><small>Save your CosmoU setup as cosmou-settings.json, or load it on another PC</small>
+                  </div>
+                  <div class="acts">
+                    <button class="btn" id="expS">Export</button><button class="btn" id="impS">Import</button>
+                  </div>
+                </div>
+                <div class="set" data-k="first time setup wizard again onboarding">
+                  <div class="lbl">
+                    <strong>First-time setup</strong><small>Go through Cemu, games folder and music again</small>
+                  </div>
+                  <button class="btn" id="rerunSetup">Run again</button>
+                </div>
+              </div>
+            </div>
+            <!-- About -->
+            <div class="pane" data-c="about">
+              <div class="sx-ph"><b>About</b></div>
+              <div class="sx-about" id="sxabout"></div>
+              <div class="grp" id="c_about"></div>
+              <h3 class="sh">What’s new in this version</h3>
+              <div class="grp wnew" data-k="whats new changelog version news features">
+                <div class="wn">
+                  <i>★</i
+                  ><span
+                    ><b>Favorites</b><small>Press F or use the game menu – favorites get a star and their own filter</small></span
+                  >
+                </div>
+                <div class="wn">
+                  <i>⇅</i
+                  ><span
+                    ><b>Sort &amp; filter</b
+                    ><small>A–Z, Z–A, recently played or most played; show all, favorites, Wii U games or apps</small></span
+                  >
+                </div>
+                <div class="wn">
+                  <i>☰</i
+                  ><span
+                    ><b>Game menu</b
+                    ><small>Right-click a game (or the Menu key) for Play, Details, Graphic packs, folder and Steam</small></span
+                  >
+                </div>
+                <div class="wn">
+                  <i>⊞</i
+                  ><span
+                    ><b>Quick Menu</b
+                    ><small>Q, the ⋯ button or the Home button: last played, quick switches and every window</small></span
+                  >
+                </div>
+                <div class="wn">
+                  <i>i</i
+                  ><span
+                    ><b>New game details</b><small>Play time, last played, sessions and first played at a glance</small></span
+                  >
+                </div>
+                <div class="wn">
+                  <i>?</i><span><b>Shortcuts</b><small>Press ? for every key and controller button</small></span>
+                </div>
+                <div class="wn">
+                  <i>🎨</i
+                  ><span
+                    ><b>More themes</b
+                    ><small>Six handheld themes, own theme files with music, theme groups and “Surprise me”</small></span
+                  >
+                </div>
+              </div>
+              <h3 class="sh">Updates &amp; help</h3>
+              <div class="grp">
+                <div class="set" data-k="update new version check github download">
+                  <div class="lbl">
+                    <strong>Updates</strong><small id="upds">CosmoU checks GitHub for new versions now and then</small>
+                  </div>
+                  <div class="acts">
+                    <button class="btn" id="updc">Check now</button><button class="btn main" id="updg" hidden>Download</button>
+                  </div>
+                </div>
+                <div class="set" data-k="feedback bug report idea issue">
+                  <div class="lbl">
+                    <strong>Found a bug or have an idea?</strong
+                    ><small>Collects your Cemu and Windows version so the report is useful</small>
+                  </div>
+                  <button class="btn main" id="fbo">Send feedback</button>
+                </div>
+                <div class="set" data-k="community discord chat help">
+                  <div class="lbl">
+                    <strong>Community</strong><small>News, help and sharing setups on the CosmoU Discord</small>
+                  </div>
+                  <button class="btn" id="dsc">Join the Discord</button>
+                </div>
+              </div>
+              <p class="hint">
+                CosmoU is an independent launcher for Cemu, the open-source Wii U emulator (MPL 2.0). It does not include any
+                games. Wii U and Nintendo are trademarks of Nintendo.
+              </p>
+            </div>
+            <p class="sx-none" id="sxnone" hidden></p>
           </div>
-          <h3 class="sh">Appearance</h3>
-          <div class="grp">
-            <div class="set thset">
-              <div class="lbl">
-                <strong>Theme</strong><small>Choose how CosmoU looks. Every theme works with Covers, Grid and Wii U Look.</small>
-              </div>
-              <div class="themes" id="themes" role="radiogroup" aria-label="Theme"></div>
-              <small class="thnote">Themes change colors, atmosphere and style. Your games and settings stay the same.</small>
-            </div>
-            <div class="set">
-              <div class="lbl"><strong>Light or dark</strong><small>Follow Windows, or always light or dark</small></div>
-              <div class="seg" id="thm">
-                <button data-t="system">System</button><button data-t="light">Light</button><button data-t="dark">Dark</button>
-              </div>
-            </div>
-            <div class="set">
-              <div class="lbl"><strong>Buddies</strong><small>Make your own characters for the Wii U Look plaza</small></div>
-              <button class="btn" id="obud">Buddy maker</button>
-            </div>
-            <div class="set">
-              <div class="lbl">
-                <strong>Wii U Look layout</strong><small>Plaza with floating icons, or the Home Menu tile grid</small>
-              </div>
-              <div class="seg" id="wul"><button data-l="plaza">Plaza</button><button data-l="home">Home Menu</button></div>
-            </div>
-            <div class="set">
-              <div class="lbl">
-                <strong>3D cases on hover</strong><small>Covers turn into a Wii U case when you point at them</small>
-              </div>
-              <button class="tg" id="hvc">On</button>
-            </div>
-          </div>
-          <h3 class="sh">Library</h3>
-          <div class="grp">
-            <div class="set">
-              <div class="lbl">
-                <strong>Covers</strong><small>Your own PNG or JPG (named like the game) wins over automatic covers</small>
-              </div>
-              <button class="btn" id="oc">Open covers folder</button>
-            </div>
-            <div class="set">
-              <div class="lbl"><strong>Rescan library</strong><small>Look for new games in your games folder</small></div>
-              <button class="btn" id="rescan">Rescan</button>
-            </div>
-            <div class="set">
-              <div class="lbl"><strong>Other apps</strong><small>Add other emulators or PC games to your library</small></div>
-              <button class="btn" id="addapp">Add app</button>
-            </div>
-            <div class="set">
-              <div class="lbl">
-                <strong>Automatic covers</strong><small>Icons from your game files, box art from GameTDB</small>
-              </div>
-              <button class="btn" id="ct">On</button>
-            </div>
-          </div>
-          <h3 class="sh">Sound</h3>
-          <div class="grp">
-            <div class="set">
-              <div class="lbl">
-                <strong>Background music</strong><small id="ms">No music found – put a file in the music folder</small>
-              </div>
-              <div class="acts"><button class="btn" id="mt">On</button><button class="btn" id="mf">Music folder</button></div>
-            </div>
-            <div class="set">
-              <div class="lbl">
-                <strong>UI sounds</strong><small>Soft clicks when you move, turn pages and start a game</small>
-              </div>
-              <button class="tg" id="uis">On</button>
-            </div>
-          </div>
-          <h3 class="sh">Backup</h3>
-          <div class="grp">
-            <div class="set">
-              <div class="lbl">
-                <strong>Settings backup</strong
-                ><small>Save your CosmoU setup as cosmou-settings.json, or load it on another PC</small>
-              </div>
-              <div class="acts"><button class="btn" id="expS">Export</button><button class="btn" id="impS">Import</button></div>
-            </div>
-            <div class="set">
-              <div class="lbl"><strong>First-time setup</strong><small>Go through Cemu, games folder and music again</small></div>
-              <button class="btn" id="rerunSetup">Run again</button>
-            </div>
-          </div>
-          <h3 class="sh">About</h3>
-          <div class="grp" id="c_about"></div>
-          <div class="grp" style="margin-top: 12px">
-            <div class="set">
-              <div class="lbl">
-                <strong>Updates</strong><small id="upds">CosmoU checks GitHub for new versions now and then</small>
-              </div>
-              <div class="acts">
-                <button class="btn" id="updc">Check now</button><button class="btn main" id="updg" hidden>Download</button>
-              </div>
-            </div>
-          </div>
-          <div class="grp" style="margin-top: 12px">
-            <div class="set">
-              <div class="lbl">
-                <strong>Found a bug or have an idea?</strong
-                ><small>Collects your Cemu and Windows version so the report is useful</small>
-              </div>
-              <button class="btn main" id="fbo">Send feedback</button>
-            </div>
-            <div class="set">
-              <div class="lbl"><strong>Community</strong><small>News, help and sharing setups on the CosmoU Discord</small></div>
-              <button class="btn" id="dsc">Join the Discord</button>
-            </div>
-          </div>
-          <p class="hint">
-            CosmoU is an independent launcher for Cemu, the open-source Wii U emulator (MPL 2.0). It does not include any games.
-            Wii U and Nintendo are trademarks of Nintendo.
-          </p>
-        </div>
-        <div class="ft"><span></span><button class="btn main big" id="close">Done</button></div>
-      </div>
-    </dialog>
-    <dialog id="gdlg" class="glass">
-      <div class="in win">
-        <div class="hd">
-          <h2>Graphics settings</h2>
-          <div class="vt tabs" id="tabs" role="tablist">
-            <span id="tind"></span><button data-t="graphics" class="on">Graphics</button><button data-t="audio">Audio</button
-            ><button data-t="overlay">Overlay</button><button data-t="input">Input</button>
-          </div>
-        </div>
-        <div class="bd">
-          <div class="pane on" data-p="graphics">
-            <p class="hint" id="gnote"></p>
-            <div id="c_graphics"></div>
-            <h3 class="sh">Default quality</h3>
-            <div class="qg" id="gq"></div>
-            <p class="hint">
-              Used for every game that has no quality of its own (set in a game’s Details). It needs Cemu’s resolution graphic
-              pack for the game.
-            </p>
-          </div>
-          <div class="pane" data-p="audio">
-            <div id="c_audio"></div>
-            <p class="hint">Choose the audio device in Cemu for now. CosmoU’s own music is in the main Settings.</p>
-          </div>
-          <div class="pane" data-p="overlay"><div id="c_overlay"></div></div>
-          <div class="pane" data-p="input"><div id="c_input"></div></div>
-        </div>
-        <div class="ft">
-          <button class="btn ghost" id="rst">Reset to Cemu’s values</button><button class="btn main big" id="gclose">Done</button>
-        </div>
+          <footer class="ft">
+            <small class="sx-saved">Changes are saved right away</small><button class="btn main big" id="close">Done</button>
+          </footer>
+        </section>
       </div>
     </dialog>
     <dialog id="gpdlg" class="glass">
@@ -439,15 +755,27 @@
                 <div class="sw" id="b_bc"></div>
               </div>
               <div class="bml">
+                Hair
+                <div class="seg" id="b_hr"></div>
+              </div>
+              <div class="bml">
+                Hair color
+                <div class="sw" id="b_hc"></div>
+              </div>
+              <div class="bml">
                 Eyes
                 <div class="seg" id="b_ey"></div>
+              </div>
+              <div class="bml">
+                Glasses
+                <div class="seg" id="b_gl"></div>
               </div>
               <div class="bml">
                 Mouth
                 <div class="seg" id="b_mo"></div>
               </div>
               <div class="bml">
-                Extra
+                Hat &amp; extra
                 <div class="seg" id="b_ac"></div>
               </div>
             </div>
@@ -463,11 +791,193 @@
         </div>
       </div>
     </dialog>
+    <dialog id="postdlg" class="glass">
+      <div class="in win">
+        <div class="hd">
+          <h2>Plaza posts</h2>
+          <p class="hint" style="margin: 8px 0 0">
+            Write something and a buddy says it in the Plaza, like the old posts above the icons.
+          </p>
+        </div>
+        <div class="bd">
+          <div class="pform">
+            <input class="sel" id="p_txt" maxlength="48" placeholder="Just beat Bowser!" aria-label="Post text" />
+            <div class="prow">
+              <label class="bml">Posted by<select class="sel" id="p_by"></select></label>
+              <label class="bml">About<select class="sel" id="p_game"></select></label>
+            </div>
+            <div class="pidea" id="p_ideas"></div>
+            <div class="pcount"><span id="p_left">48</span> characters left</div>
+          </div>
+          <h3 class="sh">Your posts <span id="p_cnt"></span></h3>
+          <div class="plist" id="p_list"></div>
+        </div>
+        <div class="ft">
+          <button class="btn main" id="p_add">Post</button>
+          <button class="btn main big" id="p_x">Done</button>
+        </div>
+      </div>
+    </dialog>
+    <dialog id="logdlg" class="glass">
+      <div class="in win">
+        <div class="hd">
+          <h2>Daily Log</h2>
+          <p class="hint" style="margin: 8px 0 0" id="l_sum"></p>
+        </div>
+        <div class="bd">
+          <h3 class="sh">This week</h3>
+          <div class="lweek" id="l_week"></div>
+          <h3 class="sh">Your games</h3>
+          <div class="llist" id="l_list"></div>
+          <p class="hint">Sessions shorter than a minute are not counted. Play time is only measured while CosmoU is open.</p>
+        </div>
+        <div class="ft"><span></span><button class="btn main big" id="l_x">Done</button></div>
+      </div>
+    </dialog>
+    <dialog id="svdlg" class="glass">
+      <div class="in win">
+        <div class="hd">
+          <h2>Restore save data</h2>
+          <p class="hint" style="margin: 8px 0 0" id="svsub"></p>
+        </div>
+        <div class="bd"><div class="svlist" id="svlist"></div></div>
+        <div class="ft">
+          <button class="btn" id="svof">Open folder</button><button class="btn main big" id="svx">Done</button>
+        </div>
+      </div>
+    </dialog>
+    <dialog id="mapdlg" class="glass tdlg">
+      <div class="in win">
+        <div class="hd">
+          <h2>Map buttons</h2>
+          <p class="hint" style="margin: 8px 0 0" id="mpsub"></p>
+        </div>
+        <div class="bd">
+          <div class="mprow">
+            <label class="bml">Device<select class="sel" id="mpdev"></select></label>
+            <label class="bml">Emulated controller<select class="sel" id="mptype"></select></label>
+          </div>
+          <p class="hint" id="mphint" hidden></p>
+          <div class="mplist" id="mplist"></div>
+        </div>
+        <div class="ft">
+          <button class="btn" id="mpdef">Defaults</button><button class="btn" id="mpclr">Clear all</button
+          ><button class="btn" id="mpall">Map all</button><span class="sp"></span><button class="btn" id="mpx">Cancel</button
+          ><button class="btn main big" id="mpsave">Save</button>
+        </div>
+      </div>
+    </dialog>
+    <dialog id="updlg" class="glass tdlg">
+      <div class="in win">
+        <div class="hd">
+          <h2>Updates &amp; DLC</h2>
+          <p class="hint" style="margin: 8px 0 0" id="upsub"></p>
+          <div class="upbar" id="upbar" hidden><i></i><small></small></div>
+        </div>
+        <div class="bd"><div class="svlist" id="uplist"></div></div>
+        <div class="ft">
+          <button class="btn" id="upadd">Look in another folder…</button
+          ><button class="btn" id="upof">Open Cemu’s title folder</button><span class="sp"></span
+          ><button class="btn main big" id="upx">Done</button>
+        </div>
+      </div>
+    </dialog>
+    <dialog id="stdlg" class="glass tdlg">
+      <div class="in win">
+        <div class="hd">
+          <h2>Add to Steam</h2>
+          <p class="hint" style="margin: 8px 0 0" id="stsub"></p>
+        </div>
+        <div class="bd">
+          <div class="mprow" id="stuserrow" hidden>
+            <label class="bml">Steam account<select class="sel" id="stuser"></select></label>
+          </div>
+          <div class="stbar">
+            <label class="ck"><input type="checkbox" id="stallck" /> Select all</label>
+            <label class="ck"><input type="checkbox" id="startck" checked /> Use covers as Steam artwork</label>
+          </div>
+          <div class="svlist" id="stlist"></div>
+          <p class="hint" id="stnote" hidden></p>
+        </div>
+        <div class="ft">
+          <span class="sp"></span><button class="btn" id="stx">Cancel</button
+          ><button class="btn main big" id="stgo">Add to Steam</button>
+        </div>
+      </div>
+    </dialog>
+    <dialog id="qmdlg" class="glass" aria-label="Quick Menu">
+      <div class="in qm">
+        <div class="qm-top">
+          <div class="qm-clock"><b id="qmt"></b><small id="qmd"></small></div>
+          <div class="qm-st" id="qms"></div>
+          <button class="dx" id="qmx" aria-label="Close" title="Close (Esc)">
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.6"
+              stroke-linecap="round"
+            >
+              <path d="M6 6l12 12M18 6 6 18" />
+            </svg>
+          </button>
+        </div>
+        <h3 class="sh" id="qmrh">Jump back in</h3>
+        <div class="qm-rec" id="qmrec"></div>
+        <h3 class="sh">Quick settings</h3>
+        <div class="qm-tg" id="qmtg"></div>
+        <div class="qm-row">
+          <div class="seg" id="qmlook" aria-label="Light or dark">
+            <button data-t="system">System</button><button data-t="light">Light</button><button data-t="dark">Dark</button>
+          </div>
+          <label class="qm-vol"
+            ><span>Music</span><input type="range" id="qmvol" min="0" max="100" step="5" aria-label="Music volume" /><output
+              id="qmvolo"
+            ></output
+          ></label>
+        </div>
+        <h3 class="sh">Go to</h3>
+        <div class="qm-go" id="qmgo"></div>
+      </div>
+    </dialog>
+    <dialog id="cmenu" class="cmenu" aria-label="Menu">
+      <div class="cm-in" role="menu"></div>
+    </dialog>
+    <dialog id="keysdlg" class="glass" aria-label="Keyboard and controller shortcuts">
+      <div class="in win">
+        <div class="hd">
+          <h2>Shortcuts</h2>
+          <p class="hint" style="margin: 8px 0 0">
+            Everything you can do without the mouse. Press <kbd>?</kbd> to open this list again.
+          </p>
+        </div>
+        <div class="bd kbd-bd" id="keysbd"></div>
+        <div class="ft"><span></span><button class="btn main big" id="keysx">Done</button></div>
+      </div>
+    </dialog>
+    <div id="hello" hidden role="status">
+      <canvas width="132" height="132"></canvas>
+      <div><b></b><span></span></div>
+    </div>
+    <div id="boot" aria-hidden="true">
+      <div class="bt-in">
+        <div class="bt-ic"></div>
+        <div class="bt-name">CosmoU</div>
+        <div class="bt-sub" id="btsub"></div>
+      </div>
+    </div>
+    <div class="tvbar" id="tvbar" aria-hidden="true">
+      <span><i>A</i>Play</span><span><i>B</i>Back</span><span><i>Y</i>Details</span><span><i>X</i>Menu</span
+      ><span><i>☰</i>Settings</span><span><i>⧉</i>Exit TV mode</span>
+    </div>
     <div id="launch">
       <div class="glass lp">
         <div class="art" id="lc"></div>
         <h3 id="ln"></h3>
         <p>Starting…</p>
+        <small class="ltip" id="ltip"></small>
         <div class="flow"><i></i></div>
       </div>
     </div>
@@ -487,7 +997,7 @@
     <div id="notes" aria-live="polite"></div>
     <div id="wiz" hidden>
       <div class="wz-card">
-        <div class="wz-steps" id="wzsteps"><i></i><i></i><i></i><i></i></div>
+        <div class="wz-steps" id="wzsteps"><i></i><i></i><i></i><i></i><i></i></div>
         <div class="wz-pages">
           <section class="wz-page wz-hello" data-s="0">
             <img class="wz-logo" src="build/icon.png" alt="" />
@@ -525,9 +1035,15 @@
               <button data-m="off"><b>No music</b><small>Quiet menu</small></button>
             </div>
           </section>
-          <section class="wz-page wz-done" data-s="4">
+          <section class="wz-page" data-s="4">
+            <small class="wz-k">Step 4 · Optional</small>
+            <h2>Pick your look</h2>
+            <p>Every theme works with Covers, Grid and Wii U Look. There are 21 in Settings → Appearance.</p>
+            <div class="wz-themes" id="wzthemes" role="radiogroup" aria-label="Theme"></div>
+          </section>
+          <section class="wz-page wz-done" data-s="5">
             <div class="wz-check">✓</div>
-            <small class="wz-k">Step 4</small>
+            <small class="wz-k">Step 5</small>
             <h2>You’re ready!</h2>
             <div class="wz-count ok" id="wzready"></div>
             <button class="btn main big" id="wzenter">Enter CosmoU</button>
@@ -552,6 +1068,12 @@
     <script src="js/polish.js"></script>
     <script src="js/onboarding.js"></script>
     <script src="js/themes.js"></script>
+    <script src="js/social.js"></script>
+    <script src="js/extras.js"></script>
+    <script src="js/tools.js"></script>
+    <script src="js/menus.js"></script>
+    <script src="js/details-ui.js"></script>
+    <script src="js/quick.js"></script>
     <script src="js/app.js"></script>
   </body>
 </html>

@@ -8,6 +8,7 @@ function openDetail(g) {
   box3d($('#dc'), g);
   $('#dt').textContent = g.name;
   $('#df').textContent = g.format;
+  $('#dpt').textContent = typeof playLine === 'function' ? playLine(g.name) : '';
   $('#dgps').textContent = '';
   $('#daor').hidden = true;
   for (const id of ['#dqs', '#dgp', '#dao', '#dgps']) $(id).hidden = app;
@@ -15,6 +16,7 @@ function openDetail(g) {
   $('#det').showModal();
   render();
   if (!app) gpSummary(g);
+  if (typeof saveUi === 'function') saveUi(g);
 }
 // --- 3D Wii U case: box art fills the front, square icons get a white case with a blue band ---
 // --- 3D case on hover (grid tiles, middle cover, Wii U Look icons) ---
@@ -285,6 +287,9 @@ function renderPacks() {
     const tg = document.createElement('button');
     tg.className = 'tg' + (p.enabled ? ' on' : '');
     tg.textContent = p.enabled ? 'On' : 'Off';
+    tg.setAttribute('role', 'switch');
+    tg.setAttribute('aria-checked', String(!!p.enabled));
+    tg.setAttribute('aria-label', p.name);
     tg.onclick = () => gpSet(p, !p.enabled, null);
     top.append(lb, tg);
     row.append(top);

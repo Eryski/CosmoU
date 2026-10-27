@@ -77,6 +77,55 @@ $('#fbi').onclick = () => {
 };
 // --- Controller navigation (standard gamepad layout): D-pad / stick move, A play, B back, Y details, Start settings ---
 const pad = { prev: {}, next: {}, loop: false };
+// ---------- moving through windows with a controller ----------
+function padFocusable(d) {
+  return [...d.querySelectorAll('button, input, select, a[href], [tabindex]:not([tabindex="-1"])')].filter(
+    e => !e.disabled && e.offsetParent !== null && e.type !== 'hidden',
+  );
+}
+function padFocus(d, f) {
+  document.body.classList.add('padnav');
+  pad.moved = true;
+  const a = document.activeElement,
+    inside = a && a !== d && d.contains(a);
+  // sliders: left and right change the value
+  if (inside && a.type === 'range' && (f.l || f.r)) {
+    a.value = +a.value + (f.r ? 1 : -1) * (+a.step || 1);
+    a.dispatchEvent(new Event('input', { bubbles: true }));
+    a.dispatchEvent(new Event('change', { bubbles: true }));
+    return;
+  }
+  // Settings: the categories are one column, the options another
+  if (d.id === 'dlg') {
+    const inNav = inside && !!a.closest('.sx-nav');
+    if (f.l && !inNav) return sxFocusNav();
+    if (f.r && (inNav || !inside)) return sxFocusContent();
+    if (inNav && (f.u || f.d)) return sxStep(f.d ? 1 : -1, true);
+  }
+  let list = padFocusable(d);
+  if (d.id === 'dlg') list = list.filter(e => !e.closest('.sx-side'));
+  const i = inside ? list.indexOf(a) : -1,
+    dir = f.u || f.l ? -1 : 1,
+    n = list[i < 0 ? 0 : Math.max(0, Math.min(list.length - 1, i + dir))];
+  if (n) {
+    n.focus();
+    n.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }
+}
+function padPress(d) {
+  const a = document.activeElement;
+  if (!a || a === d || !d.contains(a)) {
+    const f = padFocusable(d)[0];
+    if (f) f.focus();
+    return;
+  }
+  if (a.tagName === 'SELECT') {
+    a.selectedIndex = (a.selectedIndex + 1) % a.options.length;
+    a.dispatchEvent(new Event('change', { bubbles: true }));
+  } else if (a.tagName === 'INPUT' && a.type !== 'checkbox') a.select && a.select();
+  else a.click();
+}
+addEventListener('pointermove', () => document.body.classList.remove('padnav'), { passive: true });
 function padTick(now) {
   const gp0 = [...(navigator.getGamepads ? navigator.getGamepads() : [])].find(Boolean);
   if (!gp0) {
@@ -93,10 +142,13 @@ function padTick(now) {
     d: b(13) || ay > 0.55,
     a: b(0),
     b: b(1),
+    x: b(2),
     y: b(3),
     st: b(9),
+    sl: b(8),
     lb: b(4),
     rb: b(5),
+    hm: b(16),
   };
   const hit = k => {
     if (!s[k]) {
@@ -117,13 +169,25 @@ function padTick(now) {
   for (const k in s) fire[k] = hit(k);
   pad.prev = s;
   const open = [...document.querySelectorAll('dialog[open]')].pop(),
-    busy = $('#launch').classList.contains('on') || $('#setup').classList.contains('on');
-  if (!busy) {
+    busy = $('#launch').classList.contains('on') || $('#setup').classList.contains('on') || $('#mapdlg').open;
+  if (open !== pad.dlg) {
+    pad.dlg = open;
+    pad.moved = false;
+  }
+  if (!busy && fire.hm && typeof openQuick === 'function') openQuick();
+  else if (!busy) {
     if (open) {
-      if (fire.b) open.close();
-      else if (fire.a && open.id === 'det') {
-        open.close();
-        launch(cur());
+      // inside a window the D-pad moves between the buttons, A presses, B goes back
+      if (open.id === 'dlg' && (fire.lb || fire.rb)) sxStep(fire.rb ? 1 : -1, true);
+      if (fire.u || fire.d || fire.l || fire.r) padFocus(open, fire);
+      if (fire.b) {
+        if (open.id === 'dlg' && document.activeElement && document.activeElement.closest('.sx-main')) sxFocusNav();
+        else open.close();
+      } else if (fire.a) {
+        if (open.id === 'det' && !pad.moved) {
+          open.close();
+          launch(cur());
+        } else padPress(open);
       }
     } else {
       if (isHome()) {
@@ -135,7 +199,9 @@ function padTick(now) {
       }
       if (fire.a) launch(cur());
       if (fire.y && cur()) openDetail(cur());
+      if (fire.x && cur() && typeof gameMenu === 'function') gameMenu(cur(), null);
       if (fire.st) openSettings();
+      if (fire.sl && typeof toggleTv === 'function') toggleTv();
     }
   }
   requestAnimationFrame(padTick);

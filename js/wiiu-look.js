@@ -67,6 +67,7 @@ function buildWiiU(l) {
     if (!e) {
       e = document.createElement('div');
       e.className = 'wi';
+      e.dataset.g = g.name;
       e.innerHTML = '<div class="wpad"></div><div class="wi-in"><div class="wa"></div></div><span class="wl"></span>';
       e.querySelector('.wl').textContent = g.name;
       e.onclick = () => {
@@ -115,7 +116,16 @@ function buildWiiU(l) {
   const cg = l[idx];
   if (cg) {
     $('#wt').textContent = cg.name;
-    $('#wm').textContent = (plays[cg.name] ? 'Recently played · ' : '') + cg.format;
+    const pt = typeof playLog === 'object' && playLog.playtime ? playLog.playtime[cg.name] : null;
+    $('#wm').textContent =
+      (favs.has(cg.name) ? '★ ' : '') +
+      [
+        cg.format,
+        pt && pt.sec ? fmtDur(pt.sec) : '',
+        pt && pt.last ? 'last ' + dayName(pt.last) : plays[cg.name] ? 'recently played' : '',
+      ]
+        .filter(Boolean)
+        .join(' · ');
   }
   $('#wpg').hidden = pages < 2;
   const dots = $('#wdots');
@@ -281,7 +291,19 @@ function drawTag(c, m, u) {
 function applyBuddies() {
   mii.list.forEach((m, i) => {
     const b = buddies[i];
-    if (b) Object.assign(m, { fc: b.fc, bc: b.bc, ey: b.ey, mo: b.mo, acc: b.acc, name: b.name, bub: '' });
+    if (b)
+      Object.assign(m, {
+        fc: b.fc,
+        bc: b.bc,
+        ey: b.ey,
+        mo: b.mo,
+        acc: b.acc,
+        hr: b.hr,
+        hc: b.hc,
+        gl: b.gl,
+        name: b.name,
+        bub: '',
+      });
     else
       Object.assign(m, {
         fc: '',
@@ -289,10 +311,15 @@ function applyBuddies() {
         ey: 0,
         mo: 0,
         acc: i % 3,
+        // some of the crowd get hair and glasses too, so the plaza looks more mixed
+        hr: i % 3 === 1 ? 1 + (i % 7) : 0,
+        hc: HAIR[i % HAIR.length],
+        gl: i % 9 === 4 ? 1 + (i % 4) : 0,
         name: '',
         bub: i % 2 === 0 ? BUBS[(i / 2) % BUBS.length] : '',
       });
   });
+  if (typeof applyPosts === 'function') applyPosts();
 }
 function drawBuddy(c, m, t, u, refl) {
   const walk = m.st === 'walk' && m.v > 3,
@@ -344,8 +371,9 @@ function drawBuddy(c, m, t, u, refl) {
   c.arc(hx, hy, 1.9 * u, 0, 7);
   c.arc(-8.8 * u + Math.sin(sa) * 1.6 * u, -10 * u, 1.9 * u, 0, 7);
   c.fill();
-  // big round head with soft highlight
+  // big round head with soft highlight (long hair, ponytail and bun sit behind it)
   const hy0 = -30 * u;
+  if (m.hr) buddyHair(c, m, u, hy0, true);
   c.fillStyle = face;
   c.beginPath();
   c.arc(0, hy0, 11 * u, 0, 7);
@@ -354,6 +382,7 @@ function drawBuddy(c, m, t, u, refl) {
   c.beginPath();
   c.ellipse(-4.2 * u, hy0 - 5.6 * u, 4 * u, 2.4 * u, -0.5, 0, 7);
   c.fill();
+  if (m.hr) buddyHair(c, m, u, hy0, false);
   // little accessory: star antenna, leaf tuft or bow
   c.strokeStyle = '#9aa5b2';
   c.lineWidth = 0.9 * u;
@@ -395,7 +424,7 @@ function drawBuddy(c, m, t, u, refl) {
     c.beginPath();
     c.ellipse(-3.5 * u, hy0 - 9.5 * u, 3 * u, 1.4 * u, -0.4, 0, 7);
     c.fill();
-  }
+  } else if (m.acc >= 5) buddyHat(c, m, u, hy0, body);
   // face
   const bl = Math.abs(Math.sin(t * 0.7 + m.ph)) > 0.985 ? 0.15 : 1,
     lx = m.lx * 1.6 * u;
@@ -446,6 +475,7 @@ function drawBuddy(c, m, t, u, refl) {
     c.arc(lx * 0.6, hy0 + 3.4 * u, 2.2 * u, 0.15 * Math.PI, 0.85 * Math.PI);
     c.stroke();
   }
+  if (m.gl) buddyGlasses(c, m, u, hy0, lx);
   c.restore();
 }
 function miiFrame(now) {

@@ -2,7 +2,35 @@
 
 // --- First-time setup wizard ---
 const wz = { step: 0, music: 'default', count: 0 };
-const WZ_LAST = 4;
+const WZ_LAST = 5;
+// the themes offered in the setup (all of them are in Settings → Appearance)
+const WZ_THEMES = ['liquid-glass', 'wii-u', 'classic-wii', 'plaza', 'switch', '3ds', 'n64', 'gameboy'];
+function wzThemes() {
+  const box = $('#wzthemes');
+  if (!box.childElementCount)
+    for (const id of WZ_THEMES) {
+      const t = THEMES.find(x => x.id === id);
+      if (!t) continue;
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'thc';
+      b.dataset.s = id;
+      b.setAttribute('role', 'radio');
+      b.innerHTML =
+        `<span class="pv pv-${id}" aria-hidden="true"><i class="pv-top"></i><i class="pv-t"></i><i class="pv-t"></i>` +
+        `<i class="pv-t"></i><i class="pv-x"></i><i class="pv-nav"></i></span><span class="thn"></span>`;
+      b.querySelector('.thn').textContent = t.name;
+      b.onclick = () => {
+        setTheme(id);
+        setTimeout(wzThemes, 450);
+      };
+      box.append(b);
+    }
+  box.querySelectorAll('.thc').forEach(c => {
+    c.classList.toggle('on', c.dataset.s === style);
+    c.setAttribute('aria-checked', String(c.dataset.s === style));
+  });
+}
 function openWizard() {
   wz.step = 0;
   wz.music = 'default';
@@ -45,6 +73,10 @@ async function wzRender() {
   }
   if (s === 3) {
     document.querySelectorAll('#wzmusic button').forEach(b => b.classList.toggle('on', b.dataset.m === wz.music));
+    $('#wznext').textContent = 'Next';
+  }
+  if (s === 4) {
+    wzThemes();
     $('#wznext').textContent = 'Next';
   }
   if (s === WZ_LAST) {
@@ -123,7 +155,7 @@ function setMusic(m) {
   if (m && m.url) {
     bgMusic = new Audio(m.url);
     bgMusic.loop = true;
-    bgMusic.volume = 0.35;
+    bgMusic.volume = musicVol();
     musicName = m.name;
   }
 }
@@ -147,7 +179,7 @@ $('#rerunSetup').onclick = () => {
 };
 
 // --- Settings backup: export / import cosmou-settings.json ---
-const UI_PREFS = ['style', 'viewMode', 'wuView', 'hoverCases', 'uiSounds', 'music', 'buddies'];
+const UI_PREFS = ['style', 'viewMode', 'wuView', 'hoverCases', 'uiSounds', 'music', 'buddies', 'posts', 'favs', 'sort', 'show'];
 $('#expS').onclick = async () => {
   if (!need()) return;
   const ui = {};

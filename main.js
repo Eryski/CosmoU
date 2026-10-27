@@ -323,8 +323,155 @@ ipcMain.handle('pickFolder', async () => {
 });
 ipcMain.handle('play', (_, arg) => {
   const r = playGame(arg);
-  if (r.ok && arg && typeof arg === 'object') recordPlay(arg.name);
+  if (r.ok && arg && typeof arg === 'object') {
+    recordPlay(arg.name);
+    trackSession(r.child, arg.name);
+    // started from Steam: close CosmoU together with the game, so Steam sees the game end
+    if (
+      playArg &&
+      r.child &&
+      typeof arg.path === 'string' &&
+      path.resolve(arg.path).toLowerCase() === path.resolve(playArg).toLowerCase()
+    )
+      r.child.on('exit', () => setTimeout(() => app.quit(), 800));
+  }
+  delete r.child;
   return r;
+});
+// ---------- Save backups: mlc01/usr/save/<high>/<low> of a game, zipped into <userData>/saves/<game> ----------
+const savesRoot = () => path.join(app.getPath('userData'), 'saves');
+function mlcDir(exe) {
+  const data = exe && fs.existsSync(exe) ? cemuDataDir(exe) : '';
+  if (!data) return '';
+  try {
+    const m = tag(fs.readFileSync(path.join(data, 'settings.xml'), 'utf8'), 'mlc_path');
+    if (m && fs.existsSync(m)) return m;
+  } catch {}
+  return path.join(data, 'mlc01');
+}
+function saveDirOf(tid) {
+  tid = String(tid || '').toLowerCase();
+  if (!/^[0-9a-f]{16}$/.test(tid)) return '';
+  const mlc = mlcDir(read().cemuPath);
+  return mlc ? path.join(mlc, 'usr', 'save', tid.slice(0, 8), tid.slice(8)) : '';
+}
+const backupDir = name => path.join(savesRoot(), safeName(String(name || 'game')).slice(0, 120));
+function dirSize(d) {
+  let n = 0;
+  try {
+    for (const e of fs.readdirSync(d, { withFileTypes: true })) {
+      const p = path.join(d, e.name);
+      n += e.isDirectory() ? dirSize(p) : fs.statSync(p).size;
+    }
+  } catch {}
+  return n;
+}
+function listBackups(name) {
+  const d = backupDir(name);
+  if (!fs.existsSync(d)) return [];
+  return fs
+    .readdirSync(d)
+    .filter(f => /\.zip$/i.test(f))
+    .map(f => {
+      const st = fs.statSync(path.join(d, f));
+      return { file: f, at: st.mtimeMs, size: st.size, auto: /-auto\.zip$/i.test(f) };
+    })
+    .sort((a, b) => b.at - a.at);
+}
+function backupSaves(tid, name, auto) {
+  const src = saveDirOf(tid);
+  if (!src) return { ok: false, error: 'Save backups need the game in folder format (with its title ID).' };
+  if (!fs.existsSync(src) || !dirSize(src)) return { ok: false, error: 'No save data for this game yet. Play it once first.' };
+  const d = backupDir(name),
+    stamp = new Date().toISOString().replace(/[:T]/g, '-').slice(0, 19);
+  fs.mkdirSync(d, { recursive: true });
+  const z = new AdmZip();
+  z.addLocalFolder(src);
+  let file = stamp + (auto ? '-auto' : '') + '.zip';
+  for (let i = 2; fs.existsSync(path.join(d, file)); i++) file = stamp + '-' + i + (auto ? '-auto' : '') + '.zip';
+  z.writeZip(path.join(d, file));
+  // keep the newest 10 automatic backups; manual ones stay until you delete them
+  for (const b of listBackups(name)
+    .filter(x => x.auto)
+    .slice(10))
+    fs.rmSync(path.join(d, b.file), { force: true });
+  return { ok: true, file };
+}
+ipcMain.handle('savesInfo', (_, tid, name) => {
+  const src = saveDirOf(tid);
+  return {
+    supported: !!src,
+    found: !!src && fs.existsSync(src),
+    size: src && fs.existsSync(src) ? dirSize(src) : 0,
+    backups: listBackups(name),
+    auto: read().autoSaveBackup !== false,
+  };
+});
+ipcMain.handle('savesBackup', (_, tid, name) => {
+  try {
+    return backupSaves(tid, name, false);
+  } catch (e) {
+    return { ok: false, error: friendly(e) };
+  }
+});
+ipcMain.handle('savesRestore', (_, tid, name, file) => {
+  try {
+    const src = saveDirOf(tid),
+      zip = path.join(backupDir(name), path.basename(String(file || '')));
+    if (!src || !fs.existsSync(zip)) return { ok: false, error: 'This backup was not found.' };
+    if (cemuRunning()) return { ok: false, error: 'Close Cemu first, then restore the backup.' };
+    // safety copy of the current saves, so a restore can always be undone
+    if (fs.existsSync(src) && dirSize(src)) backupSaves(tid, name, true);
+    fs.rmSync(src, { recursive: true, force: true });
+    fs.mkdirSync(src, { recursive: true });
+    new AdmZip(zip).extractAllTo(src, true);
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: friendly(e) };
+  }
+});
+ipcMain.handle('savesDelete', (_, name, file) => {
+  const zip = path.join(backupDir(name), path.basename(String(file || '')));
+  if (/\.zip$/i.test(zip) && fs.existsSync(zip)) fs.rmSync(zip, { force: true });
+  return listBackups(name);
+});
+ipcMain.handle('savesFolder', (_, name) => {
+  const d = name ? backupDir(name) : savesRoot();
+  fs.mkdirSync(d, { recursive: true });
+  return shell.openPath(d);
+});
+ipcMain.handle('setAutoSaveBackup', (_, v) => {
+  write({ ...read(), autoSaveBackup: !!v });
+  return read();
+});
+// ---------- TV mode: full screen and a bigger UI for controllers ----------
+ipcMain.handle('setTvMode', (_, on) => {
+  if (!mainWin || mainWin.isDestroyed()) return false;
+  mainWin.setFullScreen(!!on);
+  mainWin.webContents.setZoomFactor(on ? 1.3 : 1);
+  return !!on;
+});
+// ---------- Play time / Daily Log: a session lasts from launch until Cemu (or the app) closes ----------
+function trackSession(child, name) {
+  if (!child || typeof name !== 'string' || !name || name.length > 200) return;
+  const start = Date.now();
+  child.on('error', () => {});
+  child.on('exit', () => endSession(name, start, Date.now()));
+}
+function endSession(name, start, end) {
+  const sec = Math.round((end - start) / 1000);
+  if (sec < 60) return; // a quick test or a crash at start is not play time
+  const s = read(),
+    pt = { ...(s.playtime || {}) },
+    e = pt[name] || { sec: 0, sessions: 0, first: start };
+  pt[name] = { sec: e.sec + sec, sessions: e.sessions + 1, first: Math.min(e.first || start, start), last: end, lastSec: sec };
+  const sessions = [...(Array.isArray(s.sessions) ? s.sessions : []), { name, start, sec }].slice(-1000);
+  write({ ...s, playtime: pt, sessions });
+  if (mainWin && !mainWin.isDestroyed()) mainWin.webContents.send('session-ended', { name, sec });
+}
+ipcMain.handle('playLog', () => {
+  const s = read();
+  return { playtime: s.playtime || {}, sessions: Array.isArray(s.sessions) ? s.sessions : [] };
 });
 function playGame(arg) {
   if (arg && typeof arg === 'object' && arg.appId) return launchApp(arg.appId);
@@ -345,8 +492,13 @@ function playGame(arg) {
   try {
     write({ ...read(), lastApply: { at: Date.now(), applied: g.applied, missing: g.missing } });
   } catch {}
-  spawn(s.cemuPath, ['-g', gamePath, '-f'], { detached: true, stdio: 'ignore', cwd: path.dirname(s.cemuPath) }).unref();
-  return { ok: true, note, preset };
+  if (s.autoSaveBackup !== false && arg && typeof arg === 'object' && arg.tid)
+    try {
+      backupSaves(arg.tid, arg.name, true);
+    } catch {}
+  const child = spawn(s.cemuPath, ['-g', gamePath, '-f'], { detached: true, stdio: 'ignore', cwd: path.dirname(s.cemuPath) });
+  child.unref();
+  return { ok: true, note, preset, child };
 }
 
 ipcMain.handle('showInFolder', (_, p) => {
@@ -398,6 +550,16 @@ function installThemeMusic() {
 }
 ipcMain.handle('themeMusic', (_, id) => {
   if (!/^[a-z0-9-]+$/.test(String(id))) return null;
+  if (id.startsWith('u-')) {
+    // a theme the user added: its music lives next to its theme.json
+    try {
+      const d = path.join(ownThemesDir(), id),
+        m = fs.readdirSync(d).find(n => /^music\.(mp3|ogg|wav|m4a|flac)$/i.test(n));
+      return m ? { url: pathToFileURL(path.join(d, m)).href } : null;
+    } catch {
+      return null;
+    }
+  }
   const u = userThemeMusic();
   try {
     const own =
@@ -408,6 +570,191 @@ ipcMain.handle('themeMusic', (_, id) => {
   const d = bundledThemeMusic(),
     f = d && path.join(d, id + '.ogg');
   return f && fs.existsSync(f) ? { url: pathToFileURL(f).href } : null;
+});
+
+// ---------- Own themes ----------
+// A theme pack is a .cosmoutheme file (a zip) with theme.json and an optional music file, or just a theme.json.
+// Everything is checked here: only known fields, hex colors and fixed choices get through, so a file cannot inject anything.
+const ownThemesDir = () => path.join(app.getPath('userData'), 'own-themes');
+const AUDIO_EXT = /\.(mp3|ogg|wav|m4a|flac)$/i;
+const MAX_THEME_MUSIC = 40 * 1024 * 1024;
+const cleanText = (v, n) =>
+  String(v == null ? '' : v)
+    .replace(/[\u0000-\u001f<>]/g, '')
+    .trim()
+    .slice(0, n);
+const oneOf = (v, list, def) => (list.includes(String(v).toLowerCase()) ? String(v).toLowerCase() : def);
+function hexColor(v) {
+  let h = String(v == null ? '' : v).trim();
+  if (!/^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.test(h)) return '';
+  h = h.replace('#', '').toLowerCase();
+  if (h.length === 3) h = h.replace(/./g, c => c + c);
+  return '#' + h;
+}
+function cleanColors(raw, label, optional) {
+  if (!raw || typeof raw !== 'object') return optional ? null : { error: `"${label}" is missing.` };
+  const c = {};
+  for (const k of ['background', 'card', 'selection', 'text']) {
+    c[k] = hexColor(raw[k]);
+    if (!c[k]) return { error: `"${label}.${k}" must be a hex color like #1a2b3c.` };
+  }
+  for (const k of ['accent', 'background2']) if (raw[k] != null && raw[k] !== '') c[k] = hexColor(raw[k]) || undefined;
+  return c;
+}
+function cleanTheme(raw) {
+  if (!raw || typeof raw !== 'object') return { error: 'theme.json is not a valid theme file.' };
+  const name = cleanText(raw.name, 40);
+  const slug = name
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 30);
+  if (!name || !slug) return { error: 'The theme needs a "name" (letters or numbers).' };
+  const colors = cleanColors(raw.colors, 'colors');
+  if (colors.error) return colors;
+  const dark = cleanColors(raw.colorsDark, 'colorsDark', true);
+  if (dark && dark.error) return dark;
+  const author = cleanText(raw.author, 40),
+    inspired = cleanText(raw.inspired, 60);
+  const t = {
+    id: 'u-' + slug,
+    name,
+    author,
+    desc: cleanText(raw.description, 80) || (inspired ? 'Inspired by ' + inspired : 'Theme by ' + (author || 'the community')),
+    mode: oneOf(raw.mode, ['both', 'light', 'dark'], 'both'),
+    colors,
+    background: oneOf(
+      raw.background,
+      [
+        'plain',
+        'gradient',
+        'stars',
+        'grid',
+        'dots',
+        'stripes',
+        'scanlines',
+        'waves',
+        'bubbles',
+        'towers',
+        'tiles',
+        'haze',
+        'facets',
+        'bokeh',
+        'fog',
+        'lcd',
+        'xmb',
+        'xmbdust',
+        'xmbnight',
+      ],
+      'plain',
+    ),
+    selection: oneOf(raw.selection, ['glow', 'outline', 'brackets'], 'glow'),
+    font: oneOf(raw.font, ['normal', 'rounded', 'pixel', 'mono', 'serif'], 'normal'),
+    corners: oneOf(raw.corners, ['square', 'rounded', 'round'], 'rounded'),
+  };
+  if (dark) t.colorsDark = dark;
+  if (raw.music) t.music = path.basename(String(raw.music)).slice(0, 100);
+  return { theme: t };
+}
+function readThemePack(file) {
+  const ext = path.extname(file).toLowerCase();
+  if (fs.statSync(file).size > 60 * 1024 * 1024) return { error: 'That file is too big for a theme.' };
+  if (ext === '.json') {
+    if (fs.statSync(file).size > 64 * 1024) return { error: 'That theme.json is too big.' };
+    return { raw: JSON.parse(fs.readFileSync(file, 'utf8')), music: null };
+  }
+  const zip = new AdmZip(file);
+  const entries = zip.getEntries().filter(e => !e.isDirectory);
+  const j = entries.find(e => path.basename(e.entryName).toLowerCase() === 'theme.json');
+  if (!j) return { error: 'No theme.json found in that file.' };
+  if (j.header.size > 64 * 1024) return { error: 'The theme.json inside is too big.' };
+  const raw = JSON.parse(j.getData().toString('utf8'));
+  const want = raw && raw.music ? path.basename(String(raw.music)).toLowerCase() : '';
+  const m =
+    entries.find(e => want && path.basename(e.entryName).toLowerCase() === want && AUDIO_EXT.test(e.entryName)) ||
+    entries.find(e => AUDIO_EXT.test(e.entryName));
+  if (m && m.header.size > MAX_THEME_MUSIC) return { error: 'The music file in that theme is too big (40 MB at most).' };
+  return { raw, music: m ? { ext: path.extname(m.entryName).toLowerCase(), data: m.getData() } : null };
+}
+ipcMain.handle('ownThemeImport', async (_, given) => {
+  try {
+    let file = typeof given === 'string' ? given : '';
+    if (!file) {
+      const r = await dialog.showOpenDialog({
+        title: 'Choose a CosmoU theme file',
+        filters: [{ name: 'CosmoU theme', extensions: ['cosmoutheme', 'zip', 'json'] }],
+        properties: ['openFile'],
+      });
+      if (r.canceled || !r.filePaths[0]) return { cancel: true };
+      file = r.filePaths[0];
+    }
+    const pack = readThemePack(file);
+    if (pack.error) return { error: pack.error };
+    const c = cleanTheme(pack.raw);
+    if (c.error) return { error: c.error };
+    const t = c.theme,
+      dir = path.join(ownThemesDir(), t.id),
+      tmp = dir + '.new';
+    fs.rmSync(tmp, { recursive: true, force: true });
+    fs.mkdirSync(tmp, { recursive: true });
+    if (pack.music) {
+      fs.writeFileSync(path.join(tmp, 'music' + pack.music.ext), pack.music.data);
+      t.music = 'music' + pack.music.ext;
+    } else delete t.music;
+    fs.writeFileSync(path.join(tmp, 'theme.json'), JSON.stringify(t, null, 2));
+    fs.rmSync(dir, { recursive: true, force: true });
+    fs.renameSync(tmp, dir);
+    return { ok: true, theme: t, hasMusic: !!pack.music };
+  } catch (e) {
+    return {
+      error: /JSON/i.test(String(e && e.message))
+        ? 'theme.json could not be read (is it valid JSON?).'
+        : 'Could not read that file.',
+    };
+  }
+});
+ipcMain.handle('ownThemeList', () => {
+  const out = [];
+  try {
+    for (const n of fs.readdirSync(ownThemesDir())) {
+      if (!/^u-[a-z0-9-]+$/.test(n)) continue;
+      try {
+        const c = cleanTheme(JSON.parse(fs.readFileSync(path.join(ownThemesDir(), n, 'theme.json'), 'utf8')));
+        if (c.theme && c.theme.id === n) out.push({ ...c.theme, hasMusic: !!c.theme.music });
+      } catch {}
+    }
+  } catch {}
+  return out;
+});
+ipcMain.handle('ownThemeRemove', (_, id) => {
+  if (!/^u-[a-z0-9-]+$/.test(String(id))) return false;
+  try {
+    fs.rmSync(path.join(ownThemesDir(), id), { recursive: true, force: true });
+    return true;
+  } catch {
+    return false;
+  }
+});
+ipcMain.handle('ownThemeExport', async (_, id) => {
+  if (!/^u-[a-z0-9-]+$/.test(String(id))) return { error: 'Unknown theme.' };
+  try {
+    const dir = path.join(ownThemesDir(), id),
+      t = JSON.parse(fs.readFileSync(path.join(dir, 'theme.json'), 'utf8'));
+    const r = await dialog.showSaveDialog({
+      title: 'Save theme file',
+      defaultPath: path.join(app.getPath('documents'), id.replace(/^u-/, '') + '.cosmoutheme'),
+      filters: [{ name: 'CosmoU theme', extensions: ['cosmoutheme'] }],
+    });
+    if (r.canceled || !r.filePath) return { cancel: true };
+    const zip = new AdmZip();
+    zip.addFile('theme.json', Buffer.from(JSON.stringify(t, null, 2)));
+    if (t.music && fs.existsSync(path.join(dir, t.music))) zip.addLocalFile(path.join(dir, t.music));
+    zip.writeZip(r.filePath);
+    return { ok: true, path: r.filePath };
+  } catch {
+    return { error: 'Could not save the theme file.' };
+  }
 });
 
 // ---------- Automatic Cemu download ----------
@@ -1351,8 +1698,12 @@ function launchApp(id) {
   if (!fs.existsSync(a.path))
     return { ok: false, error: 'The program file no longer exists. Edit the entry to choose it again.' };
   const ext = path.extname(a.path).toLowerCase();
-  if (ext === '.exe') spawn(a.path, splitArgs(a.args), { detached: true, stdio: 'ignore', cwd: path.dirname(a.path) }).unref();
-  else shell.openPath(a.path);
+  if (ext === '.exe') {
+    const child = spawn(a.path, splitArgs(a.args), { detached: true, stdio: 'ignore', cwd: path.dirname(a.path) });
+    child.unref();
+    return { ok: true, note: 'app', child };
+  }
+  shell.openPath(a.path);
   return { ok: true, note: 'app' };
 }
 ipcMain.handle('appPick', async () => {
@@ -1533,8 +1884,11 @@ const EXPORT_KEYS = {
   cemuOverrides: 'object',
   customApps: 'array',
   plays: 'object',
+  playtime: 'object',
+  sessions: 'array',
+  autoSaveBackup: 'boolean',
 };
-const UI_KEYS = ['style', 'viewMode', 'wuView', 'hoverCases', 'uiSounds', 'music', 'buddies'];
+const UI_KEYS = ['style', 'viewMode', 'wuView', 'hoverCases', 'uiSounds', 'music', 'buddies', 'posts', 'favs', 'sort', 'show'];
 ipcMain.handle('exportSettings', async (_, ui) => {
   const r = await dialog.showSaveDialog({
     title: 'Export CosmoU settings',
@@ -1590,3 +1944,612 @@ ipcMain.handle('importSettings', async () => {
   for (const k of UI_KEYS) if (data.ui && typeof data.ui[k] === 'string') ui[k] = data.ui[k];
   return { ok: true, applied, ui, from: data.version || '' };
 });
+
+// ---------- Button mapping inside CosmoU: writes Cemu's controllerProfiles/controllerN.xml ----------
+// Mapping ids belong to the emulated controller (VPADController.h etc.), button codes to the API (Controller.h).
+const MAP_APIS = ['XInput', 'SDLController', 'Keyboard'];
+const xmlEsc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+function mapRead(slot) {
+  const dir = inputDir(),
+    out = { found: !!dir, slot, configured: false, type: '', devices: [] };
+  if (!dir) return out;
+  const f = path.join(dir, 'controller' + slot + '.xml');
+  if (!fs.existsSync(f)) return out;
+  try {
+    const x = fs.readFileSync(f, 'utf8');
+    out.configured = true;
+    out.type = tagGet(x.split('<controller>')[0], 'type');
+    for (const m of x.matchAll(/<controller>([\s\S]*?)<\/controller>/g)) {
+      const c = m[1],
+        maps = {};
+      for (const e of c.matchAll(/<entry>\s*<mapping>(\d+)<\/mapping>\s*<button>(\d+)<\/button>\s*<\/entry>/g))
+        maps[e[1]] = +e[2];
+      out.devices.push({ api: tagGet(c, 'api'), uuid: tagGet(c, 'uuid'), name: unxml(tagGet(c, 'display_name')), maps });
+    }
+  } catch {}
+  return out;
+}
+function mapXml(maps, ind) {
+  if (!maps.length) return '<mappings />';
+  const t = n => '\n' + ind + '\t'.repeat(n);
+  return (
+    '<mappings>' +
+    maps
+      .map(
+        ([id, code]) =>
+          t(1) + '<entry>' + t(2) + '<mapping>' + id + '</mapping>' + t(2) + '<button>' + code + '</button>' + t(1) + '</entry>',
+      )
+      .join('') +
+    '\n' +
+    ind +
+    '</mappings>'
+  );
+}
+ipcMain.handle('inputMapGet', (_, slot) => mapRead(slotOk(slot) ? slot : 0));
+ipcMain.handle('inputMapSave', (_, slot, d) => {
+  try {
+    if (!slotOk(slot) || !d || typeof d !== 'object') return { ok: false, error: 'Invalid request.' };
+    const dir = inputDir();
+    if (!dir) return { ok: false, error: 'Cemu’s data folder wasn’t found. Install Cemu and start it once first.' };
+    if (!IN_TYPES.includes(d.type)) return { ok: false, error: 'Unknown controller type.' };
+    if (!MAP_APIS.includes(d.api)) return { ok: false, error: 'This kind of device can only be mapped in Cemu.' };
+    if (cemuRunning()) return { ok: false, error: 'Close Cemu first, otherwise it overwrites the mapping when it quits.' };
+    const cur = mapRead(slot);
+    let uuid, name;
+    if (d.api === 'XInput') {
+      const n = Number(d.uuid);
+      if (!Number.isInteger(n) || n < 0 || n > 3) return { ok: false, error: 'Choose controller 1 to 4.' };
+      uuid = String(n);
+      name = 'Controller ' + (n + 1);
+    } else if (d.api === 'Keyboard') {
+      uuid = 'keyboard';
+      name = 'Keyboard';
+    } else {
+      const ex = cur.devices.find(x => x.api === 'SDLController' && x.uuid === d.uuid);
+      if (!ex) return { ok: false, error: 'Choose this controller once in Cemu first, then you can map it here.' };
+      uuid = ex.uuid;
+      name = ex.name;
+    }
+    const seen = new Set(),
+      maps = (Array.isArray(d.maps) ? d.maps : [])
+        .filter(
+          m =>
+            Array.isArray(m) &&
+            Number.isInteger(m[0]) &&
+            m[0] > 0 &&
+            m[0] < 64 &&
+            Number.isInteger(m[1]) &&
+            m[1] >= 0 &&
+            m[1] < 0x10000 &&
+            !seen.has(m[0]) &&
+            seen.add(m[0]),
+        )
+        .sort((a, b) => a[0] - b[0]);
+    fs.mkdirSync(dir, { recursive: true });
+    const f = path.join(dir, 'controller' + slot + '.xml');
+    let x = cur.configured ? fs.readFileSync(f, 'utf8') : '';
+    const same = cur.devices.find(c => c.api === d.api && c.uuid === uuid);
+    if (same && cur.type === d.type) {
+      // keep everything Cemu wrote (deadzones, motion, rumble, other devices) and only swap this device's mappings
+      x = x.replace(/<controller>[\s\S]*?<\/controller>/g, blk => {
+        if (tagGet(blk, 'api') !== d.api || tagGet(blk, 'uuid') !== uuid) return blk;
+        const ind = ((blk.match(/\n([ \t]*)<mappings/) || [])[1] || '\t\t').replace(/\r/g, '');
+        return /<mappings\s*\/>|<mappings>[\s\S]*?<\/mappings>/.test(blk)
+          ? blk.replace(/<mappings\s*\/>|<mappings>[\s\S]*?<\/mappings>/, mapXml(maps, ind))
+          : blk.replace(/<\/controller>$/, '\t' + mapXml(maps, ind) + '\n\t</controller>');
+      });
+    } else {
+      const dz = d.api === 'XInput' ? '0.15' : '0.25',
+        st = n => `\t\t<${n}>\n\t\t\t<deadzone>${dz}</deadzone>\n\t\t\t<range>1</range>\n\t\t</${n}>\n`;
+      x =
+        '<?xml version="1.0" encoding="UTF-8"?>\n<emulated_controller>\n' +
+        `\t<type>${xmlEsc(d.type)}</type>\n` +
+        (d.type === 'Wii U GamePad' ? '\t<toggle_display>0</toggle_display>\n' : '') +
+        `\t<controller>\n\t\t<api>${d.api}</api>\n\t\t<uuid>${xmlEsc(uuid)}</uuid>\n\t\t<display_name>${xmlEsc(name)}</display_name>\n` +
+        st('axis') +
+        st('rotation') +
+        st('trigger') +
+        '\t\t' +
+        mapXml(maps, '\t\t') +
+        '\n\t</controller>\n</emulated_controller>\n';
+    }
+    if (cur.configured) {
+      const bk = f + '.cosmou-backup';
+      if (!fs.existsSync(bk)) fs.copyFileSync(f, bk);
+    }
+    fs.writeFileSync(f, x);
+    return { ok: true, ...mapRead(slot) };
+  } catch (e) {
+    return { ok: false, error: friendly(e) };
+  }
+});
+
+// ---------- Updates & DLC: Cemu loads them from mlc01/usr/title/0005000e/<low> (update) and 0005000c/<low> (DLC) ----------
+const ADDON_KIND = { '0005000e': 'update', '0005000c': 'dlc', '00050000': 'game' };
+function titleMeta(dir) {
+  try {
+    const x = fs.readFileSync(path.join(dir, 'meta', 'meta.xml'), 'utf8'),
+      tid = tag(x, 'title_id').toLowerCase();
+    if (!/^[0-9a-f]{16}$/.test(tid)) return null;
+    return {
+      tid,
+      kind: ADDON_KIND[tid.slice(0, 8)] || '',
+      low: tid.slice(8),
+      version: parseInt(tag(x, 'title_version'), 10) || 0,
+      title: tag(x, 'longname_en').replace(/\s+/g, ' '),
+    };
+  } catch {
+    return null;
+  }
+}
+// title ID of a NUS-format folder (title.tmd + .app files): 8 bytes at 0x18C of the TMD
+function nusTid(dir) {
+  try {
+    const fd = fs.openSync(path.join(dir, 'title.tmd'), 'r'),
+      b = Buffer.alloc(8);
+    fs.readSync(fd, b, 0, 8, 0x18c);
+    fs.closeSync(fd);
+    return b.toString('hex');
+  } catch {
+    return '';
+  }
+}
+const titleDir = (mlc, kind, low) => path.join(mlc, 'usr', 'title', kind === 'update' ? '0005000e' : '0005000c', low);
+function installedAddons(mlc, low) {
+  const up = titleDir(mlc, 'update', low),
+    dlc = titleDir(mlc, 'dlc', low),
+    m = fs.existsSync(path.join(up, 'meta', 'meta.xml')) ? titleMeta(up) : null;
+  return { update: m ? m.version : null, dlc: fs.existsSync(dlc) && fs.readdirSync(dlc).length > 0 };
+}
+function findAddons(roots) {
+  const out = [],
+    seen = new Set();
+  const look = (dir, depth) => {
+    let list = [];
+    try {
+      list = fs.readdirSync(dir, { withFileTypes: true });
+    } catch {
+      return;
+    }
+    for (const e of list) {
+      if (!e.isDirectory()) continue;
+      const p = path.join(dir, e.name);
+      if (seen.has(p.toLowerCase())) continue;
+      if (fs.existsSync(path.join(p, 'meta', 'meta.xml'))) {
+        seen.add(p.toLowerCase());
+        const m = titleMeta(p);
+        if (m && (m.kind === 'update' || m.kind === 'dlc')) out.push({ ...m, dir: p, format: 'folder' });
+        continue; // never look inside a title
+      }
+      if (fs.existsSync(path.join(p, 'title.tmd'))) {
+        seen.add(p.toLowerCase());
+        const tid = nusTid(p),
+          kind = ADDON_KIND[tid.slice(0, 8)];
+        if (kind === 'update' || kind === 'dlc')
+          out.push({ tid, kind, low: tid.slice(8), version: null, title: e.name, dir: p, format: 'nus' });
+        continue;
+      }
+      if (depth < 2) look(p, depth + 1);
+    }
+  };
+  for (const r of roots) if (r && fs.existsSync(r)) look(r, 0);
+  return out;
+}
+function addonRoots() {
+  const s = read();
+  return [...new Set([s.gamesDir, ...(Array.isArray(s.addonDirs) ? s.addonDirs : [])].filter(x => typeof x === 'string' && x))];
+}
+function addonsInfo(gameLows) {
+  const s = read(),
+    mlc = mlcDir(s.cemuPath);
+  if (!mlc) return { supported: false, roots: addonRoots(), installed: {}, found: [] };
+  const found = findAddons(addonRoots()),
+    installed = {},
+    lows = new Set(
+      [...found.map(f => f.low), ...(Array.isArray(gameLows) ? gameLows.slice(0, 2000) : [])].filter(l =>
+        /^[0-9a-f]{8}$/.test(l),
+      ),
+    );
+  for (const low of lows) installed[low] = installedAddons(mlc, low);
+  for (const f of found) {
+    const i = installed[f.low];
+    f.state =
+      f.format === 'nus'
+        ? 'nus'
+        : f.kind === 'dlc'
+          ? i.dlc
+            ? 'installed'
+            : 'new'
+          : i.update === null
+            ? 'new'
+            : f.version > i.update
+              ? 'newer'
+              : 'installed';
+  }
+  return { supported: true, mlc, roots: addonRoots(), installed, found, busy: !!addonJob };
+}
+let addonJob = null;
+async function copyTree(src, dst, onBytes) {
+  await fs.promises.mkdir(dst, { recursive: true });
+  for (const e of await fs.promises.readdir(src, { withFileTypes: true })) {
+    const s = path.join(src, e.name),
+      d = path.join(dst, e.name);
+    if (e.isDirectory()) await copyTree(s, d, onBytes);
+    else if (e.isFile()) {
+      await fs.promises.copyFile(s, d);
+      onBytes((await fs.promises.stat(s)).size);
+    }
+  }
+}
+ipcMain.handle('addonsInfo', (_, lows) => {
+  try {
+    return addonsInfo(lows);
+  } catch (e) {
+    return { supported: false, roots: [], installed: {}, found: [], error: friendly(e) };
+  }
+});
+ipcMain.handle('addonsInstall', async (_, dir) => {
+  if (addonJob) return { ok: false, error: 'Another install is still running.' };
+  const s = read(),
+    mlc = mlcDir(s.cemuPath);
+  if (!mlc) return { ok: false, error: 'Cemu isn’t set up yet. Install Cemu and start it once first.' };
+  // only folders that the scan itself found can be installed
+  const f = typeof dir === 'string' && findAddons(addonRoots()).find(x => x.dir === dir);
+  if (!f) return { ok: false, error: 'This folder wasn’t found any more.' };
+  if (f.format === 'nus')
+    return {
+      ok: false,
+      error: 'This one is in NUS format (.app files). Install it in Cemu: File → Install game title, update or DLC.',
+    };
+  if (cemuRunning()) return { ok: false, error: 'Close Cemu first, then install.' };
+  const dst = titleDir(mlc, f.kind, f.low),
+    tmp = dst + '.cosmou-new',
+    old = dst + '.cosmou-old',
+    total = dirSize(f.dir);
+  let done = 0,
+    last = 0;
+  const send = force => {
+    const now = Date.now();
+    if (!force && now - last < 150) return;
+    last = now;
+    if (mainWin && !mainWin.isDestroyed())
+      mainWin.webContents.send('addon-progress', {
+        low: f.low,
+        kind: f.kind,
+        done,
+        total,
+        percent: total ? Math.min(100, Math.round((done / total) * 100)) : 0,
+      });
+  };
+  addonJob = f;
+  try {
+    await fs.promises.rm(tmp, { recursive: true, force: true });
+    // DLC can come in parts: start from what is already installed, the new files go on top
+    if (f.kind === 'dlc' && fs.existsSync(dst)) await copyTree(dst, tmp, () => {});
+    await copyTree(f.dir, tmp, n => {
+      done += n;
+      send();
+    });
+    // swap in one step, so a failed copy never leaves a half-installed title behind
+    await fs.promises.rm(old, { recursive: true, force: true });
+    if (fs.existsSync(dst)) await fs.promises.rename(dst, old);
+    await fs.promises.rename(tmp, dst);
+    await fs.promises.rm(old, { recursive: true, force: true });
+    send(true);
+    return { ok: true, kind: f.kind, version: f.version, low: f.low };
+  } catch (e) {
+    await fs.promises.rm(tmp, { recursive: true, force: true }).catch(() => {});
+    if (!fs.existsSync(dst) && fs.existsSync(old)) await fs.promises.rename(old, dst).catch(() => {});
+    return { ok: false, error: friendly(e) };
+  } finally {
+    addonJob = null;
+  }
+});
+ipcMain.handle('addonsAddFolder', async (_, lows) => {
+  const r = await dialog.showOpenDialog({ title: 'Choose a folder with updates or DLC', properties: ['openDirectory'] });
+  if (r.canceled) return addonsInfo(lows);
+  const p = r.filePaths[0],
+    s = read(),
+    // an update folder itself was picked: remember the folder it sits in
+    keep = fs.existsSync(path.join(p, 'meta', 'meta.xml')) || fs.existsSync(path.join(p, 'title.tmd')) ? path.dirname(p) : p;
+  write({ ...s, addonDirs: [...new Set([...(Array.isArray(s.addonDirs) ? s.addonDirs : []), keep])].slice(-10) });
+  return addonsInfo(lows);
+});
+ipcMain.handle('addonsForget', (_, dir, lows) => {
+  const s = read();
+  write({ ...s, addonDirs: (Array.isArray(s.addonDirs) ? s.addonDirs : []).filter(d => d !== dir) });
+  return addonsInfo(lows);
+});
+ipcMain.handle('addonsOpen', (_, low, kind) => {
+  const mlc = mlcDir(read().cemuPath);
+  if (!mlc) return '';
+  const d = /^[0-9a-f]{8}$/.test(String(low))
+    ? titleDir(mlc, kind === 'dlc' ? 'dlc' : 'update', low)
+    : path.join(mlc, 'usr', 'title');
+  return shell.openPath(fs.existsSync(d) ? d : path.join(mlc, 'usr', 'title'));
+});
+
+// ---------- Add to Steam: non-Steam shortcuts in userdata/<id>/config/shortcuts.vdf (binary VDF) ----------
+const CRC_T = Array.from({ length: 256 }, (_, n) => {
+  let c = n;
+  for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+  return c >>> 0;
+});
+const crc32 = s => {
+  let c = 0xffffffff;
+  for (const b of Buffer.from(s, 'utf8')) c = CRC_T[(c ^ b) & 0xff] ^ (c >>> 8);
+  return (c ^ 0xffffffff) >>> 0;
+};
+// the same id Steam and Steam ROM Manager use, so artwork in config/grid matches
+const steamAppId = (exe, name) => (crc32(exe + name) | 0x80000000) >>> 0;
+function vdfParse(buf) {
+  let i = 0;
+  const str = () => {
+    const e = buf.indexOf(0, i);
+    if (e < 0) throw new Error('Broken shortcuts file');
+    const s = buf.toString('utf8', i, e);
+    i = e + 1;
+    return s;
+  };
+  const map = () => {
+    const out = [];
+    for (;;) {
+      if (i >= buf.length) return out;
+      const t = buf[i++];
+      if (t === 8) return out;
+      const k = str();
+      if (t === 0) out.push([k, 0, map()]);
+      else if (t === 1) out.push([k, 1, str()]);
+      else if (t === 2) {
+        out.push([k, 2, buf.readInt32LE(i)]);
+        i += 4;
+      } else if (t === 3 || t === 4 || t === 6) {
+        out.push([k, t, Buffer.from(buf.subarray(i, i + 4))]);
+        i += 4;
+      } else if (t === 7 || t === 10) {
+        out.push([k, t, Buffer.from(buf.subarray(i, i + 8))]);
+        i += 8;
+      } else throw new Error('Unknown entry in shortcuts file');
+    }
+  };
+  return map();
+}
+function vdfWrite(list) {
+  const parts = [];
+  const w = l => {
+    for (const [k, t, v] of l) {
+      parts.push(Buffer.from([t]), Buffer.from(k + '\0', 'utf8'));
+      if (t === 0) w(v);
+      else if (t === 1) parts.push(Buffer.from(v + '\0', 'utf8'));
+      else if (t === 2) {
+        const b = Buffer.alloc(4);
+        b.writeInt32LE(v | 0);
+        parts.push(b);
+      } else parts.push(v);
+    }
+    parts.push(Buffer.from([8]));
+  };
+  w(list);
+  return Buffer.concat(parts);
+}
+const vget = (e, k) => {
+  const f = e.find(x => x[0].toLowerCase() === k.toLowerCase());
+  return f ? f[2] : undefined;
+};
+function steamRoot() {
+  if (process.platform === 'win32') {
+    try {
+      const o = execFileSync('reg', ['query', 'HKCU\\Software\\Valve\\Steam', '/v', 'SteamPath'], {
+        encoding: 'utf8',
+        timeout: 4000,
+        windowsHide: true,
+      });
+      const m = o.match(/SteamPath\s+REG_SZ\s+(.+)/);
+      if (m && fs.existsSync(m[1].trim())) return path.normalize(m[1].trim());
+    } catch {}
+  }
+  const tries =
+    process.platform === 'win32'
+      ? ['C:\\Program Files (x86)\\Steam', 'C:\\Program Files\\Steam']
+      : [path.join(os.homedir(), '.steam', 'steam'), path.join(os.homedir(), '.local', 'share', 'Steam')];
+  return tries.find(p => fs.existsSync(path.join(p, 'userdata'))) || '';
+}
+function steamUsers(root) {
+  const names = {};
+  try {
+    const x = fs.readFileSync(path.join(root, 'config', 'loginusers.vdf'), 'utf8');
+    for (const m of x.matchAll(/"(\d{17})"\s*\{([^}]*)\}/g)) {
+      const id = String(BigInt(m[1]) - 76561197960265728n),
+        f = {};
+      for (const k of m[2].matchAll(/"(\w+)"\s*"([^"]*)"/g)) f[k[1]] = k[2];
+      names[id] = { name: f.PersonaName || f.AccountName || '', recent: f.MostRecent === '1' || f.mostrecent === '1' };
+    }
+  } catch {}
+  let ids = [];
+  try {
+    ids = fs.readdirSync(path.join(root, 'userdata')).filter(d => /^\d+$/.test(d) && d !== '0');
+  } catch {}
+  return ids
+    .map(id => {
+      let at = 0;
+      try {
+        at = fs.statSync(path.join(root, 'userdata', id, 'config')).mtimeMs;
+      } catch {}
+      return { id, name: (names[id] && names[id].name) || 'Steam account ' + id, recent: !!(names[id] && names[id].recent), at };
+    })
+    .sort((a, b) => b.recent - a.recent || b.at - a.at);
+}
+const scFile = (root, user) => path.join(root, 'userdata', user, 'config', 'shortcuts.vdf');
+function readShortcuts(root, user) {
+  const f = scFile(root, user);
+  if (!fs.existsSync(f)) return [['shortcuts', 0, []]];
+  const top = vdfParse(fs.readFileSync(f));
+  if (!top.length || top[0][1] !== 0) throw new Error('Steam’s shortcuts file looks unusual, nothing was changed.');
+  return top;
+}
+function steamRunning() {
+  if (process.platform !== 'win32') return false;
+  try {
+    return /steam\.exe/i.test(
+      execFileSync('tasklist', ['/FI', 'IMAGENAME eq steam.exe', '/NH'], { encoding: 'utf8', timeout: 4000, windowsHide: true }),
+    );
+  } catch {
+    return false;
+  }
+}
+// how Steam starts CosmoU: the installed exe, the portable exe, or electron + app folder while developing
+function selfLaunch() {
+  const exe = process.env.PORTABLE_EXECUTABLE_FILE || process.execPath;
+  return { exe, dir: path.dirname(exe), pre: app.isPackaged ? '' : `"${app.getAppPath()}" ` };
+}
+const q = s => '"' + s + '"';
+function steamInfo(user) {
+  const root = steamRoot();
+  if (!root) return { found: false, users: [] };
+  const users = steamUsers(root),
+    u = users.find(x => x.id === user) || users[0];
+  const out = { found: true, root, users, user: u ? u.id : '', running: steamRunning(), have: [] };
+  if (!u) return out;
+  try {
+    const me = selfLaunch().exe.toLowerCase();
+    for (const [, , e] of readShortcuts(root, u.id)[0][2]) {
+      const exe = String(vget(e, 'Exe') || '')
+        .replace(/"/g, '')
+        .toLowerCase();
+      if (exe !== me) continue;
+      const opts = String(vget(e, 'LaunchOptions') || ''),
+        m = opts.match(/--play "([^"]+)"/);
+      out.have.push(m ? 'game:' + m[1].toLowerCase() : 'cosmou');
+    }
+  } catch (e) {
+    out.error = friendly(e);
+  }
+  return out;
+}
+// artwork only from CosmoU's own cover folders
+const fromUrl = u => {
+  try {
+    const p = u && /^file:/.test(u) ? path.resolve(require('url').fileURLToPath(u)) : '';
+    return p && [autoDir(), coversDir()].some(d => p.toLowerCase().startsWith(path.resolve(d).toLowerCase() + path.sep)) ? p : '';
+  } catch {
+    return '';
+  }
+};
+function addShortcuts(root, user, items, art) {
+  const top = readShortcuts(root, user),
+    list = top[0][2],
+    me = selfLaunch(),
+    grid = path.join(root, 'userdata', user, 'config', 'grid'),
+    added = [];
+  for (const it of items) {
+    const isApp = it.kind === 'cosmou',
+      name = isApp ? 'CosmoU' : String(it.name || '').slice(0, 120),
+      opts = me.pre + (isApp ? '' : '--play ' + q(it.path)),
+      exe = q(me.exe),
+      appid = steamAppId(exe, name);
+    if (!name || (!isApp && (typeof it.path !== 'string' || !fs.existsSync(it.path) || !fs.statSync(it.path).isFile()))) continue;
+    const icon = isApp ? me.exe : fromUrl(it.icon) || me.exe;
+    const entry = [
+      ['appid', 2, appid | 0],
+      ['AppName', 1, name],
+      ['Exe', 1, exe],
+      ['StartDir', 1, q(me.dir)],
+      ['icon', 1, icon],
+      ['ShortcutPath', 1, ''],
+      ['LaunchOptions', 1, opts],
+      ['IsHidden', 2, 0],
+      ['AllowDesktopConfig', 2, 1],
+      ['AllowOverlay', 2, 1],
+      ['OpenVR', 2, 0],
+      ['Devkit', 2, 0],
+      ['DevkitGameID', 1, ''],
+      ['DevkitOverrideAppID', 2, 0],
+      ['LastPlayTime', 2, 0],
+      ['FlatpakAppID', 1, ''],
+      ['tags', 0, [['0', 1, isApp ? 'CosmoU' : 'Wii U']]],
+    ];
+    // same game again: update it in place (keeps play time and the user's own tweaks)
+    const at = list.findIndex(([, , e]) => {
+      const o = String(vget(e, 'LaunchOptions') || '');
+      return (
+        String(vget(e, 'Exe') || '').toLowerCase() === exe.toLowerCase() &&
+        (isApp ? !/--play /.test(o) : o.toLowerCase() === opts.toLowerCase())
+      );
+    });
+    if (at >= 0) {
+      const old = list[at][2];
+      for (const [k, t, v] of entry) {
+        if (['LastPlayTime', 'IsHidden', 'tags', 'AllowOverlay', 'AllowDesktopConfig'].includes(k) && vget(old, k) !== undefined)
+          continue;
+        const f = old.find(x => x[0].toLowerCase() === k.toLowerCase());
+        if (f) {
+          f[1] = t;
+          f[2] = v;
+        } else old.push([k, t, v]);
+      }
+    } else list.push([String(list.length), 0, entry]);
+    if (art) {
+      fs.mkdirSync(grid, { recursive: true });
+      const put = (src, dst) => {
+        try {
+          if (src && fs.existsSync(src)) fs.copyFileSync(src, path.join(grid, dst + path.extname(src).toLowerCase()));
+        } catch {}
+      };
+      if (!isApp) {
+        put(fromUrl(it.cover), appid + 'p');
+        put(fromUrl(it.hero), appid + '_hero');
+        put(fromUrl(it.hero), String(appid));
+      }
+    }
+    added.push(name);
+  }
+  // keep the keys 0, 1, 2 … in order
+  list.forEach((e, i) => (e[0] = String(i)));
+  const f = scFile(root, user);
+  fs.mkdirSync(path.dirname(f), { recursive: true });
+  if (fs.existsSync(f) && !fs.existsSync(f + '.cosmou-backup')) fs.copyFileSync(f, f + '.cosmou-backup');
+  fs.writeFileSync(f, vdfWrite(top));
+  return added;
+}
+const waitFor = async (test, ms) => {
+  for (let t = 0; t < ms; t += 500) {
+    if (test()) return true;
+    await new Promise(r => setTimeout(r, 500));
+  }
+  return test();
+};
+ipcMain.handle('steamInfo', (_, user) => steamInfo(typeof user === 'string' ? user : ''));
+ipcMain.handle('steamAdd', async (_, d) => {
+  try {
+    const root = steamRoot();
+    if (!root) return { ok: false, error: 'Steam wasn’t found on this PC.' };
+    const users = steamUsers(root),
+      u = users.find(x => x.id === (d && d.user)) || users[0];
+    if (!u) return { ok: false, error: 'Sign in to Steam once, then try again.' };
+    const items = Array.isArray(d && d.items) ? d.items.slice(0, 500) : [];
+    if (!items.length) return { ok: false, error: 'Choose at least one entry.' };
+    const wasRunning = steamRunning();
+    // Steam rewrites shortcuts.vdf when it quits, so it has to be closed while CosmoU writes the file
+    if (wasRunning) {
+      if (!d.restart) return { ok: false, needRestart: true };
+      spawn(path.join(root, 'steam.exe'), ['-shutdown'], { detached: true, stdio: 'ignore' }).unref();
+      if (!(await waitFor(() => !steamRunning(), 30000)))
+        return { ok: false, error: 'Steam didn’t close. Close it yourself and try again.' };
+      await new Promise(r => setTimeout(r, 1500));
+    }
+    const added = addShortcuts(root, u.id, items, d.art !== false);
+    if (wasRunning) spawn(path.join(root, 'steam.exe'), [], { detached: true, stdio: 'ignore' }).unref();
+    return { ok: true, added, restarted: wasRunning };
+  } catch (e) {
+    return { ok: false, error: friendly(e) };
+  }
+});
+
+// ---------- Started from a Steam shortcut: CosmoU.exe --play "<game path>" ----------
+const playArg = (() => {
+  const a = process.argv,
+    i = a.indexOf('--play');
+  return i >= 0 && typeof a[i + 1] === 'string' ? a[i + 1] : '';
+})();
+ipcMain.on('launchArg', e => (e.returnValue = playArg));
+ipcMain.on('appVersion', e => (e.returnValue = app.getVersion()));

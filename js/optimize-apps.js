@@ -6,7 +6,8 @@ $('#dao').onclick = async () => {
   const gpu = gpuName(),
     b = $('#dao');
   b.disabled = true;
-  b.textContent = 'Optimizing…';
+  const bl = b.querySelector('b') || b;
+  bl.textContent = 'Optimizing…';
   let r;
   if (window.api) r = await api.autoOptimize(g.tid || '', g.name, g.tid || g.name, gpu);
   else {
@@ -29,7 +30,7 @@ $('#dao').onclick = async () => {
     }
   }
   b.disabled = false;
-  b.textContent = 'Auto-optimize';
+  bl.textContent = 'Auto-optimize';
   if (r.settings) cfg = r.settings;
   if (sel !== g.name) return;
   qTiles(g);

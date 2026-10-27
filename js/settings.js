@@ -1,4 +1,4 @@
-// CosmoU – Quick quality, Graphics settings window (graphics, audio, overlay, input) and the About box.
+// CosmoU – Quick quality and the Settings window: categories on the left, search, Cemu's graphics, audio, overlay and input.
 const QUALITY = {
   Native: [1280, 720],
   Performance: [960, 540],
@@ -43,8 +43,7 @@ function startToast(g, r) {
   const ok = !r.note || r.note === 'applied' || r.note === 'nearest' || r.note === 'app';
   toast(r.note && M[r.note] ? M[r.note] : g.name + ' is starting…', ok ? 3500 : 8000);
 }
-let tab = 'graphics',
-  cs = { found: false, current: {}, overrides: {}, defaultQuality: '' };
+let cs = { found: false, current: {}, overrides: {}, defaultQuality: '' };
 const POS = [
   ['Disabled', 0],
   ['Top left', 1],
@@ -139,7 +138,7 @@ const SCHEMA = {
     B('Notifications', 'ntFriend', 'Friend list'),
   ],
 };
-function ctl(it) {
+function ctl(it, t) {
   const val = () => (it.k in (cs.overrides || {}) ? cs.overrides[it.k] : cs.current[it.k]);
   const row = document.createElement('div');
   row.className = 'set';
@@ -154,10 +153,12 @@ function ctl(it) {
     lab.append(sm);
   }
   row.append(lab);
+  row.dataset.k = (it.g + ' ' + (it.k || '')).toLowerCase();
   const set = async v => {
     if (window.api) cs = await api.setCemuSetting(it.k, v);
     else cs.overrides = { ...cs.overrides, [it.k]: v };
-    renderPane(tab);
+    renderPane(t);
+    sxRefilter();
   };
   let c;
   if (it.type === 'seg') {
@@ -174,6 +175,9 @@ function ctl(it) {
     c = document.createElement('button');
     c.className = 'tg' + (val() ? ' on' : '');
     c.textContent = val() ? 'On' : 'Off';
+    c.setAttribute('role', 'switch');
+    c.setAttribute('aria-checked', String(!!val()));
+    c.setAttribute('aria-label', it.label);
     c.onclick = () => set(!val());
   } else if (it.type === 'sel') {
     c = document.createElement('select');
@@ -185,6 +189,7 @@ function ctl(it) {
       c.append(o);
     }
     c.value = String(val() ?? it.opts[0][1]);
+    c.setAttribute('aria-label', it.label);
     c.onchange = () => set(+c.value);
   } else {
     c = document.createElement('div');
@@ -195,6 +200,7 @@ function ctl(it) {
     r.max = it.max;
     r.step = it.step;
     r.value = val() ?? it.max;
+    r.setAttribute('aria-label', it.label);
     const o = document.createElement('output');
     o.textContent = r.value + it.unit;
     r.oninput = () => {
@@ -344,12 +350,16 @@ async function renderInput(box) {
   box.append(tabs);
   const g = document.createElement('div');
   g.className = 'grp';
-  if (!i.configured)
-    g.append(
-      row('Not set up yet', 'Cemu has no settings for this controller. Assign it once in Cemu, then it appears here.', []),
-    );
+  if (!i.configured) g.append(row('Not set up yet', 'Press “Map buttons” below to set this controller up right here.', []));
   g.append(row('Emulated controller', 'What the game sees', sel(i.types, IN_TYPE_LABEL, i.type, 'type')));
   g.append(row('Controller API', 'How your device is read', sel(i.apis, IN_API_LABEL, i.api, 'api')));
+  g.append(
+    row(
+      'Buttons',
+      'A, B, sticks, D-pad … set right here, no need to open Cemu',
+      btn('Map buttons', 'main', () => openMapper(inSlot)),
+    ),
+  );
   box.append(g);
   const h2 = document.createElement('h3');
   h2.className = 'sh';
@@ -402,8 +412,10 @@ async function renderInput(box) {
   box.append(g2);
   const bw = document.createElement('div');
   bw.style.cssText = 'margin:18px 0 6px;display:flex;justify-content:center';
+  bw.style.gap = '10px';
+  bw.style.flexWrap = 'wrap';
   bw.append(
-    btn('Configure buttons in Cemu', 'main big', async () => {
+    btn('Open Cemu’s input settings', 'big', async () => {
       if (!window.api) {
         toast('This only works in the desktop app.');
         return;
@@ -415,7 +427,7 @@ async function renderInput(box) {
   box.append(bw);
   box.append(
     hint(
-      'The button mapping (A, B, sticks, D-pad …) is still done in Cemu. Close Cemu before changing things here, otherwise it overwrites them when it quits. If you change the API, map the buttons again in Cemu, because mappings belong to one API.',
+      'Map buttons sets A, B, sticks, D-pad and more for an Xbox controller, an SDL controller or the keyboard, without opening Cemu. Close Cemu before changing things here, otherwise it overwrites them when it quits. Motion controls and DSU servers are still set up in Cemu.',
     ),
   );
 }
@@ -435,7 +447,6 @@ function renderPane(t) {
       r.append(x, y);
       box.append(r);
     };
-    line('CosmoU', 'Version 0.10.0');
     line(
       'Cemu',
       cfg.cemuPath
@@ -469,7 +480,7 @@ function renderPane(t) {
       grp.className = 'grp';
       box.append(grp);
     }
-    grp.append(ctl(it));
+    grp.append(ctl(it, t));
   }
   if (t === 'graphics') {
     gqTiles();
@@ -479,14 +490,352 @@ function renderPane(t) {
     $('#gnote').hidden = false;
   }
 }
-async function openSettings() {
-  fill();
-  if (window.api) cfg = await api.getSettings();
-  renderPane('about');
-  $('#dlg').showModal();
+
+// ================= The Settings window =================
+const APP_VERSION = (window.api && api.appVersion) || '0.11.2';
+const SX_ICON = {
+  general:
+    '<svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="11" fill="none" stroke="#fff" stroke-width="3.4"/><circle cx="16" cy="16" r="3.2" fill="#fff"/></svg>',
+  look: '<svg viewBox="0 0 32 32"><path fill="#fff" d="M16 4C9.4 4 4 9 4 15.4 4 21 8.6 25 13.6 25c1.6 0 2.2-1 2.2-2 0-1.4-1.2-1.8-1.2-3.2 0-1.3 1-2.2 2.4-2.2h3.2C25 17.6 28 15 28 11.6 28 7.2 22.6 4 16 4z"/><g fill="#e57ac0"><circle cx="10" cy="14" r="2"/><circle cx="14" cy="9.2" r="2"/><circle cx="20.2" cy="9.4" r="2"/></g></svg>',
+  graphics:
+    '<svg viewBox="0 0 32 32"><rect x="4" y="6" width="24" height="16" rx="3" fill="none" stroke="#fff" stroke-width="3"/><path d="M11 27h10M16 22v5" stroke="#fff" stroke-width="3" stroke-linecap="round"/><path fill="#fff" d="m16 9.5 1.3 2.7 2.9.4-2.1 2 .5 2.9-2.6-1.4-2.6 1.4.5-2.9-2.1-2 2.9-.4z"/></svg>',
+  sound:
+    '<svg viewBox="0 0 32 32"><path fill="#fff" d="M5 12.5h5l7-6v19l-7-6H5z"/><path d="M21 11.5a6.5 6.5 0 0 1 0 9M24.5 8a11 11 0 0 1 0 16" fill="none" stroke="#fff" stroke-width="2.8" stroke-linecap="round"/></svg>',
+  overlay:
+    '<svg viewBox="0 0 32 32"><path d="M5 23a11 11 0 0 1 22 0" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round"/><path d="m16 23 5.5-7" stroke="#fff" stroke-width="3" stroke-linecap="round"/><circle cx="16" cy="23" r="2.4" fill="#fff"/></svg>',
+  controls:
+    '<svg viewBox="0 0 32 32"><rect x="3" y="9" width="26" height="15" rx="5" fill="#fff"/><rect x="11" y="11.5" width="10" height="7.5" rx="1.2" fill="#16b3d9"/><circle cx="7" cy="16.5" r="1.8" fill="#16b3d9"/><circle cx="25" cy="16.5" r="1.8" fill="#16b3d9"/></svg>',
+  plaza:
+    '<svg viewBox="0 0 32 32"><circle cx="16" cy="12" r="7.5" fill="#fff"/><path d="M6 28c1-6 5-9 10-9s9 3 10 9z" fill="#fff"/><circle cx="13.3" cy="12" r="1.3" fill="#3aa86b"/><circle cx="18.7" cy="12" r="1.3" fill="#3aa86b"/></svg>',
+  data: '<svg viewBox="0 0 32 32"><path fill="#fff" d="M6 6.5A2.5 2.5 0 0 1 8.5 4h12.6l4.9 4.9v16.6a2.5 2.5 0 0 1-2.5 2.5h-15A2.5 2.5 0 0 1 6 25.5z"/><rect x="10" y="6.5" width="9" height="6" rx="1" fill="#e0a91e"/><rect x="10" y="17" width="12" height="7.5" rx="1.2" fill="#e0a91e"/></svg>',
+  about:
+    '<svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="12" fill="none" stroke="#fff" stroke-width="3"/><circle cx="16" cy="10.4" r="2" fill="#fff"/><path d="M16 15v8" stroke="#fff" stroke-width="3.2" stroke-linecap="round"/></svg>',
+};
+// [id, name, description, color, Cemu pane that lives inside it]
+const SX = [
+  ['general', 'Cemu & Games', 'Cemu, your games folder, covers and your library', '#1e8fe0', ''],
+  ['look', 'Appearance', 'Theme, light or dark and how the views look', '#e57ac0', ''],
+  ['graphics', 'Graphics', 'How Cemu draws your games', '#8a6cf0', 'graphics'],
+  ['sound', 'Sound & Music', 'Menu music, UI sounds and the game volume', '#f29a3c', 'audio'],
+  ['overlay', 'Overlay', 'FPS, usage and notifications while you play', '#5ab55e', 'overlay'],
+  ['controls', 'Controllers & TV', 'Map buttons, controller profiles and TV mode', '#16b3d9', 'input'],
+  ['plaza', 'Buddies & Plaza', 'Your buddies, their posts and the greeting at start', '#3aa86b', ''],
+  ['data', 'Saves & Data', 'Save backups, play time and your settings file', '#e0a91e', ''],
+  ['about', 'About', 'Version, updates, feedback and the community', '#8b959e', 'about'],
+];
+const sxOf = id => SX.find(c => c[0] === id) || SX[0];
+let sxCat = 'general';
+try {
+  const c = localStorage.getItem('cosmou.setCat');
+  if (SX.some(x => x[0] === c)) sxCat = c;
+} catch {}
+(function sxBuild() {
+  const nav = $('#sxnav');
+  for (const [id, name, , col] of SX) {
+    const b = document.createElement('button'),
+      ic = document.createElement('span'),
+      t = document.createElement('span'),
+      n = document.createElement('i');
+    b.type = 'button';
+    b.dataset.c = id;
+    b.setAttribute('role', 'tab');
+    b.setAttribute('aria-controls', 'sxbd');
+    ic.className = 'ci';
+    ic.style.setProperty('--c', col);
+    ic.innerHTML = SX_ICON[id];
+    t.textContent = name;
+    n.className = 'n';
+    b.append(ic, t, n);
+    b.onclick = () => {
+      if ($('#sq').value) sxClear();
+      sxShow(id);
+    };
+    nav.append(b);
+  }
+  // arrow keys walk through the categories
+  nav.addEventListener('keydown', e => {
+    const d = { ArrowDown: 1, ArrowUp: -1 }[e.key];
+    if (!d) return;
+    e.preventDefault();
+    sxStep(d, true);
+  });
+  $('#sxver').textContent = 'CosmoU ' + APP_VERSION;
+})();
+// fill a category's live content (Cemu values, controllers, status) when it is shown
+function sxRender(id) {
+  const c = sxOf(id);
+  if (c[4]) {
+    if (c[4] === 'input') inInfo = null;
+    renderPane(c[4]);
+  }
+  if (id === 'general') sxStatus();
+  if (id === 'about') sxAbout();
+  if (id === 'sound') sxSound();
+  if (id === 'plaza') sxPlaza();
 }
-async function openGraphics() {
-  if (window.api) cs = await api.cemuSettingsGet();
+function sxShow(id, focusNav) {
+  const c = sxOf(id);
+  sxCat = c[0];
+  try {
+    localStorage.setItem('cosmou.setCat', sxCat);
+  } catch {}
+  document.querySelectorAll('#sxnav button').forEach(b => {
+    const on = b.dataset.c === sxCat;
+    b.classList.toggle('on', on);
+    b.setAttribute('aria-selected', String(on));
+    b.tabIndex = on ? 0 : -1;
+  });
+  document.querySelectorAll('#sxbd .pane').forEach(p => p.classList.toggle('on', p.dataset.c === sxCat));
+  $('#sxt').textContent = c[1];
+  $('#sxd').textContent = c[2];
+  // reset only where a whole page of Cemu values lives
+  $('#rst').hidden = !(c[0] === 'graphics' || c[0] === 'overlay');
+  sxRender(sxCat);
+  $('#sxbd').scrollTop = 0;
+  if (focusNav) document.querySelector('#sxnav button.on').focus();
+}
+function sxStep(d, focusNav) {
+  const i = SX.findIndex(c => c[0] === sxCat);
+  sxShow(SX[(i + d + SX.length) % SX.length][0], focusNav);
+  blip('move');
+}
+// the small status cards on top of Cemu & Games
+function sxStatus() {
+  const box = $('#sxstat'),
+    n = games.filter(g => g.kind !== 'app').length,
+    apps = games.filter(g => g.kind === 'app').length,
+    pt = (typeof playLog === 'object' && playLog && playLog.playtime) || {},
+    sec = Object.values(pt).reduce((a, p) => a + (p.sec || 0), 0);
+  const card = (ok, title, sub) => {
+    const d = document.createElement('div'),
+      i = document.createElement('i'),
+      b = document.createElement('b'),
+      s = document.createElement('small');
+    d.className = 'st ' + (ok ? 'ok' : 'warn');
+    i.textContent = ok ? '✓' : '!';
+    b.textContent = title;
+    s.textContent = sub;
+    d.append(i, b, s);
+    return d;
+  };
+  box.replaceChildren(
+    card(
+      !!cfg.cemuPath,
+      cfg.cemuPath ? 'Cemu is ready' : 'Cemu is missing',
+      cfg.cemuPath ? cfg.cemuVersion || 'Installed' : 'Download it below',
+    ),
+    card(
+      n > 0,
+      n ? `${n} ${n === 1 ? 'game' : 'games'}` : 'No games yet',
+      cfg.gamesDir ? (apps ? `+ ${apps} other apps` : 'In your games folder') : 'Choose a games folder',
+    ),
+    card(true, sec ? fmtDur(sec) : 'No play time yet', 'Played with CosmoU'),
+  );
+}
+// the status cards on top of Buddies & Plaza
+function sxPlaza() {
+  const box = $('#sxpstat'),
+    nb = (typeof buddies !== 'undefined' && buddies.length) || 0,
+    np = (typeof posts !== 'undefined' && posts.length) || 0,
+    hi = $('#hlo').classList.contains('on');
+  const card = (ok, title, sub) => {
+    const d = document.createElement('div'),
+      i = document.createElement('i'),
+      b = document.createElement('b'),
+      s = document.createElement('small');
+    d.className = 'st ' + (ok ? 'ok' : 'warn');
+    i.textContent = ok ? '✓' : '+';
+    b.textContent = title;
+    s.textContent = sub;
+    d.append(i, b, s);
+    return d;
+  };
+  box.replaceChildren(
+    card(
+      nb > 0,
+      nb ? `${nb} ${nb === 1 ? 'buddy' : 'buddies'}` : 'No buddies yet',
+      nb ? 'Walking around the Plaza' : 'Open the Buddy maker',
+    ),
+    card(
+      np > 0,
+      np ? `${np} ${np === 1 ? 'post' : 'posts'}` : 'No posts yet',
+      np ? 'Shown as speech bubbles' : 'Write one below',
+    ),
+    card(hi, hi ? 'Greeting on' : 'Greeting off', hi ? 'Your buddy says hello at start' : 'Turn it on below'),
+  );
+}
+function sxAbout() {
+  const box = $('#sxabout');
+  if (box.childElementCount) return;
+  const img = document.createElement('img'),
+    tx = document.createElement('div'),
+    h = document.createElement('b'),
+    v = document.createElement('small'),
+    d = document.createElement('span');
+  img.src = 'build/icon.png';
+  img.alt = '';
+  h.textContent = 'CosmoU';
+  v.textContent = 'Version ' + APP_VERSION;
+  d.textContent = 'The Wii U-style launcher for Cemu · free and open source';
+  tx.append(h, v, d);
+  box.append(img, tx);
+}
+// ---------- search across every category ----------
+let sxRendered = false;
+function sxRefilter() {
+  if ($('#sq').value) sxSearch($('#sq').value);
+}
+function sxClear() {
+  $('#sq').value = '';
+  sxSearch('');
+}
+function sxSearch(q) {
+  const bd = $('#sxbd'),
+    words = q.toLowerCase().trim().split(/\s+/).filter(Boolean);
+  bd.classList.toggle('sx-search', words.length > 0);
+  $('#sxnav').classList.toggle('searching', words.length > 0);
+  if (!words.length) {
+    bd.querySelectorAll('[data-hit]').forEach(e => e.removeAttribute('data-hit'));
+    document.querySelectorAll('#sxnav .n').forEach(n => (n.textContent = ''));
+    $('#sxnone').hidden = true;
+    $('#sxt').textContent = sxOf(sxCat)[1];
+    $('#sxd').textContent = sxOf(sxCat)[2];
+    $('#rst').hidden = !(sxCat === 'graphics' || sxCat === 'overlay');
+    return;
+  }
+  // the Cemu panes are filled on demand: fill them all once for searching
+  if (!sxRendered) {
+    sxRendered = true;
+    for (const [id] of SX) if (id !== sxCat) sxRender(id);
+  }
+  let total = 0;
+  for (const pane of bd.querySelectorAll('.pane')) {
+    let n = 0;
+    for (const row of pane.querySelectorAll('.set')) {
+      const text = (row.textContent + ' ' + (row.dataset.k || '')).toLowerCase(),
+        hit = words.every(w => text.includes(w));
+      row.dataset.hit = hit ? '1' : '0';
+      if (hit) n++;
+    }
+    for (const g of pane.querySelectorAll('.grp')) g.dataset.hit = g.querySelector('.set[data-hit="1"]') ? '1' : '0';
+    pane.dataset.hit = n ? '1' : '0';
+    const nb = document.querySelector(`#sxnav button[data-c="${pane.dataset.c}"] .n`);
+    if (nb) nb.textContent = n || '';
+    total += n;
+  }
+  $('#sxt').textContent = total ? `${total} ${total === 1 ? 'setting' : 'settings'} found` : 'Nothing found';
+  $('#sxd').textContent = `Results for “${q.trim()}”`;
+  $('#rst').hidden = true;
+  $('#sxnone').hidden = total > 0;
+  $('#sxnone').textContent = `No setting matches “${q.trim()}”. Try a shorter word like “music”, “theme” or “controller”.`;
+}
+$('#sq').addEventListener('input', () => sxSearch($('#sq').value));
+$('#sq').addEventListener('keydown', e => {
+  if (e.key === 'Escape' && $('#sq').value) {
+    e.preventDefault();
+    e.stopPropagation();
+    sxClear();
+  } else if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    sxFocusContent();
+  }
+});
+// a click on a category title in the results jumps to that category
+$('#sxbd').addEventListener('click', e => {
+  const ph = e.target.closest('.sx-ph');
+  if (!ph) return;
+  const id = ph.parentNode.dataset.c;
+  sxClear();
+  sxShow(id);
+});
+$('#dlg').addEventListener('cancel', e => {
+  if ($('#sq').value) {
+    e.preventDefault();
+    sxClear();
+  }
+});
+addEventListener('keydown', e => {
+  if (!$('#dlg').open) {
+    // Ctrl + , opens the settings from anywhere
+    if (e.key === ',' && (e.ctrlKey || e.metaKey) && !document.querySelector('dialog[open]')) {
+      e.preventDefault();
+      openSettings();
+    }
+    return;
+  }
+  if (
+    (e.key === 'f' && (e.ctrlKey || e.metaKey)) ||
+    (e.key === '/' && !/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName))
+  ) {
+    e.preventDefault();
+    $('#sq').focus();
+    $('#sq').select();
+  }
+});
+function sxFocusNav() {
+  const b = document.querySelector('#sxnav button.on');
+  if (b) b.focus();
+}
+function sxFocusContent() {
+  const pane = $('#sxbd'),
+    f = [...pane.querySelectorAll('button, input, select')].find(e => !e.disabled && e.offsetParent !== null);
+  if (f) {
+    f.focus();
+    f.scrollIntoView({ block: 'nearest' });
+  }
+}
+// ---------- Sound & Music rows ----------
+function sxSound() {
+  const v = Math.round(musicVol() * 100);
+  $('#mvol').value = v;
+  $('#mvolo').textContent = v + '%';
+  $('#mreset').disabled = !!musicBuiltin;
+  musicUi();
+}
+$('#mvol').oninput = () => {
+  const v = +$('#mvol').value;
+  $('#mvolo').textContent = v + '%';
+  try {
+    localStorage.setItem('cosmou.musicVol', String(v));
+  } catch {}
+  if (bgMusic) bgMusic.volume = v / 100;
+};
+$('#mpick').onclick = async () => {
+  if (!need()) return;
+  const r = await api.pickMusic();
+  if (!r) return;
+  musicBuiltin = false;
+  setMusic(r);
+  musicOn = true;
+  try {
+    localStorage.setItem('cosmou.music', 'true');
+  } catch {}
+  syncMusic();
+  sxSound();
+  toast('✓ Music: ' + r.name);
+};
+$('#mreset').onclick = async () => {
+  if (!need()) return;
+  await api.resetMusic();
+  await reloadMusic();
+  syncMusic();
+  sxSound();
+  toast('✓ Back to the CosmoU music for your theme');
+};
+// on/off buttons are switches: keep aria-checked in step with their look
+const sxSw = new MutationObserver(list => {
+  for (const m of list) m.target.setAttribute('aria-checked', String(m.target.classList.contains('on')));
+});
+document.querySelectorAll('#dlg .tg').forEach(t => {
+  t.setAttribute('role', 'switch');
+  t.setAttribute('aria-label', t.closest('.set').querySelector('strong').textContent);
+  t.setAttribute('aria-checked', String(t.classList.contains('on')));
+  sxSw.observe(t, { attributes: true, attributeFilter: ['class'] });
+});
+
+async function openSettings(cat) {
+  fill();
+  if (window.api) [cfg, cs] = await Promise.all([api.getSettings(), api.cemuSettingsGet()]);
   else if (!cs.found)
     cs = {
       found: true,
@@ -510,24 +859,14 @@ async function openGraphics() {
         ntFriend: true,
       },
     };
-  showTab(tab);
-  $('#gdlg').showModal();
-  tind();
+  fill();
+  sxRendered = false;
+  sxClear();
+  sxShow(typeof cat === 'string' ? cat : sxCat);
+  if (!$('#dlg').open) $('#dlg').showModal();
+  sxFocusNav();
 }
-function tind() {
-  const b = document.querySelector('#tabs button.on'),
-    i = $('#tind');
-  if (b) {
-    i.style.left = b.offsetLeft + 'px';
-    i.style.width = b.offsetWidth + 'px';
-  }
-}
-function showTab(t) {
-  tab = t;
-  if (t === 'input') inInfo = null;
-  document.querySelectorAll('#tabs button').forEach(x => x.classList.toggle('on', x.dataset.t === t));
-  document.querySelectorAll('.pane').forEach(p => p.classList.toggle('on', p.dataset.p === t));
-  $('#rst').hidden = !SCHEMA[t];
-  renderPane(t);
-  tind();
+// older entry point: the Graphics settings are a category of the Settings now
+function openGraphics(cat = 'graphics') {
+  return openSettings(cat);
 }

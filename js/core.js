@@ -26,6 +26,14 @@ function syncMusic() {
   if (musicOn) bgMusic.play().catch(() => {});
   else bgMusic.pause();
 }
+// menu music volume, 0–1 (Settings → Sound & Music)
+function musicVol() {
+  try {
+    const v = localStorage.getItem('cosmou.musicVol');
+    if (v !== null && isFinite(+v)) return Math.max(0, Math.min(1, +v / 100));
+  } catch {}
+  return 0.35;
+}
 function musicUi() {
   $('#mt').textContent = musicOn ? 'On' : 'Off';
   $('#mt').classList.toggle('on', musicOn);
@@ -36,7 +44,7 @@ async function initMusic() {
   if (m && m.url) {
     bgMusic = new Audio(m.url);
     bgMusic.loop = true;
-    bgMusic.volume = 0.35;
+    bgMusic.volume = musicVol();
     musicName = m.name;
   }
   musicUi();
@@ -91,20 +99,31 @@ function paint(el, g, initials = true) {
     return;
   }
   const h = hue(g.name);
-  el.style.background = `linear-gradient(135deg,hsl(${h} 78% 66%),hsl(${(h + 55) % 360} 80% 48%))`;
+  // no cover: a generated box with a soft light, fine stripes, the initials and the full title
+  el.style.background =
+    `radial-gradient(120% 75% at 18% 0%, rgba(255,255,255,.34), transparent 56%),` +
+    `repeating-linear-gradient(135deg, rgba(255,255,255,.07) 0 10px, transparent 10px 22px),` +
+    `linear-gradient(135deg,hsl(${h} 72% 62%),hsl(${(h + 55) % 360} 78% 42%))`;
   if (initials) {
     const s = document.createElement('span');
     s.textContent = g.name
       .split(/\s+/)
+      .filter(w => /[\p{L}\p{N}]/u.test(w))
       .slice(0, 2)
-      .map(w => w[0])
+      .map(w => w.match(/[\p{L}\p{N}]/u)[0].toUpperCase())
       .join('');
     el.append(s);
+    if (el.classList.contains('art')) {
+      const t = document.createElement('small');
+      t.className = 'art-name';
+      t.textContent = g.name;
+      el.append(t);
+    }
   }
 }
 // Small Liquid Glass notifications in the bottom-right corner; they stack and fade out on their own.
 const WARN_RE = /(n’t|n't|\bnot\b|error|fail|first|only works|no longer|unknown|invalid|couldn|wrong|close cemu)/i;
-function toast(t, ms = 3500, type) {
+function toast(t, ms = 3500, type, action) {
   const box = $('#notes');
   if (!box) return;
   t = String(t || '');
@@ -117,6 +136,17 @@ function toast(t, ms = 3500, type) {
   ic.textContent = type === 'warn' ? '!' : type === 'info' ? 'i' : '✓';
   tx.textContent = t.replace(/^✓\s*/, '');
   n.append(ic, tx);
+  if (action) {
+    const b = document.createElement('button');
+    b.className = 'note-act';
+    b.textContent = action.label;
+    b.onclick = e => {
+      e.stopPropagation();
+      action.fn();
+      n.onclick();
+    };
+    n.append(b);
+  }
   box.append(n);
   while (box.children.length > 3) box.firstElementChild.remove();
   requestAnimationFrame(() => n.classList.add('on'));
@@ -129,13 +159,40 @@ function toast(t, ms = 3500, type) {
   setTimeout(kill, Math.max(2500, ms));
 }
 const cur = () => games.find(g => g.name === sel);
+// ---------- favorites, sorting and the "show" filter (menu: js/menus.js) ----------
+let favs = new Set(),
+  showFilter = 'all';
+try {
+  const f = JSON.parse(localStorage.getItem('cosmou.favs') || '[]');
+  if (Array.isArray(f)) favs = new Set(f.filter(x => typeof x === 'string'));
+  const so = localStorage.getItem('cosmou.sort');
+  if (['az', 'za', 'recent', 'most'].includes(so)) sortMode = so;
+  const sh = localStorage.getItem('cosmou.show');
+  if (['all', 'fav', 'wiiu', 'apps'].includes(sh)) showFilter = sh;
+} catch {}
+const isFav = name => favs.has(name);
+const SORT_LABEL = { az: 'A–Z', za: 'Z–A', recent: 'Recent', most: 'Most played' },
+  SHOW_LABEL = { all: 'All games', fav: 'Favorites', wiiu: 'Wii U games', apps: 'Other apps' };
+// seconds played (Daily Log) – 0 when the log isn't loaded yet
+const secOf = name =>
+  (typeof playLog === 'object' && playLog && playLog.playtime && playLog.playtime[name] && playLog.playtime[name].sec) || 0;
 function list() {
   const q = $('#q').value.trim().toLowerCase();
-  let l = games.filter(g => g.name.toLowerCase().includes(q));
+  let l = games.filter(g => g.name.toLowerCase().includes(q) || (g.tid && String(g.tid).toLowerCase().includes(q)));
   if (view === 'recent') l = l.filter(g => plays[g.name]);
-  const t = view === 'recent' || sortMode === 'recent';
+  if (showFilter === 'fav') l = l.filter(g => favs.has(g.name));
+  else if (showFilter === 'wiiu') l = l.filter(g => g.kind !== 'app');
+  else if (showFilter === 'apps') l = l.filter(g => g.kind === 'app');
+  const by = view === 'recent' ? 'recent' : sortMode,
+    az = (a, b) => a.name.localeCompare(b.name);
   return l.sort((a, b) =>
-    t ? (plays[b.name] || 0) - (plays[a.name] || 0) || a.name.localeCompare(b.name) : a.name.localeCompare(b.name),
+    by === 'recent'
+      ? (plays[b.name] || 0) - (plays[a.name] || 0) || az(a, b)
+      : by === 'most'
+        ? secOf(b.name) - secOf(a.name) || (plays[b.name] || 0) - (plays[a.name] || 0) || az(a, b)
+        : by === 'za'
+          ? az(b, a)
+          : az(a, b),
   );
 }
 function render() {
@@ -156,8 +213,10 @@ function render() {
     $('#hl').textContent = (plays[g.name] ? 'Recently played' : 'Selected') + ' · ' + g.format;
   }
   $('#st').textContent = view === 'recent' ? 'Recently played' : 'Library';
-  $('#count').textContent = l.length + (l.length === 1 ? ' game' : ' games');
-  $('#sort').textContent = sortMode === 'az' ? 'A–Z' : 'Recent';
+  const nf = l.filter(x => favs.has(x.name)).length;
+  $('#count').textContent = l.length + (l.length === 1 ? ' game' : ' games') + (nf && showFilter !== 'fav' ? ` · ${nf} ★` : '');
+  if (typeof sortUi === 'function') sortUi();
+  else $('#sort').textContent = SORT_LABEL[sortMode];
   const em = !l.length,
     q = $('#q').value.trim();
   $('#empty').hidden = !em;
@@ -166,6 +225,7 @@ function render() {
   $('#cf').hidden = mode !== 'covers' || em;
   $('#wu').hidden = mode !== 'wiiu' || em;
   document.body.classList.toggle('wiiu', mode === 'wiiu' && !em);
+  document.body.dataset.mode = mode;
   document.body.classList.toggle('wuhome', mode === 'wiiu' && !em && wuView === 'home');
   if (mode === 'covers') buildCovers(l);
   if (mode === 'wiiu' && !em && wuView === 'home') {
@@ -176,19 +236,34 @@ function render() {
     startMii();
   } else stopMii();
   if (em) {
-    $('#et').textContent = q ? 'No matches' : view === 'recent' ? 'Nothing played yet' : 'Your library is empty';
+    const filtered = showFilter !== 'all' && games.length;
+    $('#et').textContent = q
+      ? 'No matches'
+      : filtered
+        ? showFilter === 'fav'
+          ? 'No favorites yet'
+          : 'Nothing to show'
+        : view === 'recent'
+          ? 'Nothing played yet'
+          : 'Your library is empty';
     $('#ep').textContent = q
       ? 'Try a different title.'
-      : view === 'recent'
-        ? 'Games you launch will show up here.'
-        : 'Choose the folder with your Wii U games and they appear here.';
-    $('#ebtn').hidden = !!q || view === 'recent';
+      : filtered
+        ? showFilter === 'fav'
+          ? 'Right-click a game (or press F) and choose “Add to favorites”.'
+          : 'No games match “' + SHOW_LABEL[showFilter] + '”.'
+        : view === 'recent'
+          ? 'Games you launch will show up here.'
+          : 'Choose the folder with your Wii U games and they appear here.';
+    $('#ebtn').hidden = !!q || view === 'recent' || !!filtered;
+    if (typeof emptyExtra === 'function') emptyExtra(!q && filtered);
   }
   const gr = $('#grid');
   gr.replaceChildren();
   l.forEach((x, i) => {
     const t = document.createElement('button');
-    t.className = 'tile' + (x.name === sel ? ' on' : '');
+    t.className = 'tile' + (x.name === sel ? ' on' : '') + (favs.has(x.name) ? ' fav' : '');
+    t.dataset.g = x.name;
     t.style.setProperty('--i', Math.min(i, 14));
     t.style.setProperty('--c', glow(x));
     t.onpointerleave = () => {
@@ -203,6 +278,13 @@ function render() {
     const b = document.createElement('b');
     b.textContent = x.name;
     t.append(a, b);
+    if (favs.has(x.name)) {
+      const f = document.createElement('i');
+      f.className = 'fbadge';
+      f.textContent = '★';
+      f.title = 'Favorite';
+      t.append(f);
+    }
     if (x.name === sel) {
       const r = document.createElement('div');
       r.className = 'ring';
