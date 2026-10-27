@@ -147,8 +147,6 @@ function buildWiiU(l) {
 const mii = { on: false, list: [], last: 0, W: 0, H: 0, px: 0, py: 0, sel: '', fx: 0, fy: 0 };
 const FACE = ['#ffd9c2', '#cdeedd', '#d9d2f6', '#cfe7fa', '#fbeab4', '#f9cfe0'],
   BODY = ['#f29a86', '#7fcaa4', '#9b8fe0', '#6fb2e8', '#f0c85a', '#ee8fb6'];
-// how many buddies walk around the plaza, per theme
-const CROWD = { 'classic-wii': 12, plaza: 56 };
 const ds = (y, H) => Math.max(0.5, Math.min(1.35, 0.5 + (y / H - 0.12) * 1.05));
 function fitMii(reset) {
   const c = $('#wmii'),
@@ -158,9 +156,8 @@ function fitMii(reset) {
   c.width = mii.W * dpr;
   c.height = mii.H * dpr;
   c.getContext('2d').setTransform(dpr, 0, 0, dpr, 0, 0);
-  const n = CROWD[style] || 32;
-  if (reset || mii.list.length !== n)
-    mii.list = Array.from({ length: n }, (_, i) => {
+  if (reset || !mii.list.length)
+    mii.list = Array.from({ length: 32 }, (_, i) => {
       const x = mii.W * (0.05 + 0.9 * Math.random()),
         y = mii.H * (0.2 + 0.7 * Math.random());
       return {
