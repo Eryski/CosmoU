@@ -120,6 +120,10 @@
         <div class="acts"><button class="wplay" id="wplay">Play</button><button class="wdet" id="wdet">Details</button></div>
       </div>
     </section>
+    <canvas id="pzc" hidden></canvas>
+    <div class="wiibar" aria-hidden="true">
+      <div class="wclk" id="wclk"><b></b><small></small></div>
+    </div>
     <nav class="glass pill">
       <span id="ind"></span> <button data-v="lib" class="on">Library</button><button data-v="recent">Recently played</button
       ><button data-v="set">Settings</button>
@@ -173,18 +177,17 @@
           </div>
           <h3 class="sh">Appearance</h3>
           <div class="grp">
-            <div class="set">
-              <div class="lbl"><strong>Theme</strong><small>Follow Windows, or always light or dark</small></div>
-              <div class="seg" id="thm">
-                <button data-t="system">System</button><button data-t="light">Light</button><button data-t="dark">Dark</button>
+            <div class="set thset">
+              <div class="lbl">
+                <strong>Theme</strong><small>Choose how CosmoU looks. Every theme works with Covers, Grid and Wii U Look.</small>
               </div>
+              <div class="themes" id="themes" role="radiogroup" aria-label="Theme"></div>
+              <small class="thnote">Themes change colors, atmosphere and style. Your games and settings stay the same.</small>
             </div>
             <div class="set">
-              <div class="lbl">
-                <strong>Style</strong><small>Classic Wii U is opaque and glossy like the original console menu</small>
-              </div>
-              <div class="seg" id="sty">
-                <button data-s="glass">Liquid Glass</button><button data-s="classic">Classic Wii U</button>
+              <div class="lbl"><strong>Light or dark</strong><small>Follow Windows, or always light or dark</small></div>
+              <div class="seg" id="thm">
+                <button data-t="system">System</button><button data-t="light">Light</button><button data-t="dark">Dark</button>
               </div>
             </div>
             <div class="set">
@@ -532,6 +535,7 @@
     <script src="js/wiiu-home.js"></script>
     <script src="js/polish.js"></script>
     <script src="js/onboarding.js"></script>
+    <script src="js/themes.js"></script>
     <script src="js/app.js"></script>
   </body>
 </html>
