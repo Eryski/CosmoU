@@ -290,13 +290,16 @@ addEventListener('resize', () => {
     x = c.getContext('2d');
   if (matchMedia('(prefers-reduced-motion:reduce)').matches) return;
   let w, h;
-  const P = Array.from({ length: 26 }, () => ({
+  const P = Array.from({ length: 26 }, (_, i) => ({
     x: Math.random(),
     y: Math.random(),
     r: 1 + Math.random() * 2.2,
     v: 0.00008 + Math.random() * 0.00014,
     p: Math.random() * 6,
+    k: i % 4,
   }));
+  // Plaza theme: soft pastel confetti instead of white sparkles
+  const PASTEL = ['255,170,140', '255,160,195', '140,215,185', '255,214,120'];
   const fit = () => {
     w = c.width = innerWidth;
     h = c.height = innerHeight;
@@ -311,9 +314,10 @@ addEventListener('resize', () => {
       const a = 0.25 + 0.2 * Math.sin(n / 1400 + p.p);
       x.beginPath();
       x.arc(p.x * w + Math.sin(n / 2600 + p.p) * 14, p.y * h, p.r, 0, 7);
-      x.fillStyle = `rgba(255,255,255,${a})`;
+      const pz = style === 'plaza';
+      x.fillStyle = pz ? `rgba(${PASTEL[p.k]},${a + 0.35})` : `rgba(255,255,255,${a})`;
       x.shadowBlur = 10;
-      x.shadowColor = 'rgba(80,220,240,.8)';
+      x.shadowColor = pz ? 'rgba(255,190,150,.7)' : 'rgba(80,220,240,.8)';
       x.fill();
     }
     requestAnimationFrame(t);

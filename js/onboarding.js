@@ -97,6 +97,7 @@ document.querySelectorAll('#wzmusic button').forEach(
         const r = await api.pickMusic();
         if (!r) return;
         wz.music = 'file';
+        musicBuiltin = false;
         setMusic(r);
         musicOn = true;
       } else if (m === 'default') {
@@ -127,7 +128,7 @@ function setMusic(m) {
   }
 }
 async function reloadMusic() {
-  setMusic(window.api ? await api.getMusic() : null);
+  setMusic(await themedMusic(window.api ? await api.getMusic() : null));
 }
 $('#wzenter').onclick = async () => {
   if (window.api) cfg = await api.setSetupDone(true);

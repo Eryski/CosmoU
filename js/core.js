@@ -32,7 +32,7 @@ function musicUi() {
   $('#ms').textContent = bgMusic ? musicName : 'No music found – put a file in the music folder';
 }
 async function initMusic() {
-  const m = window.api ? await api.getMusic() : null;
+  const m = await themedMusic(window.api ? await api.getMusic() : null);
   if (m && m.url) {
     bgMusic = new Audio(m.url);
     bgMusic.loop = true;

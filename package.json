@@ -1,7 +1,7 @@
 {
  "name": "cosmou",
  "productName": "CosmoU",
- "version": "0.10.0",
+ "version": "0.11.0",
  "description": "CosmoU – a Wii U style launcher for Cemu",
  "main": "main.js",
  "scripts": {
@@ -32,6 +32,13 @@
    "build/icon.png"
   ],
   "extraResources": [
+   {
+    "from": "assets/music/themes",
+    "to": "music/themes",
+    "filter": [
+     "*.ogg"
+    ]
+   },
    {
     "from": "assets/music",
     "to": "music",

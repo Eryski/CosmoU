@@ -1,4 +1,4 @@
-// CosmoU – Feedback window, Liquid Glass / Classic Wii U style switch and controller navigation.
+// CosmoU – Feedback window and controller navigation.
 const DISCORD_URL = 'https://discord.gg/BZry7jGjr7';
 // --- Feedback ---
 function gpuName() {
@@ -30,10 +30,7 @@ async function openFeedback() {
     '- Graphic packs installed: ' + i.packs,
     '- Controllers set up in Cemu: ' + i.ctrl,
     '- Controller connected right now: ' + (pads.join(', ') || 'none'),
-    '- View / style: ' +
-      { covers: 'Covers', grid: 'Grid', wiiu: 'Wii U Look' }[mode] +
-      ' · ' +
-      (style === 'classic' ? 'Classic Wii U' : 'Liquid Glass'),
+    '- View / theme: ' + { covers: 'Covers', grid: 'Grid', wiiu: 'Wii U Look' }[mode] + ' · ' + themeName(),
     '',
     'Did CosmoU find your games without manual setup? (yes / no / partly):',
     '',
@@ -78,29 +75,6 @@ $('#dsc').onclick = () => {
 $('#fbi').onclick = () => {
   if (need()) api.openIssue($('#fbtxt').value);
 };
-// --- Style: Liquid Glass or Classic Wii U ---
-let style = 'glass';
-try {
-  if (localStorage.getItem('cosmou.style') === 'classic') style = 'classic';
-} catch {}
-function applyStyle() {
-  document.body.classList.toggle('classic', style === 'classic');
-  document.querySelectorAll('#sty button').forEach(b => b.classList.toggle('on', b.dataset.s === style));
-  requestAnimationFrame(() => {
-    ind();
-    vind();
-  });
-}
-document.querySelectorAll('#sty button').forEach(
-  b =>
-    (b.onclick = () => {
-      style = b.dataset.s;
-      try {
-        localStorage.setItem('cosmou.style', style);
-      } catch {}
-      applyStyle();
-    }),
-);
 // --- Controller navigation (standard gamepad layout): D-pad / stick move, A play, B back, Y details, Start settings ---
 const pad = { prev: {}, next: {}, loop: false };
 function padTick(now) {

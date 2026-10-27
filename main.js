@@ -269,6 +269,7 @@ async function runBox() {
 
 app.whenReady().then(() => {
   fs.mkdirSync(coversDir(), { recursive: true });
+  installThemeMusic();
   applyTheme(read().theme);
   const win = new BrowserWindow({
     width: 1280,
@@ -358,12 +359,55 @@ ipcMain.handle('music', () => {
     path.join(process.resourcesPath || '', 'music'),
     path.join(__dirname, 'assets', 'music'),
   ];
-  for (const d of dirs) {
+  for (const [i, d] of dirs.entries()) {
     if (!fs.existsSync(d)) continue;
     const f = fs.readdirSync(d).find(n => /\.(mp3|ogg|wav|m4a|flac)$/i.test(n));
-    if (f) return { url: pathToFileURL(path.join(d, f)).href, name: f };
+    // builtin: the bundled tune, not the user's own file
+    if (f) return { url: pathToFileURL(path.join(d, f)).href, name: f, builtin: i > 0 };
   }
   return null;
+});
+// One original tune per theme, used while no own music file is chosen.
+// The tunes are copied to <userData>/music/themes on install and on every update, so people can find (and swap) them.
+const bundledThemeMusic = () =>
+  [path.join(process.resourcesPath || '', 'music', 'themes'), path.join(__dirname, 'assets', 'music', 'themes')].find(d =>
+    fs.existsSync(d),
+  );
+const userThemeMusic = () => path.join(app.getPath('userData'), 'music', 'themes');
+const sha1 = f => crypto.createHash('sha1').update(fs.readFileSync(f)).digest('hex');
+function installThemeMusic() {
+  try {
+    const src = bundledThemeMusic();
+    if (!src) return;
+    const dst = userThemeMusic(),
+      mark = path.join(dst, '.cosmou-bundled.json');
+    fs.mkdirSync(dst, { recursive: true });
+    let known = {};
+    try {
+      known = JSON.parse(fs.readFileSync(mark, 'utf8')) || {};
+    } catch {}
+    for (const f of fs.readdirSync(src).filter(n => /\.ogg$/i.test(n))) {
+      const to = path.join(dst, f),
+        h = sha1(path.join(src, f));
+      // copy when missing, or when it is still our earlier copy; a file the user replaced stays untouched
+      if (!fs.existsSync(to) || (known[f] && sha1(to) === known[f] && known[f] !== h)) fs.copyFileSync(path.join(src, f), to);
+      if (!fs.existsSync(to) || sha1(to) === h) known[f] = h;
+    }
+    fs.writeFileSync(mark, JSON.stringify(known, null, 1));
+  } catch {}
+}
+ipcMain.handle('themeMusic', (_, id) => {
+  if (!/^[a-z0-9-]+$/.test(String(id))) return null;
+  const u = userThemeMusic();
+  try {
+    const own =
+      fs.existsSync(u) &&
+      fs.readdirSync(u).find(n => n.toLowerCase().startsWith(id + '.') && /\.(mp3|ogg|wav|m4a|flac)$/i.test(n));
+    if (own) return { url: pathToFileURL(path.join(u, own)).href };
+  } catch {}
+  const d = bundledThemeMusic(),
+    f = d && path.join(d, id + '.ogg');
+  return f && fs.existsSync(f) ? { url: pathToFileURL(f).href } : null;
 });
 
 // ---------- Automatic Cemu download ----------

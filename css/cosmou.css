@@ -3557,3 +3557,1886 @@ html.dark .wz-card {
   visibility: visible;
   transition-delay: 0s;
 }
+
+/* ===================================================================
+   Themes: Liquid Glass (default), Wii U (= the opaque glossy base, body.classic),
+   Classic Wii and Plaza. A theme is the skin; the view (Covers, Grid, Wii U Look) stays the same.
+   =================================================================== */
+#pzc,
+.wiibar {
+  display: none;
+}
+
+/* --- Theme picker (Settings → Appearance) --- */
+.grp .set.thset {
+  flex-direction: column;
+  align-items: stretch;
+}
+.thset .lbl {
+  flex: none;
+}
+.themes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.thc {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px 8px 12px;
+  border-radius: 20px;
+  text-align: left;
+  background: var(--field);
+  box-shadow: inset 0 0 0 2px transparent;
+  transition:
+    box-shadow 0.25s,
+    background 0.25s,
+    transform 0.35s cubic-bezier(0.34, 1.6, 0.5, 1);
+}
+.thc:hover {
+  transform: translateY(-2px);
+}
+.thc.on {
+  background: var(--card);
+  box-shadow:
+    inset 0 0 0 2.5px var(--act2),
+    0 10px 22px -14px var(--shadow);
+}
+.thc.on::after {
+  content: '';
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--act2)
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6 12.5l4 4 8-9' fill='none' stroke='%23fff' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+    center/16px no-repeat;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  animation: chk 0.35s cubic-bezier(0.34, 1.8, 0.5, 1);
+}
+@keyframes chk {
+  from {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+}
+.thn {
+  padding: 0 6px;
+  font: 700 15px var(--head);
+  color: var(--ink);
+}
+.thd {
+  padding: 0 6px;
+  font-size: 12.5px;
+  line-height: 1.35;
+  color: var(--mute);
+}
+.thnote {
+  font-size: 12.5px;
+  color: var(--mute);
+}
+/* mini previews: a tiny window per theme, drawn with CSS (no screenshots) */
+.pv {
+  position: relative;
+  display: block;
+  aspect-ratio: 16 / 10;
+  margin-bottom: 6px;
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--pbg);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.07);
+}
+.pv i {
+  position: absolute;
+  display: block;
+}
+.pv-top {
+  left: 8%;
+  right: 8%;
+  top: 9%;
+  height: 9%;
+  border-radius: 99px;
+  background: var(--ptop);
+  box-shadow: var(--ptops, none);
+}
+.pv-t {
+  top: 28%;
+  width: 22%;
+  aspect-ratio: 1;
+  border-radius: var(--prad, 28%);
+  box-shadow: var(--pts, none);
+}
+.pv-t:nth-child(2) {
+  left: 10%;
+  background: var(--pt1);
+  rotate: var(--pr1, 0deg);
+}
+.pv-t:nth-child(3) {
+  left: 39%;
+  background: var(--pt2);
+  rotate: var(--pr2, 0deg);
+}
+.pv-t:nth-child(4) {
+  left: 68%;
+  background: var(--pt3);
+  rotate: var(--pr3, 0deg);
+}
+.pv-nav {
+  left: 30%;
+  right: 30%;
+  bottom: 8%;
+  height: 13%;
+  border-radius: 99px;
+  background: var(--pnav);
+  box-shadow: var(--pnavs, none);
+}
+.pv-x {
+  z-index: 2;
+}
+.pv-liquid-glass {
+  --pbg:
+    radial-gradient(55% 70% at 12% 8%, #9eeef6, transparent 70%), radial-gradient(55% 70% at 92% 30%, #d6ccff, transparent 70%),
+    radial-gradient(55% 60% at 50% 115%, #ffd9b4, transparent 70%), #f7f6f1;
+  --ptop: rgba(255, 255, 255, 0.62);
+  --ptops: inset 0 0 0 1px rgba(255, 255, 255, 0.9);
+  --pt1: linear-gradient(150deg, #8fe3ee, #36b8cf);
+  --pt2: linear-gradient(150deg, #ffc1cd, #f0839c);
+  --pt3: linear-gradient(150deg, #c6ec9e, #7cc46a);
+  --pts: inset 0 3px 3px rgba(255, 255, 255, 0.7), 0 6px 10px -5px rgba(30, 80, 120, 0.45);
+  --pnav: rgba(255, 255, 255, 0.66);
+  --pnavs: inset 0 0 0 1px rgba(255, 255, 255, 0.95), 0 5px 10px -5px rgba(30, 80, 120, 0.4);
+}
+.pv-liquid-glass .pv-x {
+  left: 31.5%;
+  bottom: 10%;
+  width: 12%;
+  height: 9%;
+  border-radius: 99px;
+  background: linear-gradient(180deg, #bff4fa, #3ccbe0);
+}
+.pv-wii-u {
+  --pbg:
+    repeating-linear-gradient(0deg, transparent 0 11px, rgba(140, 152, 162, 0.16) 11px 12px),
+    repeating-linear-gradient(90deg, transparent 0 11px, rgba(140, 152, 162, 0.16) 11px 12px), linear-gradient(#fafbfb, #e9ecee);
+  --ptop: linear-gradient(#fff 45%, #eef0f2 55%);
+  --ptops: 0 0 0 1px #cfd4d9;
+  --prad: 24%;
+  --pt1: linear-gradient(150deg, #8cc6f0, #3c8fd6);
+  --pt2: linear-gradient(150deg, #f7b2a6, #e4685a);
+  --pt3: linear-gradient(150deg, #b5e3a2, #5cb259);
+  --pts: 0 0 0 2px #fff, 0 0 0 3px #cfd4d9, 0 5px 8px -4px rgba(40, 50, 60, 0.4);
+  --pnav: linear-gradient(#fff 45%, #eef0f2 55%);
+  --pnavs: 0 0 0 1px #cfd4d9, 0 4px 8px -5px rgba(40, 50, 60, 0.45);
+}
+.pv-wii-u .pv-t:nth-child(2) {
+  box-shadow:
+    0 0 0 2px #fff,
+    0 0 0 4px #22a8e6,
+    0 5px 8px -4px rgba(21, 150, 214, 0.5);
+}
+.pv-wii-u .pv-x {
+  left: 31.5%;
+  bottom: 10%;
+  width: 12%;
+  height: 9%;
+  border-radius: 99px;
+  background: linear-gradient(180deg, #7fd6fa, #2aa9e6 50%, #1595d4 51%, #28a6e2);
+}
+.pv-classic-wii {
+  --pbg: repeating-linear-gradient(180deg, #fff 0 3px, #edf1f3 3px 4px);
+  --ptop: #fff;
+  --ptops: 0 0 0 1.5px #d3dbe0;
+  --prad: 16%;
+  --pt1: #b9e3f6;
+  --pt2: #dfe5e9;
+  --pt3: #dfe5e9;
+  --pts: inset 0 0 0 3px #fff, 0 0 0 1.5px #cdd6dc;
+  --pnav: transparent;
+}
+.pv-classic-wii .pv-t:nth-child(2) {
+  box-shadow:
+    inset 0 0 0 3px #fff,
+    0 0 0 2px #34bdef,
+    0 0 8px rgba(52, 189, 239, 0.6);
+}
+.pv-classic-wii .pv-nav {
+  left: -10%;
+  right: -10%;
+  bottom: -14%;
+  height: 34%;
+  border-radius: 50% 50% 0 0 / 46% 46% 0 0;
+  background: linear-gradient(#fff, #eef2f4);
+  box-shadow: 0 -1.5px 0 #cdd6dc;
+}
+.pv-classic-wii .pv-x {
+  left: 9%;
+  bottom: 6%;
+  width: 17%;
+  height: 7%;
+  border-radius: 3px;
+  background: #b4bfc6;
+}
+.pv-plaza {
+  --pbg:
+    radial-gradient(50% 60% at 18% 0%, #ffe1ad, transparent 70%), radial-gradient(55% 70% at 92% 40%, #ffc9de, transparent 70%),
+    radial-gradient(55% 60% at 40% 115%, #c3efda, transparent 70%), #fff4ea;
+  --ptop: rgba(255, 250, 244, 0.75);
+  --ptops: inset 0 0 0 1px #fff;
+  --prad: 32%;
+  --pt1: linear-gradient(150deg, #ffcab3, #ff936c);
+  --pt2: linear-gradient(150deg, #bfeedd, #6fcaa8);
+  --pt3: linear-gradient(150deg, #ffe7a6, #f6be4f);
+  --pr1: -5deg;
+  --pr2: 4deg;
+  --pr3: -3deg;
+  --pts: inset 0 3px 3px rgba(255, 255, 255, 0.6), 0 6px 10px -5px rgba(170, 90, 60, 0.45);
+  --pnav: rgba(255, 250, 244, 0.8);
+  --pnavs: inset 0 0 0 1px #fff, 0 5px 10px -5px rgba(170, 90, 60, 0.4);
+}
+/* two little buddies walking past */
+.pv-plaza .pv-x {
+  left: 9%;
+  bottom: 9%;
+  width: 5.5%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: #ffd9c2;
+  box-shadow:
+    0 8px 0 1px #f29a86,
+    40px -3px 0 0 #cfe7fa,
+    40px 5px 0 1px #6fb2e8,
+    172px 2px 0 0 #fbeab4,
+    172px 10px 0 1px #f0c85a;
+}
+html.dark .pv-liquid-glass {
+  --pbg:
+    radial-gradient(55% 70% at 12% 8%, rgba(40, 170, 200, 0.45), transparent 70%),
+    radial-gradient(55% 70% at 92% 30%, rgba(120, 90, 220, 0.35), transparent 70%), #0d1826;
+  --ptop: rgba(255, 255, 255, 0.12);
+  --ptops: inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+  --pnav: rgba(255, 255, 255, 0.12);
+  --pnavs: inset 0 0 0 1px rgba(255, 255, 255, 0.22);
+}
+html.dark .pv-wii-u {
+  --pbg:
+    repeating-linear-gradient(0deg, transparent 0 11px, rgba(255, 255, 255, 0.05) 11px 12px),
+    repeating-linear-gradient(90deg, transparent 0 11px, rgba(255, 255, 255, 0.05) 11px 12px), linear-gradient(#2a323b, #1e252c);
+  --ptop: linear-gradient(#46525e 45%, #3a444f 55%);
+  --ptops: 0 0 0 1px #556270;
+  --pts: 0 0 0 2px #3a444f, 0 0 0 3px #556270;
+  --pnav: linear-gradient(#46525e 45%, #3a444f 55%);
+  --pnavs: 0 0 0 1px #556270;
+}
+html.dark .pv-classic-wii {
+  --pbg: repeating-linear-gradient(180deg, #1b2229 0 3px, #20282f 3px 4px);
+  --ptop: #222b33;
+  --ptops: 0 0 0 1.5px #3a4753;
+  --pt1: #1f5f7c;
+  --pt2: #2b353e;
+  --pt3: #2b353e;
+  --pts: inset 0 0 0 3px #222b33, 0 0 0 1.5px #3a4753;
+}
+html.dark .pv-classic-wii .pv-nav {
+  background: linear-gradient(#222b33, #1b2229);
+  box-shadow: 0 -1.5px 0 #3a4753;
+}
+html.dark .pv-classic-wii .pv-x {
+  background: #56636e;
+}
+html.dark .pv-plaza {
+  --pbg:
+    radial-gradient(50% 60% at 18% 0%, rgba(255, 170, 110, 0.35), transparent 70%),
+    radial-gradient(55% 70% at 92% 40%, rgba(255, 120, 170, 0.28), transparent 70%), linear-gradient(#2c1f2c, #1f1a2b);
+  --ptop: rgba(255, 230, 215, 0.12);
+  --ptops: inset 0 0 0 1px rgba(255, 230, 215, 0.2);
+  --pnav: rgba(255, 230, 215, 0.12);
+  --pnavs: inset 0 0 0 1px rgba(255, 230, 215, 0.22);
+}
+
+/* ===== Classic Wii: flat, white and light blue, channel-style tiles, a curved bottom bar with a clock ===== */
+body.theme-classic-wii {
+  --head: 'Segoe UI Variable Display', 'Segoe UI', system-ui, sans-serif;
+  --ink: #3c464e;
+  --mute: #7a868f;
+  --bg: #f3f5f6;
+  --deep: #1a9ed9;
+  --cyan: #34bdef;
+  --shadow: rgba(60, 75, 90, 0.2);
+  --card: #fff;
+  --cardline: #dbe1e5;
+  --field: #edf1f3;
+  --dlg: #f8fafb;
+  --panel: #f8fafb;
+  --act1: #34bdef;
+  --act2: #22aee6;
+  --acttx: #fff;
+  --wline: #cfd8de;
+  --wsel: #34bdef;
+  --wsel2: #22aee6;
+  --wsel3: #8ad9f7;
+  --wglow: rgba(52, 189, 239, 0.45);
+  --wglow2: rgba(52, 189, 239, 0.25);
+}
+html.dark body.theme-classic-wii {
+  --ink: #e3e9ee;
+  --mute: #9aa6b0;
+  --bg: #161c22;
+  --deep: #5fd0f7;
+  --cyan: #46c6f2;
+  --shadow: rgba(0, 0, 0, 0.5);
+  --card: #1f272f;
+  --cardline: #33404b;
+  --field: #26303a;
+  --dlg: #1a2128;
+  --panel: #1a2128;
+  --act1: #2fb2e6;
+  --act2: #1d9fd6;
+  --wline: #3a4753;
+  --btnbg: #26303a;
+}
+body.theme-classic-wii .bg {
+  background: linear-gradient(#fcfdfd, #edf1f3);
+}
+body.theme-classic-wii .bg::before {
+  background: repeating-linear-gradient(180deg, transparent 0 3px, rgba(150, 168, 180, 0.15) 3px 4px);
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+html.dark body.theme-classic-wii .bg {
+  background: linear-gradient(#1a2128, #12171c);
+}
+html.dark body.theme-classic-wii .bg::before {
+  background: repeating-linear-gradient(180deg, transparent 0 3px, rgba(255, 255, 255, 0.035) 3px 4px);
+}
+/* flat white panels with a soft grey outline */
+body.flat .glass,
+body.flat .glass.pill:not(nav):not(#toast):not(.pb),
+body.flat nav.glass {
+  --bs: 0 0 0 2px var(--wline), 0 6px 14px -10px rgba(60, 75, 90, 0.35);
+  background: var(--card);
+  box-shadow: var(--bs);
+}
+html.dark body.flat .glass,
+html.dark body.flat .glass.pill:not(nav):not(#toast):not(.pb),
+html.dark body.flat nav.glass {
+  background: var(--card);
+  box-shadow:
+    0 0 0 2px var(--wline),
+    0 6px 14px -10px rgba(0, 0, 0, 0.6);
+}
+body.flat .glass::before {
+  display: none;
+}
+body.flat .search input,
+body.flat .tool,
+body.flat .vt button,
+body.flat nav button,
+body.flat .cfa,
+body.flat .play.dark {
+  color: var(--ink);
+}
+body.flat #vi,
+body.flat #ind,
+body.flat #tind,
+html.dark body.flat #vi,
+html.dark body.flat #ind,
+html.dark body.flat #tind {
+  background: var(--wsel);
+  box-shadow: 0 3px 10px -4px var(--wglow);
+}
+body.flat .vt button.on,
+body.flat nav button.on {
+  color: var(--indtx, #fff) !important;
+  text-shadow: none;
+}
+body.flat #play,
+body.flat #cfplay,
+body.flat #dplay,
+body.flat .wplay,
+body.flat .btn.main,
+body.flat .win .btn.main,
+body.flat .seg button.on,
+body.flat .tg.on,
+body.flat .q.on {
+  background: var(--pbtn, var(--wsel)) !important;
+  color: var(--seltx, #fff) !important;
+  text-shadow: none !important;
+  box-shadow:
+    0 0 0 2px var(--wsel2, var(--wsel)),
+    0 6px 14px -8px var(--wglow) !important;
+}
+body.flat .btn,
+body.flat .win .btn,
+body.flat .wdet {
+  background: var(--card);
+  color: var(--ink);
+  box-shadow: 0 0 0 2px var(--wline);
+}
+html.dark body.flat .btn,
+html.dark body.flat .win .btn,
+html.dark body.flat .wdet {
+  background: var(--btnbg, var(--card));
+  color: var(--ink);
+}
+body.flat .btn:hover,
+body.flat .wdet:hover,
+body.flat .play.dark:hover {
+  box-shadow: 0 0 0 2px var(--wsel);
+}
+/* channel-style tiles: white frame, grey outline, light blue glow when selected */
+body.flat .art,
+html.dark body.flat .art {
+  border-radius: var(--trad, 18px);
+  box-shadow:
+    0 0 0 4px var(--frame, var(--card)),
+    0 0 0 6px var(--wline),
+    0 12px 18px -14px rgba(60, 75, 90, 0.5) !important;
+}
+body.flat .art::before {
+  display: none;
+}
+body.flat .tile,
+body.flat .ring {
+  border-radius: calc(var(--trad, 18px) + 4px);
+}
+body.flat .tile.on .art,
+body.flat .cc.mid .art,
+html.dark body.flat .tile.on .art,
+html.dark body.flat .cc.mid .art {
+  box-shadow:
+    0 0 0 4px var(--frame, var(--card)),
+    0 0 0 7px var(--wsel),
+    0 0 22px 4px var(--wglow) !important;
+  animation: wiiglow 1.8s ease-in-out infinite;
+}
+@keyframes wiiglow {
+  50% {
+    box-shadow:
+      0 0 0 4px var(--frame, var(--card)),
+      0 0 0 7px var(--wsel3, var(--wsel)),
+      0 0 12px 1px var(--wglow2, transparent);
+  }
+}
+body.flat .tile:hover {
+  transform: translateY(-3px) scale(1.03);
+}
+body.flat .tile b,
+html.dark body.flat .tile b {
+  background: none;
+  box-shadow: none;
+  text-align: center;
+  color: var(--ink);
+}
+body.flat .cc,
+html.dark body.flat .cc {
+  -webkit-box-reflect: unset;
+}
+body.flat .dots i.on {
+  background: var(--wsel);
+}
+body.flat .hero,
+html.dark body.flat .hero {
+  border-radius: calc(var(--trad, 18px) + 4px);
+  box-shadow:
+    0 0 0 4px var(--frame, var(--card)),
+    0 0 0 6px var(--wline),
+    0 22px 34px -24px rgba(60, 75, 90, 0.5);
+}
+body.flat .set,
+body.flat .q,
+body.flat .empty,
+body.flat .sel,
+html.dark body.flat .set,
+html.dark body.flat .q,
+html.dark body.flat .empty,
+html.dark body.flat .sel {
+  background: var(--card);
+  border-color: var(--cardline);
+}
+body.flat .grp .set,
+html.dark body.flat .grp .set {
+  background: none;
+}
+body.flat .brand small {
+  color: var(--deep);
+}
+body.flat dialog::backdrop {
+  background: rgba(220, 232, 240, 0.55);
+}
+html.dark body.flat dialog::backdrop {
+  background: rgba(8, 12, 16, 0.55);
+}
+/* the curved bottom bar with the clock (Covers and Grid) */
+body.clock-bar:not(.wiiu) .wiibar,
+body.clock-line:not(.wiiu) .wiibar,
+body.clock-plain:not(.wiiu) .wiibar,
+body.clock-band:not(.wiiu) .wiibar {
+  display: block;
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 112px;
+  z-index: 4;
+  pointer-events: none;
+}
+body.clock-bar .wiibar::before {
+  content: '';
+  position: absolute;
+  left: -12%;
+  right: -12%;
+  top: 0;
+  bottom: -40px;
+  border-radius: 50% 50% 0 0 / 64px 64px 0 0;
+  background: linear-gradient(#ffffff, #eef2f4 70%);
+  box-shadow:
+    0 -2px 0 #cfd8de,
+    0 -16px 30px -18px rgba(60, 75, 90, 0.35);
+}
+html.dark body.clock-bar .wiibar::before {
+  background: linear-gradient(#222b33, #182027 70%);
+  box-shadow:
+    0 -2px 0 #34414c,
+    0 -16px 30px -18px rgba(0, 0, 0, 0.6);
+}
+.wclk {
+  position: absolute;
+  left: clamp(20px, 4vw, 48px);
+  bottom: 22px;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+  color: #8a959d;
+}
+.wclk b {
+  font: 600 34px var(--head);
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.wclk small {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: #9aa5ad;
+}
+html.dark .wclk,
+html.dark .wclk small {
+  color: #7f8c96;
+}
+body.clock-bar:not(.wiiu) nav.glass,
+body.clock-band:not(.wiiu) nav.glass {
+  bottom: 30px;
+}
+@media (max-width: 760px) {
+  .wclk {
+    display: none;
+  }
+}
+/* Wii U Look with the Classic Wii theme: brighter, lined floor, channel-style icons */
+body.theme-classic-wii #wu {
+  background:
+    repeating-linear-gradient(180deg, transparent 0 3px, rgba(150, 168, 180, 0.12) 3px 4px), linear-gradient(#fcfdfd, #edf1f3);
+}
+html.dark body.theme-classic-wii #wu {
+  background:
+    repeating-linear-gradient(180deg, transparent 0 3px, rgba(255, 255, 255, 0.03) 3px 4px), linear-gradient(#1a2128, #12171c);
+}
+body.theme-classic-wii .wplane {
+  opacity: 0.55;
+}
+body.flat .wa,
+html.dark body.flat .wa {
+  border-radius: var(--warad, 18%);
+  border: 4px solid var(--card);
+  box-shadow:
+    0 0 0 2px var(--wline),
+    0 14px 20px -12px rgba(60, 75, 90, 0.45);
+}
+body.flat .wa::before {
+  display: none;
+}
+body.flat .wi.on .wa,
+html.dark body.flat .wi.on .wa {
+  box-shadow:
+    0 0 0 3px var(--wsel),
+    0 0 22px 4px var(--wglow),
+    0 18px 24px -12px rgba(60, 75, 90, 0.45);
+}
+body.flat .wh-t,
+html.dark body.flat .wh-t {
+  border-radius: var(--whrad, 16%);
+  background: var(--card);
+  box-shadow:
+    0 0 0 2px var(--wline),
+    0 8px 14px -10px rgba(60, 75, 90, 0.4);
+}
+body.flat .wh-a {
+  border-radius: 11%;
+}
+body.flat .wh-a::after {
+  display: none;
+}
+body.flat .wh-t.on,
+html.dark body.flat .wh-t.on {
+  background: var(--card);
+  box-shadow:
+    0 0 0 3px var(--wsel),
+    0 0 20px 4px var(--wglow),
+    0 12px 20px -10px rgba(60, 75, 90, 0.4);
+}
+body.theme-classic-wii.wuhome #whome {
+  background:
+    repeating-linear-gradient(180deg, transparent 0 3px, rgba(150, 168, 180, 0.13) 3px 4px), linear-gradient(#fcfdfd, #edf1f3);
+}
+html.dark body.theme-classic-wii.wuhome #whome {
+  background:
+    repeating-linear-gradient(180deg, transparent 0 3px, rgba(255, 255, 255, 0.03) 3px 4px), linear-gradient(#1a2128, #12171c);
+}
+body.theme-classic-wii.wuhome #whome::before,
+body.theme-classic-wii.wuhome #whome::after {
+  display: none;
+}
+
+/* ===== Plaza: warm pastel light, more buddies, playful motion ===== */
+body.theme-plaza {
+  --ink: #3d2b2b;
+  --mute: #8a706a;
+  --bg: #fff6ee;
+  --g1: rgba(255, 250, 244, 0.7);
+  --g2: rgba(255, 238, 222, 0.3);
+  --cyan: #ff8a5c;
+  --deep: #d4582f;
+  --shadow: rgba(170, 90, 60, 0.28);
+  --panel: rgba(255, 248, 240, 0.72);
+  --card: rgba(255, 252, 248, 0.97);
+  --cardline: rgba(150, 80, 50, 0.14);
+  --field: rgba(210, 120, 80, 0.1);
+  --dlg: rgba(255, 248, 241, 0.98);
+  --act1: #ffb08a;
+  --act2: #ff7f57;
+  --acttx: #3a1408;
+}
+html.dark body.theme-plaza {
+  --ink: #fbeee6;
+  --mute: #c9ada5;
+  --bg: #221a24;
+  --g1: rgba(255, 230, 215, 0.14);
+  --g2: rgba(255, 220, 200, 0.04);
+  --cyan: #ff9a70;
+  --deep: #ffb38f;
+  --shadow: rgba(0, 0, 0, 0.55);
+  --panel: rgba(46, 32, 44, 0.72);
+  --card: rgba(255, 235, 225, 0.07);
+  --cardline: rgba(255, 220, 200, 0.16);
+  --field: rgba(255, 220, 200, 0.1);
+  --dlg: rgba(36, 26, 38, 0.97);
+  --act1: #ffb08a;
+  --act2: #ff7f57;
+  --acttx: #2a0e05;
+}
+body.theme-plaza .bg {
+  background: #fff4ea;
+}
+body.theme-plaza .bg i:nth-child(1) {
+  background: #ffcfa8;
+}
+body.theme-plaza .bg i:nth-child(2) {
+  background: #ffc2dc;
+}
+body.theme-plaza .bg i:nth-child(3) {
+  background: #bdeed6;
+}
+/* warm light falling in from the top left */
+body.theme-plaza .bg::before {
+  background:
+    radial-gradient(60% 50% at 12% -5%, rgba(255, 214, 140, 0.55), transparent 70%),
+    repeating-conic-gradient(from 195deg at 8% -12%, rgba(255, 225, 170, 0.16) 0 5deg, transparent 5deg 13deg);
+  -webkit-mask-image: radial-gradient(90% 90% at 10% 0%, #000, transparent 75%);
+  mask-image: radial-gradient(90% 90% at 10% 0%, #000, transparent 75%);
+}
+html.dark body.theme-plaza .bg {
+  background: linear-gradient(#2a1d2a, #1c1828);
+}
+html.dark body.theme-plaza .bg::before {
+  background:
+    radial-gradient(60% 50% at 12% -5%, rgba(255, 160, 100, 0.22), transparent 70%),
+    repeating-conic-gradient(from 195deg at 8% -12%, rgba(255, 190, 140, 0.03) 0 5deg, transparent 5deg 13deg);
+}
+body.theme-plaza .glass.pill:not(nav):not(#toast):not(.pb) {
+  background: linear-gradient(160deg, rgba(255, 252, 247, 0.9), rgba(255, 240, 228, 0.62));
+}
+html.dark body.theme-plaza .glass.pill:not(nav):not(#toast):not(.pb) {
+  background: linear-gradient(160deg, rgba(78, 55, 70, 0.92), rgba(50, 36, 50, 0.78));
+}
+body.theme-plaza .search input,
+body.theme-plaza .tool,
+body.theme-plaza .play.dark,
+body.theme-plaza .cfa {
+  color: var(--ink);
+}
+body.theme-plaza #ind,
+body.theme-plaza #vi,
+body.theme-plaza #tind {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.8), rgba(255, 138, 92, 0.38));
+  box-shadow:
+    inset 0 1px 0 #fff,
+    0 0 20px -4px #ff8a5c;
+  transition:
+    left 0.6s cubic-bezier(0.34, 1.9, 0.45, 1),
+    width 0.6s cubic-bezier(0.34, 1.9, 0.45, 1);
+}
+html.dark body.theme-plaza #ind,
+html.dark body.theme-plaza #vi,
+html.dark body.theme-plaza #tind {
+  background: linear-gradient(180deg, rgba(255, 200, 170, 0.45), rgba(255, 128, 87, 0.45));
+  box-shadow: 0 0 20px -4px #ff8a5c;
+}
+body.theme-plaza .btn {
+  background: rgba(255, 138, 92, 0.16);
+  color: var(--deep);
+}
+body.theme-plaza .btn.main {
+  background: linear-gradient(180deg, #ffa27a, #ff7f57);
+  color: #fff;
+}
+body.theme-plaza .seg button.on,
+body.theme-plaza .tg.on,
+body.theme-plaza .win .btn.on,
+body.theme-plaza .q.on {
+  box-shadow:
+    0 3px 12px -3px rgba(255, 127, 87, 0.75),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+body.theme-plaza #play,
+body.theme-plaza #cfplay,
+body.theme-plaza #dplay,
+body.theme-plaza .wplay {
+  background: linear-gradient(180deg, #ff9b70, #ee6338) !important;
+  color: #fff !important;
+  text-shadow: 0 1px 2px rgba(150, 50, 20, 0.35);
+}
+body.theme-plaza dialog::backdrop {
+  background: rgba(255, 196, 165, 0.32);
+}
+html.dark body.theme-plaza dialog::backdrop {
+  background: rgba(30, 15, 25, 0.5);
+}
+body.theme-plaza #launch,
+body.theme-plaza #setup {
+  background: rgba(255, 205, 175, 0.38);
+}
+body.theme-plaza .tile b {
+  background: linear-gradient(160deg, rgba(255, 252, 247, 0.75), rgba(255, 236, 220, 0.3));
+}
+/* playful motion: tiles tip a little, the selected game bobs, buttons wobble */
+body.theme-plaza .tile:hover {
+  transform: translateY(-7px) scale(1.06) rotate(-1.6deg);
+}
+body.theme-plaza .tile:nth-child(even):hover {
+  transform: translateY(-7px) scale(1.06) rotate(1.6deg);
+}
+body.theme-plaza .tile.on .art,
+body.theme-plaza .cc.mid .art,
+body.theme-plaza .wh-t.on .wh-a {
+  animation: pzbob 2.6s ease-in-out infinite;
+}
+@keyframes pzbob {
+  50% {
+    translate: 0 -5px;
+    rotate: -1.4deg;
+  }
+}
+body.theme-plaza nav button:hover,
+body.theme-plaza .play:hover,
+body.theme-plaza .btn:hover,
+body.theme-plaza .thc:hover {
+  animation: pzjelly 0.55s ease;
+}
+@keyframes pzjelly {
+  30% {
+    scale: 1.07 0.93;
+  }
+  55% {
+    scale: 0.96 1.04;
+  }
+  75% {
+    scale: 1.02 0.98;
+  }
+}
+body.theme-plaza .grid.swap .tile {
+  animation-timing-function: cubic-bezier(0.3, 1.9, 0.45, 1);
+}
+/* buddies strolling along the bottom in Covers and Grid */
+body.theme-plaza:not(.wiiu) #pzc:not([hidden]) {
+  display: block;
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 130px;
+  z-index: 4;
+  pointer-events: none;
+}
+/* Wii U Look with the Plaza theme: warm floor and light */
+body.theme-plaza #wu {
+  background: radial-gradient(70% 55% at 50% 42%, #fffaf3, #fff1e4 60%, #ffe4d2);
+}
+html.dark body.theme-plaza #wu {
+  background: radial-gradient(70% 55% at 50% 42%, #3a2a36, #2a2030 60%, #1f1a28);
+}
+body.theme-plaza .wplane {
+  background-image:
+    radial-gradient(ellipse 20px 13px at 50% 50%, rgba(225, 140, 105, 0.16) 0 62%, transparent 66%),
+    radial-gradient(ellipse 20px 13px at 50% 50%, rgba(225, 140, 105, 0.16) 0 62%, transparent 66%);
+}
+html.dark body.theme-plaza .wplane {
+  background-image:
+    radial-gradient(ellipse 20px 13px at 50% 50%, rgba(255, 170, 130, 0.1) 0 62%, transparent 66%),
+    radial-gradient(ellipse 20px 13px at 50% 50%, rgba(255, 170, 130, 0.1) 0 62%, transparent 66%);
+}
+body.theme-plaza .wi.on .wa {
+  box-shadow:
+    0 0 0 4px rgba(255, 255, 255, 0.95),
+    0 0 0 8px rgba(255, 150, 110, 0.5),
+    0 22px 30px -12px rgba(170, 90, 60, 0.5);
+}
+body.theme-plaza .wh-t.on {
+  background: linear-gradient(160deg, #fff4ec, #ffd9c6);
+  box-shadow:
+    0 0 0 4px #ff9a70,
+    0 0 0 8px rgba(255, 154, 112, 0.25),
+    0 14px 24px -10px rgba(170, 90, 60, 0.5);
+}
+body.theme-plaza.wuhome #whome {
+  background:
+    radial-gradient(70% 60% at 50% 42%, #fffaf4 0%, rgba(255, 250, 244, 0.7) 45%, transparent 80%),
+    linear-gradient(180deg, #fff6ee 0%, #ffece0 55%, #ffe3d4 100%);
+}
+html.dark body.theme-plaza.wuhome #whome {
+  background:
+    radial-gradient(70% 60% at 50% 42%, rgba(80, 55, 70, 0.6) 0%, transparent 80%),
+    linear-gradient(180deg, #2c202c 0%, #241b28 55%, #1e1824 100%);
+}
+body.theme-plaza .wh-dots i.on,
+body.theme-plaza .dots i.on {
+  background: #ff8a5c;
+  box-shadow: 0 0 0 3px rgba(255, 138, 92, 0.22);
+}
+@media (prefers-reduced-motion: reduce) {
+  body.theme-plaza .tile.on .art,
+  body.theme-plaza .cc.mid .art,
+  body.theme-plaza .wh-t.on .wh-a,
+  body.theme-classic-wii .tile.on .art,
+  body.theme-classic-wii .cc.mid .art {
+    animation: none;
+  }
+}
+body.theme-plaza :is(#play, #cfplay, #dplay)::before {
+  display: none;
+}
+body.theme-plaza :is(#play, #cfplay, #dplay)::after {
+  opacity: 0.45;
+}
+
+/* ===================================================================
+   Retro & handheld themes (flat base + per-theme palette)
+   Shared: body.flat = opaque panels with an outline and a coloured selection ring.
+   =================================================================== */
+body.flat:not(.theme-classic-wii) .bg {
+  background: var(--tbg);
+}
+body.flat:not(.theme-classic-wii) .bg::before {
+  background: var(--tbg2, none);
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+body.flat:not(.theme-classic-wii) #wu,
+body.flat:not(.theme-classic-wii).wuhome #whome {
+  background: var(--tbg);
+}
+body.flat:not(.theme-classic-wii).wuhome #whome::before,
+body.flat:not(.theme-classic-wii).wuhome #whome::after {
+  display: none;
+}
+body.flat:not(.theme-classic-wii) .wplane {
+  opacity: var(--floor, 0.5);
+}
+body.flat .wl,
+body.flat .wbud,
+body.flat .wpg button,
+body.flat .wbar,
+body.flat .wh-av,
+body.flat .wh-swap {
+  background: var(--card);
+  color: var(--ink);
+  box-shadow: 0 0 0 2px var(--wline);
+}
+body.flat .wtt h2,
+body.flat .wh-title {
+  color: var(--ink);
+}
+body.flat .wtt small {
+  color: var(--mute);
+}
+body.flat .wh-dots i.on,
+body.flat .dots i.on,
+body.flat #wdots i.on {
+  background: var(--wsel);
+  box-shadow: none;
+}
+/* the clock in the bottom bar: straight line, plain text or a ridged band */
+body.clock-plain .wiibar {
+  background: linear-gradient(transparent, var(--fade, transparent) 70%);
+}
+body.clock-line .wiibar {
+  background: var(--barbg, transparent);
+  border-top: 1.5px solid var(--wline);
+}
+body.clock-band .wiibar {
+  background:
+    repeating-linear-gradient(180deg, transparent 0 7px, rgba(0, 0, 0, 0.55) 7px 9px) 0 26px / 100% calc(100% - 26px) no-repeat,
+    var(--band, #3a3a3a);
+  border-top: 4px solid var(--band2, #1a1a1a);
+}
+body.flat.clock-band .wclk,
+body.flat.clock-band .wclk small {
+  color: var(--bandtx, #d8d8d8);
+}
+body.flat:not(.theme-classic-wii) .wclk,
+body.flat:not(.theme-classic-wii) .wclk small {
+  color: var(--mute);
+}
+/* selection as four corner brackets (DS, 3DS) */
+body.brackets .tile.on::after,
+body.brackets .wh-t.on::after {
+  content: '';
+  position: absolute;
+  left: -10px;
+  top: -10px;
+  width: calc(100% + 20px);
+  aspect-ratio: 1;
+  pointer-events: none;
+  z-index: 3;
+  --k: var(--wsel);
+  background:
+    linear-gradient(var(--k) 0 0) top left / 24px 4px no-repeat,
+    linear-gradient(var(--k) 0 0) top left / 4px 24px no-repeat,
+    linear-gradient(var(--k) 0 0) top right / 24px 4px no-repeat,
+    linear-gradient(var(--k) 0 0) top right / 4px 24px no-repeat,
+    linear-gradient(var(--k) 0 0) bottom left / 24px 4px no-repeat,
+    linear-gradient(var(--k) 0 0) bottom left / 4px 24px no-repeat,
+    linear-gradient(var(--k) 0 0) bottom right / 24px 4px no-repeat,
+    linear-gradient(var(--k) 0 0) bottom right / 4px 24px no-repeat;
+  animation: brk 1.1s ease-in-out infinite;
+}
+body.brackets .wh-t.on::after {
+  height: calc(100% + 20px);
+  aspect-ratio: auto;
+}
+@keyframes brk {
+  50% {
+    scale: 1.035;
+  }
+}
+body.brackets .tile.on .art,
+html.dark body.brackets .tile.on .art,
+body.brackets .wh-t.on,
+html.dark body.brackets .wh-t.on {
+  box-shadow:
+    0 0 0 4px var(--frame, var(--card)),
+    0 0 0 6px var(--wline) !important;
+  animation: none;
+}
+/* chunky "pixel era" lettering (no web font: a monospace from Windows) */
+body.pix .brand,
+body.pix .sec h4,
+body.pix #cft,
+body.pix dialog h2,
+body.pix .wclk b,
+body.pix .wh-title {
+  font-family: 'Lucida Console', Consolas, 'Courier New', monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+body.pix nav button,
+body.pix .vt button,
+body.pix .tool {
+  font-family: 'Lucida Console', Consolas, monospace;
+  text-transform: uppercase;
+  font-size: 13px;
+  letter-spacing: 0.03em;
+}
+/* four-shade palettes for Game Boy and Virtual Boy: every picture is redrawn in the console's colours */
+body.pal-gb :is(.art, .wa, .wh-a, .hero .bgimg, #dc, #wmii, #pzc, #hbox),
+body.pal-vb :is(.art, .wa, .wh-a, .hero .bgimg, #dc, #wmii, #pzc, #hbox) {
+  filter: url(#gbpal);
+}
+body.pal-vb :is(.art, .wa, .wh-a, .hero .bgimg, #dc, #wmii, #pzc, #hbox) {
+  filter: url(#vbpal);
+}
+body.pal-gb .hero::before,
+body.pal-vb .hero::before {
+  background: linear-gradient(90deg, var(--heroshade), transparent 70%);
+}
+
+/* --- Switch: light grey, white tiles, turquoise selection --- */
+body.theme-switch {
+  --tbg: #ebebeb;
+  --ink: #2d2d2d;
+  --mute: #6f6f6f;
+  --deep: #0aa3c2;
+  --cyan: #00c3e3;
+  --card: #fff;
+  --cardline: #dcdcdc;
+  --field: #f1f1f1;
+  --dlg: #f6f6f6;
+  --panel: #f6f6f6;
+  --act1: #00c3e3;
+  --act2: #00b0cf;
+  --wline: #d2d2d2;
+  --wsel: #00c3e3;
+  --wsel2: #00a9c8;
+  --wsel3: #7fe6f6;
+  --wglow: rgba(0, 195, 227, 0.4);
+  --trad: 4px;
+  --warad: 8%;
+  --whrad: 6%;
+  --barbg: #ebebeb;
+}
+html.dark body.theme-switch {
+  --tbg: #2d2d2d;
+  --ink: #fff;
+  --mute: #b4b4b4;
+  --card: #3a3a3a;
+  --cardline: #4c4c4c;
+  --field: #454545;
+  --dlg: #333;
+  --panel: #333;
+  --wline: #555;
+  --btnbg: #454545;
+  --barbg: #2d2d2d;
+}
+/* --- Switch 2: rounder, softer, a little more depth --- */
+body.theme-switch2 {
+  --tbg: linear-gradient(#f3f4f6, #e5e7ea);
+  --ink: #26282c;
+  --mute: #6c7078;
+  --deep: #1c9be0;
+  --cyan: #2fb4f5;
+  --card: #fff;
+  --cardline: #dfe2e6;
+  --field: #eef0f3;
+  --dlg: #f7f8fa;
+  --panel: #f7f8fa;
+  --act1: #36b9f6;
+  --act2: #1ea6ec;
+  --wline: #d8dce1;
+  --wsel: #2fb4f5;
+  --wsel2: #1ea6ec;
+  --wsel3: #9ddcfb;
+  --wglow: rgba(47, 180, 245, 0.45);
+  --trad: 14px;
+  --warad: 24%;
+  --whrad: 22%;
+  --barbg: rgba(255, 255, 255, 0.6);
+}
+html.dark body.theme-switch2 {
+  --tbg: linear-gradient(#27282c, #1b1c1f);
+  --ink: #f3f4f6;
+  --mute: #a7abb3;
+  --card: #303136;
+  --cardline: #44464c;
+  --field: #393a40;
+  --dlg: #26272b;
+  --panel: #26272b;
+  --wline: #47494f;
+  --btnbg: #393a40;
+  --barbg: rgba(40, 41, 45, 0.7);
+}
+body.theme-switch2 .art,
+body.theme-switch2 .hero {
+  box-shadow:
+    0 0 0 4px var(--frame, var(--card)),
+    0 0 0 5px var(--wline),
+    0 18px 30px -18px rgba(30, 40, 60, 0.45) !important;
+}
+/* --- DS: grid paper, grey bevelled boxes, blue corner brackets --- */
+body.theme-ds {
+  --fade: #f8f8f8;
+  --tbg:
+    repeating-linear-gradient(0deg, transparent 0 15px, #e1e1e1 15px 16px),
+    repeating-linear-gradient(90deg, transparent 0 15px, #e1e1e1 15px 16px), #f8f8f8;
+  --ink: #2e2e2e;
+  --mute: #6a6a6a;
+  --deep: #2f5be0;
+  --cyan: #3a66e8;
+  --card: #fff;
+  --cardline: #bdbdbd;
+  --field: #efefef;
+  --dlg: #f7f7f7;
+  --panel: #f7f7f7;
+  --act1: #4a74ee;
+  --act2: #3a66e8;
+  --wline: #8e8e8e;
+  --wsel: #3a66e8;
+  --wglow: rgba(58, 102, 232, 0.35);
+  --trad: 3px;
+  --warad: 6%;
+  --whrad: 6%;
+}
+html.dark body.theme-ds {
+  --fade: #1f1f1f;
+  --tbg:
+    repeating-linear-gradient(0deg, transparent 0 15px, #2c2c2c 15px 16px),
+    repeating-linear-gradient(90deg, transparent 0 15px, #2c2c2c 15px 16px), #1f1f1f;
+  --ink: #ededed;
+  --mute: #a9a9a9;
+  --card: #2a2a2a;
+  --cardline: #484848;
+  --field: #333;
+  --dlg: #242424;
+  --panel: #242424;
+  --wline: #5c5c5c;
+  --wsel: #6d8ff5;
+  --btnbg: #333;
+}
+body.theme-ds .glass,
+body.theme-ds .glass.pill:not(nav):not(#toast):not(.pb),
+body.theme-ds nav.glass {
+  border-radius: 6px;
+}
+/* --- DSi: white with fine lines, rounded panels, teal accents --- */
+body.theme-dsi {
+  --tbg: repeating-linear-gradient(0deg, transparent 0 3px, rgba(0, 0, 0, 0.035) 3px 4px), linear-gradient(#fff, #e8e8e8);
+  --ink: #333;
+  --mute: #777;
+  --deep: #2f9c89;
+  --cyan: #49b3a0;
+  --card: #fff;
+  --cardline: #d6d6d6;
+  --field: #f0f0f0;
+  --dlg: #f8f8f8;
+  --panel: #f8f8f8;
+  --act1: #5cc2ae;
+  --act2: #49b3a0;
+  --wline: #c9c9c9;
+  --wsel: #49b3a0;
+  --wsel3: #a6ded3;
+  --wglow: rgba(73, 179, 160, 0.4);
+  --trad: 14px;
+  --warad: 22%;
+  --whrad: 18%;
+  --barbg: linear-gradient(#f4f4f4, #e2e2e2);
+}
+html.dark body.theme-dsi {
+  --tbg:
+    repeating-linear-gradient(0deg, transparent 0 3px, rgba(255, 255, 255, 0.025) 3px 4px), linear-gradient(#262928, #1c1e1d);
+  --ink: #eef2f1;
+  --mute: #a8b0ae;
+  --card: #2e3231;
+  --cardline: #46504d;
+  --field: #363b3a;
+  --dlg: #242726;
+  --panel: #242726;
+  --wline: #4a5452;
+  --btnbg: #363b3a;
+  --barbg: linear-gradient(#2a2e2d, #202322);
+}
+/* --- 3DS: soft grid, framed icons, green corner brackets --- */
+body.theme-3ds {
+  --tbg:
+    repeating-linear-gradient(0deg, transparent 0 23px, rgba(150, 168, 186, 0.17) 23px 24px),
+    repeating-linear-gradient(90deg, transparent 0 23px, rgba(150, 168, 186, 0.17) 23px 24px), linear-gradient(#fbfcfd, #eaf0f5);
+  --ink: #2f3a44;
+  --mute: #6f7c88;
+  --deep: #1f9fd8;
+  --cyan: #3aaee6;
+  --card: #fff;
+  --cardline: #d5dde5;
+  --field: #edf2f6;
+  --dlg: #f7f9fb;
+  --panel: #f7f9fb;
+  --act1: #48b6ea;
+  --act2: #2ea6e0;
+  --wline: #ccd5de;
+  --wsel: #2ec4a8;
+  --wglow: rgba(46, 196, 168, 0.4);
+  --pbtn: #2ea6e0;
+  --trad: 16px;
+  --warad: 20%;
+  --whrad: 18%;
+  --barbg: linear-gradient(#f3f6f9, #e3e9ef);
+}
+html.dark body.theme-3ds {
+  --tbg:
+    repeating-linear-gradient(0deg, transparent 0 23px, rgba(255, 255, 255, 0.04) 23px 24px),
+    repeating-linear-gradient(90deg, transparent 0 23px, rgba(255, 255, 255, 0.04) 23px 24px), linear-gradient(#1f252b, #171b20);
+  --ink: #e9eff4;
+  --mute: #9fabb6;
+  --card: #29313a;
+  --cardline: #3e4955;
+  --field: #313a44;
+  --dlg: #1f252b;
+  --panel: #1f252b;
+  --wline: #434f5b;
+  --btnbg: #313a44;
+  --barbg: linear-gradient(#232a31, #1b2026);
+}
+/* --- N64: starry night, grey cartridges, pixel clock --- */
+body.theme-n64,
+html.dark body.theme-n64 {
+  --fade: #050f2b;
+  --tbg:
+    radial-gradient(1.4px 1.4px at 12% 18%, #fff 60%, transparent 70%) 0 0 / 230px 190px,
+    radial-gradient(1.2px 1.2px at 64% 42%, #dfe8ff 60%, transparent 70%) 0 0 / 310px 260px,
+    radial-gradient(1.8px 1.8px at 38% 76%, #fff 60%, transparent 70%) 0 0 / 420px 340px,
+    radial-gradient(1px 1px at 84% 8%, #cfdcff 60%, transparent 70%) 0 0 / 150px 140px,
+    radial-gradient(120% 90% at 50% 0%, #10295c, #071637 60%, #040d24);
+  --ink: #eef2ff;
+  --mute: #aab6d6;
+  --deep: #8fb0ff;
+  --cyan: #4f7cff;
+  --card: #13254f;
+  --cardline: #2b3f72;
+  --field: #1b3063;
+  --dlg: #0d1c40;
+  --panel: #0d1c40;
+  --act1: #3b5fe0;
+  --act2: #2346c8;
+  --acttx: #fff;
+  --wline: #5d6170;
+  --frame: #8f9199;
+  --wsel: #f2f5ff;
+  --wsel3: #b9c8ff;
+  --wglow: rgba(200, 215, 255, 0.6);
+  --pbtn: #2346c8;
+  --indtx: #0b1a3d;
+  --btnbg: #1b3063;
+  --shadow: rgba(0, 0, 0, 0.6);
+  --trad: 6px;
+  --warad: 10%;
+  --whrad: 10%;
+  --floor: 0.15;
+  color-scheme: dark;
+}
+/* --- GameCube: dark indigo glass, violet glow --- */
+body.theme-gamecube,
+html.dark body.theme-gamecube {
+  --tbg:
+    radial-gradient(45% 40% at 30% 30%, rgba(90, 60, 200, 0.35), transparent 70%),
+    radial-gradient(40% 40% at 75% 70%, rgba(40, 170, 140, 0.18), transparent 70%),
+    radial-gradient(70% 70% at 50% 50%, #191233, #0b0818 60%, #030206);
+  --ink: #f1edff;
+  --mute: #b4abd8;
+  --deep: #b39cff;
+  --cyan: #8d6cff;
+  --card: rgba(38, 28, 78, 0.92);
+  --cardline: rgba(150, 130, 255, 0.3);
+  --field: rgba(70, 55, 140, 0.5);
+  --dlg: #120d26;
+  --panel: #120d26;
+  --act1: #8d6cff;
+  --act2: #6b4fd8;
+  --acttx: #fff;
+  --wline: rgba(150, 130, 255, 0.5);
+  --frame: #241a4d;
+  --wsel: #9b7dff;
+  --wsel3: #6ad7b6;
+  --wglow: rgba(141, 108, 255, 0.6);
+  --pbtn: #6b4fd8;
+  --btnbg: rgba(70, 55, 140, 0.6);
+  --shadow: rgba(0, 0, 0, 0.6);
+  --trad: 12px;
+  --warad: 16%;
+  --whrad: 14%;
+  --floor: 0.12;
+  color-scheme: dark;
+}
+body.theme-gamecube .glass,
+body.theme-gamecube .glass.pill:not(nav):not(#toast):not(.pb),
+body.theme-gamecube nav.glass {
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  box-shadow:
+    0 0 0 1.5px var(--wline),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 0 26px -8px rgba(141, 108, 255, 0.6) !important;
+}
+/* --- Game Boy: the four greens of the original screen --- */
+body.theme-gameboy {
+  --fade: #9bbc0f;
+  --tbg:
+    repeating-linear-gradient(0deg, transparent 0 3px, rgba(15, 56, 15, 0.07) 3px 4px),
+    repeating-linear-gradient(90deg, transparent 0 3px, rgba(15, 56, 15, 0.07) 3px 4px), #9bbc0f;
+  --ink: #0f380f;
+  --mute: #306230;
+  --deep: #0f380f;
+  --cyan: #306230;
+  --card: #8bac0f;
+  --cardline: #306230;
+  --field: #a6c41e;
+  --dlg: #9bbc0f;
+  --panel: #9bbc0f;
+  --act1: #306230;
+  --act2: #0f380f;
+  --acttx: #9bbc0f;
+  --wline: #306230;
+  --frame: #8bac0f;
+  --wsel: #0f380f;
+  --wsel3: #306230;
+  --wglow: rgba(15, 56, 15, 0.35);
+  --seltx: #9bbc0f;
+  --indtx: #9bbc0f;
+  --btnbg: #8bac0f;
+  --shadow: rgba(15, 56, 15, 0.35);
+  --heroshade: rgba(15, 56, 15, 0.85);
+  --trad: 2px;
+  --warad: 4%;
+  --whrad: 4%;
+  --floor: 0.3;
+  color-scheme: light;
+}
+html.dark body.theme-gameboy {
+  --fade: #0f380f;
+  --tbg:
+    repeating-linear-gradient(0deg, transparent 0 3px, rgba(155, 188, 15, 0.06) 3px 4px),
+    repeating-linear-gradient(90deg, transparent 0 3px, rgba(155, 188, 15, 0.06) 3px 4px), #0f380f;
+  --ink: #9bbc0f;
+  --mute: #8bac0f;
+  --card: #1e4a1e;
+  --cardline: #306230;
+  --field: #285a28;
+  --dlg: #0f380f;
+  --panel: #0f380f;
+  --act1: #8bac0f;
+  --act2: #9bbc0f;
+  --acttx: #0f380f;
+  --wline: #8bac0f;
+  --frame: #306230;
+  --wsel: #9bbc0f;
+  --seltx: #0f380f;
+  --indtx: #0f380f;
+  --btnbg: #285a28;
+  color-scheme: dark;
+}
+body.theme-gameboy .hero h3,
+body.theme-virtualboy .hero h3 {
+  font-family: 'Lucida Console', Consolas, monospace;
+  text-transform: uppercase;
+  font-size: clamp(22px, 3vw, 38px);
+}
+/* --- Virtual Boy: red on black --- */
+body.theme-virtualboy,
+html.dark body.theme-virtualboy {
+  --tbg: repeating-linear-gradient(0deg, transparent 0 2px, rgba(255, 0, 0, 0.045) 2px 3px), #000;
+  --head: 'Bahnschrift SemiBold Condensed', 'Bahnschrift Condensed', 'Arial Narrow', sans-serif;
+  --ink: #ff2a2a;
+  --mute: #b01818;
+  --deep: #ff4040;
+  --cyan: #ff2020;
+  --card: #120000;
+  --cardline: #5a0000;
+  --field: #1e0000;
+  --dlg: #080000;
+  --panel: #080000;
+  --act1: #ff2a2a;
+  --act2: #d40000;
+  --acttx: #000;
+  --wline: #6e0000;
+  --frame: #2a0000;
+  --wsel: #ff2a2a;
+  --wsel3: #8a0000;
+  --wglow: rgba(255, 0, 0, 0.5);
+  --seltx: #000;
+  --indtx: #000;
+  --btnbg: #1e0000;
+  --shadow: rgba(0, 0, 0, 0.8);
+  --heroshade: rgba(0, 0, 0, 0.85);
+  --trad: 0px;
+  --warad: 2%;
+  --whrad: 2%;
+  --floor: 0.25;
+  color-scheme: dark;
+}
+body.theme-virtualboy .brand {
+  font-family: var(--head);
+  font-size: 34px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+/* --- SNES: light grey plastic, lavender and purple --- */
+body.theme-snes {
+  --tbg:
+    repeating-linear-gradient(180deg, transparent 0 22px, rgba(90, 80, 130, 0.06) 22px 24px), linear-gradient(#e7e7ed, #d0d0d9);
+  --ink: #2c2a38;
+  --mute: #6a6680;
+  --deep: #5b4fc4;
+  --cyan: #7a6fe0;
+  --card: #f1f1f5;
+  --cardline: #c3c1d0;
+  --field: #e3e2ea;
+  --dlg: #ededf2;
+  --panel: #ededf2;
+  --act1: #7a6fe0;
+  --act2: #5b4fc4;
+  --wline: #8e8aa3;
+  --frame: #cbc9d6;
+  --wsel: #5b4fc4;
+  --wsel3: #b7aeef;
+  --wglow: rgba(91, 79, 196, 0.45);
+  --trad: 8px;
+  --warad: 12%;
+  --whrad: 12%;
+  --barbg: linear-gradient(#dcdbe3, #c9c8d3);
+}
+html.dark body.theme-snes {
+  --tbg:
+    repeating-linear-gradient(180deg, transparent 0 22px, rgba(180, 170, 255, 0.04) 22px 24px), linear-gradient(#2c2b34, #1f1e26);
+  --ink: #ecebf5;
+  --mute: #aca8c4;
+  --card: #34323f;
+  --cardline: #4d4a60;
+  --field: #3b394a;
+  --dlg: #26252e;
+  --panel: #26252e;
+  --wline: #5b5772;
+  --frame: #45424f;
+  --wsel: #9d92ff;
+  --btnbg: #3b394a;
+  --barbg: linear-gradient(#2a2932, #201f27);
+}
+body.theme-snes .brand {
+  font-style: italic;
+  letter-spacing: -0.05em;
+}
+body.theme-snes .brand small::before {
+  content: '';
+  display: inline-block;
+  width: 46px;
+  height: 9px;
+  margin-right: 8px;
+  vertical-align: 0;
+  background:
+    radial-gradient(circle 4px at 4.5px 4.5px, #d83a3a 98%, transparent) 0 0 / 11.5px 9px no-repeat,
+    radial-gradient(circle 4px at 4.5px 4.5px, #f2c230 98%, transparent) 11.5px 0 / 11.5px 9px no-repeat,
+    radial-gradient(circle 4px at 4.5px 4.5px, #3aa85c 98%, transparent) 23px 0 / 11.5px 9px no-repeat,
+    radial-gradient(circle 4px at 4.5px 4.5px, #3a6fd8 98%, transparent) 34.5px 0 / 11.5px 9px no-repeat;
+}
+/* --- NES: grey and black, boxy, red accents, ridged band --- */
+body.theme-nes {
+  --tbg: linear-gradient(#dcdcdc, #c6c6c6);
+  --ink: #161616;
+  --mute: #4f4f4f;
+  --deep: #c8102e;
+  --cyan: #c8102e;
+  --card: #e6e6e6;
+  --cardline: #1a1a1a;
+  --field: #d4d4d4;
+  --dlg: #e0e0e0;
+  --panel: #e0e0e0;
+  --act1: #d81f3d;
+  --act2: #c8102e;
+  --wline: #161616;
+  --frame: #9a9a9a;
+  --wsel: #c8102e;
+  --wsel3: #ff6b80;
+  --wglow: rgba(200, 16, 46, 0.35);
+  --trad: 2px;
+  --warad: 4%;
+  --whrad: 4%;
+  --band: #3c3c3c;
+  --band2: #161616;
+}
+html.dark body.theme-nes {
+  --tbg: linear-gradient(#202020, #141414);
+  --ink: #eeeeee;
+  --mute: #a5a5a5;
+  --card: #2a2a2a;
+  --cardline: #555;
+  --field: #333;
+  --dlg: #1c1c1c;
+  --panel: #1c1c1c;
+  --wline: #6a6a6a;
+  --frame: #5a5a5a;
+  --wsel: #ff3355;
+  --btnbg: #333;
+  --band: #2a2a2a;
+  --band2: #000;
+}
+body.theme-nes .glass,
+body.theme-nes .glass.pill:not(nav):not(#toast):not(.pb),
+body.theme-nes nav.glass,
+body.theme-nes .btn,
+body.theme-nes .play,
+body.theme-nes .tile b {
+  border-radius: 3px !important;
+}
+body.theme-nes #vi,
+body.theme-nes #ind,
+body.theme-nes #tind {
+  border-radius: 2px;
+}
+
+/* --- mini previews for the new themes --- */
+.pv-switch {
+  --pbg: #ebebeb;
+  --ptop: transparent;
+  --prad: 3px;
+  --pt1: #e8513c;
+  --pt2: #f1c232;
+  --pt3: #3b8ee0;
+  --pts: 0 0 0 2px #fff, 0 0 0 3px #d2d2d2;
+  --pnav: transparent;
+}
+.pv-switch .pv-t:nth-child(2) {
+  box-shadow:
+    0 0 0 2px #fff,
+    0 0 0 4px #00c3e3;
+}
+.pv-switch .pv-nav {
+  left: 6%;
+  right: 6%;
+  bottom: 14%;
+  height: 1.5px;
+  border-radius: 0;
+  background: #cfcfcf;
+}
+.pv-switch .pv-x {
+  left: 30%;
+  bottom: 22%;
+  width: 6%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: #e60012;
+  box-shadow:
+    14px 0 0 #fff,
+    28px 0 0 #fff,
+    42px 0 0 #fff,
+    56px 0 0 #fff;
+}
+.pv-switch2 {
+  --pbg: linear-gradient(#f3f4f6, #e5e7ea);
+  --ptop: transparent;
+  --prad: 10px;
+  --pt1: #f08a3c;
+  --pt2: #4cc28a;
+  --pt3: #8a6cf0;
+  --pts: 0 0 0 2px #fff, 0 0 0 3px #d8dce1, 0 6px 10px -6px rgba(30, 40, 60, 0.4);
+  --pnav: rgba(255, 255, 255, 0.85);
+  --pnavs: 0 0 0 1px #d8dce1;
+}
+.pv-switch2 .pv-t:nth-child(2) {
+  box-shadow:
+    0 0 0 2px #fff,
+    0 0 0 4px #2fb4f5,
+    0 0 10px rgba(47, 180, 245, 0.6);
+}
+.pv-ds {
+  --pbg:
+    repeating-linear-gradient(0deg, transparent 0 7px, #e1e1e1 7px 8px),
+    repeating-linear-gradient(90deg, transparent 0 7px, #e1e1e1 7px 8px), #f8f8f8;
+  --ptop: #fff;
+  --ptops: 0 0 0 1.5px #8e8e8e;
+  --prad: 2px;
+  --pt1: #fff;
+  --pt2: #fff;
+  --pt3: #fff;
+  --pts: inset 0 0 0 2px #fff, 0 0 0 1.5px #8e8e8e;
+  --pnav: #fff;
+  --pnavs: 0 0 0 1.5px #8e8e8e;
+}
+.pv-ds .pv-x {
+  left: 7%;
+  top: 25%;
+  width: 28%;
+  aspect-ratio: 1;
+  --k: #3a66e8;
+  background:
+    linear-gradient(var(--k) 0 0) top left / 8px 2px no-repeat,
+    linear-gradient(var(--k) 0 0) top left / 2px 8px no-repeat,
+    linear-gradient(var(--k) 0 0) top right / 8px 2px no-repeat,
+    linear-gradient(var(--k) 0 0) top right / 2px 8px no-repeat,
+    linear-gradient(var(--k) 0 0) bottom left / 8px 2px no-repeat,
+    linear-gradient(var(--k) 0 0) bottom left / 2px 8px no-repeat,
+    linear-gradient(var(--k) 0 0) bottom right / 8px 2px no-repeat,
+    linear-gradient(var(--k) 0 0) bottom right / 2px 8px no-repeat;
+}
+.pv-dsi {
+  --pbg: repeating-linear-gradient(0deg, transparent 0 3px, rgba(0, 0, 0, 0.04) 3px 4px), linear-gradient(#fff, #e8e8e8);
+  --ptop: #7fc6b8;
+  --prad: 10px;
+  --pt1: #444;
+  --pt2: #fff;
+  --pt3: #e9d8b4;
+  --pts: 0 0 0 2px #fff, 0 0 0 3px #c9c9c9;
+  --pnav: #fff;
+  --pnavs: 0 0 0 1px #c9c9c9;
+}
+.pv-dsi .pv-top {
+  height: 18%;
+  border-radius: 6px;
+}
+.pv-dsi .pv-t {
+  top: 38%;
+  width: 20%;
+}
+.pv-3ds {
+  --pbg:
+    repeating-linear-gradient(0deg, transparent 0 11px, rgba(150, 168, 186, 0.2) 11px 12px),
+    repeating-linear-gradient(90deg, transparent 0 11px, rgba(150, 168, 186, 0.2) 11px 12px), linear-gradient(#fbfcfd, #eaf0f5);
+  --ptop: linear-gradient(90deg, #e8f2fa, #dcebf7);
+  --prad: 10px;
+  --pt1: #46a4e8;
+  --pt2: #f7c948;
+  --pt3: #68b860;
+  --pts: 0 0 0 2px #fff, 0 0 0 3px #ccd5de;
+  --pnav: linear-gradient(#f3f6f9, #e3e9ef);
+}
+.pv-3ds .pv-x {
+  left: 36%;
+  top: 24%;
+  width: 28%;
+  aspect-ratio: 1;
+  --k: #2ec4a8;
+  background:
+    linear-gradient(var(--k) 0 0) top left / 8px 2.5px no-repeat,
+    linear-gradient(var(--k) 0 0) top left / 2.5px 8px no-repeat,
+    linear-gradient(var(--k) 0 0) top right / 8px 2.5px no-repeat,
+    linear-gradient(var(--k) 0 0) top right / 2.5px 8px no-repeat,
+    linear-gradient(var(--k) 0 0) bottom left / 8px 2.5px no-repeat,
+    linear-gradient(var(--k) 0 0) bottom left / 2.5px 8px no-repeat,
+    linear-gradient(var(--k) 0 0) bottom right / 8px 2.5px no-repeat,
+    linear-gradient(var(--k) 0 0) bottom right / 2.5px 8px no-repeat;
+}
+.pv-n64 {
+  --pbg:
+    radial-gradient(1px 1px at 12% 18%, #fff 60%, transparent 70%) 0 0 / 40px 34px,
+    radial-gradient(1px 1px at 64% 52%, #dfe8ff 60%, transparent 70%) 0 0 / 57px 44px,
+    radial-gradient(120% 90% at 50% 0%, #10295c, #050f2b);
+  --ptop: transparent;
+  --prad: 3px;
+  --pt1: #8f9199;
+  --pt2: #8f9199;
+  --pt3: transparent;
+  --pts: inset 0 0 0 3px #8f9199, inset 0 0 0 8px #c33;
+  --pnav: transparent;
+}
+.pv-n64 .pv-t:nth-child(3) {
+  box-shadow:
+    inset 0 0 0 3px #8f9199,
+    inset 0 0 0 8px #3a6;
+  filter: drop-shadow(0 0 6px rgba(220, 230, 255, 0.85));
+}
+.pv-n64 .pv-x {
+  left: 32%;
+  bottom: 9%;
+  width: 7%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: #2346c8;
+  box-shadow: 34px 0 0 #d82a2a;
+}
+.pv-gamecube {
+  --pbg:
+    radial-gradient(45% 50% at 35% 35%, rgba(90, 60, 200, 0.5), transparent 70%),
+    radial-gradient(70% 70% at 50% 50%, #191233, #05040b);
+  --ptop: transparent;
+  --prad: 8px;
+  --pt1: rgba(80, 60, 170, 0.75);
+  --pt2: rgba(60, 150, 130, 0.6);
+  --pt3: rgba(80, 60, 170, 0.75);
+  --pts: 0 0 0 1.5px rgba(170, 150, 255, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  --pnav: rgba(60, 45, 120, 0.6);
+  --pnavs: 0 0 0 1px rgba(170, 150, 255, 0.5);
+}
+.pv-gamecube .pv-t {
+  rotate: 8deg;
+}
+.pv-gameboy {
+  --pbg: #9bbc0f;
+  --ptop: #8bac0f;
+  --ptops: 0 0 0 1.5px #306230;
+  --prad: 1px;
+  --pt1: #306230;
+  --pt2: #8bac0f;
+  --pt3: #8bac0f;
+  --pts: 0 0 0 2px #0f380f;
+  --pnav: #8bac0f;
+  --pnavs: 0 0 0 1.5px #0f380f;
+}
+.pv-virtualboy {
+  --pbg: repeating-linear-gradient(0deg, transparent 0 2px, rgba(255, 0, 0, 0.08) 2px 3px), #000;
+  --ptop: #1a0000;
+  --ptops: 0 0 0 1px #6e0000;
+  --prad: 0;
+  --pt1: #ff2a2a;
+  --pt2: #5a0000;
+  --pt3: #5a0000;
+  --pts: 0 0 0 1.5px #6e0000;
+  --pnav: #1a0000;
+  --pnavs: 0 0 0 1px #6e0000;
+}
+.pv-snes {
+  --pbg: linear-gradient(#e7e7ed, #d0d0d9);
+  --ptop: #f1f1f5;
+  --ptops: 0 0 0 1.5px #8e8aa3;
+  --prad: 5px;
+  --pt1: #cbc9d6;
+  --pt2: #cbc9d6;
+  --pt3: #cbc9d6;
+  --pts: inset 0 0 0 4px #cbc9d6, inset 0 0 0 30px #7a6fe0, 0 0 0 1.5px #8e8aa3;
+  --pnav: #f1f1f5;
+  --pnavs: 0 0 0 1.5px #8e8aa3;
+}
+.pv-snes .pv-t:nth-child(3) {
+  --pts: inset 0 0 0 4px #cbc9d6, inset 0 0 0 30px #d83a3a, 0 0 0 1.5px #8e8aa3;
+}
+.pv-snes .pv-t:nth-child(4) {
+  --pts: inset 0 0 0 4px #cbc9d6, inset 0 0 0 30px #3aa85c, 0 0 0 1.5px #8e8aa3;
+}
+.pv-nes {
+  --pbg: linear-gradient(#dcdcdc, #c6c6c6);
+  --ptop: #e6e6e6;
+  --ptops: 0 0 0 1.5px #161616;
+  --prad: 1px;
+  --pt1: #9a9a9a;
+  --pt2: #9a9a9a;
+  --pt3: #9a9a9a;
+  --pts: 0 0 0 1.5px #161616;
+  --pnav: transparent;
+}
+.pv-nes .pv-t:nth-child(2) {
+  box-shadow:
+    0 0 0 1.5px #161616,
+    0 0 0 3.5px #c8102e;
+}
+.pv-nes .pv-nav {
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 18%;
+  border-radius: 0;
+  background: repeating-linear-gradient(180deg, #3c3c3c 0 3px, #161616 3px 4px);
+}
+html.dark .pv-switch {
+  --pbg: #2d2d2d;
+  --pts: 0 0 0 2px #3a3a3a, 0 0 0 3px #555;
+}
+html.dark .pv-switch2 {
+  --pbg: linear-gradient(#27282c, #1b1c1f);
+  --pts: 0 0 0 2px #303136, 0 0 0 3px #47494f;
+  --pnav: #303136;
+}
+html.dark .pv-ds {
+  --pbg:
+    repeating-linear-gradient(0deg, transparent 0 7px, #2c2c2c 7px 8px),
+    repeating-linear-gradient(90deg, transparent 0 7px, #2c2c2c 7px 8px), #1f1f1f;
+  --ptop: #2a2a2a;
+  --pt1: #2a2a2a;
+  --pt2: #2a2a2a;
+  --pt3: #2a2a2a;
+  --pts: 0 0 0 1.5px #5c5c5c;
+  --pnav: #2a2a2a;
+}
+html.dark .pv-dsi {
+  --pbg: linear-gradient(#262928, #1c1e1d);
+  --pt2: #2e3231;
+  --pnav: #2e3231;
+}
+html.dark .pv-3ds {
+  --pbg: linear-gradient(#1f252b, #171b20);
+  --ptop: #29313a;
+  --pnav: #29313a;
+}
+html.dark .pv-snes {
+  --pbg: linear-gradient(#2c2b34, #1f1e26);
+  --ptop: #34323f;
+  --pnav: #34323f;
+}
+html.dark .pv-nes {
+  --pbg: linear-gradient(#202020, #141414);
+  --ptop: #2a2a2a;
+}
+html.dark .pv-gameboy {
+  --pbg: #0f380f;
+  --ptop: #1e4a1e;
+  --pt1: #9bbc0f;
+  --pt2: #306230;
+  --pt3: #306230;
+  --pts: 0 0 0 2px #8bac0f;
+  --pnav: #1e4a1e;
+}
+.themes {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.thc {
+  padding: 6px 6px 10px;
+  border-radius: 16px;
+}
+.thn {
+  font-size: 14px;
+}
+.thd {
+  font-size: 11.5px;
+}
+.thc.on::after {
+  top: 11px;
+  right: 11px;
+  width: 20px;
+  height: 20px;
+  background-size: 13px;
+}
+.pv-plaza .pv-x {
+  box-shadow:
+    0 6px 0 1px #f29a86,
+    26px -2px 0 0 #cfe7fa,
+    26px 4px 0 1px #6fb2e8,
+    104px 2px 0 0 #fbeab4,
+    104px 8px 0 1px #f0c85a;
+}
+@media (max-width: 560px) {
+  .themes {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* dark mode: keep each flat theme's own text colour instead of the Wii U dark grey */
+html.dark body.flat .search input,
+html.dark body.flat .tool,
+html.dark body.flat .vt button,
+html.dark body.flat nav button,
+html.dark body.flat .cfa,
+html.dark body.flat .play.dark,
+html.dark body.flat .btn,
+html.dark body.flat .win .btn,
+html.dark body.flat .sel,
+html.dark body.flat .tile b {
+  color: var(--ink);
+}
+body.flat #dlg,
+body.flat #gdlg,
+body.flat #det,
+body.flat #gpdlg,
+body.flat #fbdlg {
+  color-scheme: var(--scheme, light);
+}
+body.theme-n64,
+body.theme-gamecube,
+body.theme-virtualboy,
+html.dark body.flat {
+  --scheme: dark;
+}
+html.dark body.theme-gameboy {
+  --scheme: dark;
+}
+body.theme-n64 dialog::backdrop,
+body.theme-gamecube dialog::backdrop,
+body.theme-virtualboy dialog::backdrop {
+  background: rgba(0, 0, 0, 0.6);
+}

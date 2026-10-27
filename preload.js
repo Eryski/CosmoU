@@ -39,6 +39,7 @@ contextBridge.exposeInMainWorld('api', {
   setSetupDone: v => r.invoke('setSetupDone', v),
   pickMusic: () => r.invoke('pickMusic'),
   resetMusic: () => r.invoke('resetMusic'),
+  themeMusic: id => r.invoke('themeMusic', id),
   exportSettings: ui => r.invoke('exportSettings', ui),
   importSettings: () => r.invoke('importSettings'),
   cemuStatus: () => r.invoke('cemuStatus'),
