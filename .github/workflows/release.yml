@@ -23,6 +23,7 @@ on:
 
 permissions:
   contents: write
+  checks: write
 
 jobs:
   windows:
@@ -97,6 +98,23 @@ jobs:
           test "${code:-0}" = "124"
           test -f "$HOME/.config/CosmoU/settings.json" -o -d "$HOME/.config/CosmoU"
 
+      - name: Test CosmoU on this computer
+        id: e2e
+        continue-on-error: true
+        run: |
+          sudo apt-get install -y xvfb imagemagick >/dev/null
+          npm install --prefix "$RUNNER_TEMP/pw" playwright-core@1.48.2
+          PW_PATH="$RUNNER_TEMP/pw/node_modules/playwright-core" CEMU_DOWNLOAD=1 \
+            xvfb-run -a -s "-screen 0 1280x800x24" node scripts/ci/e2e.js "$PWD/dist/linux-unpacked/cosmou-bin" "$RUNNER_TEMP/e2e"
+
+      - name: Report the test
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          for f in "$RUNNER_TEMP"/e2e/*.png; do [ -f "$f" ] && convert "$f" -resize 720x -quality 40 "${f%.png}.jpg"; done
+          node scripts/ci/report.js "$RUNNER_TEMP/e2e" linux
+
       - name: Keep the files on the run page
         uses: actions/upload-artifact@v4
         with:
@@ -160,14 +178,16 @@ jobs:
 
       - name: Report the test
         if: always()
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
-          for f in "$RUNNER_TEMP"/e2e/*.png; do [ -f "$f" ] && sips -s format jpeg -s formatOptions 45 -Z 760 "$f" --out "${f%.png}.jpg" >/dev/null; done
-          node scripts/ci/report.js "$RUNNER_TEMP/e2e"
-          node scripts/ci/report.js "$RUNNER_TEMP/e2e" 1 5
-
-      - name: Report the screenshots
-        if: always()
-        run: node scripts/ci/report.js "$RUNNER_TEMP/e2e" 6 10
+          for f in "$RUNNER_TEMP"/e2e/*.png; do
+            [ -f "$f" ] || continue
+            sips -s format jpeg -s formatOptions 40 -Z 720 "$f" --out "${f%.png}.jpg" >/dev/null
+            # keep every picture small enough for a note on the check (64 KB)
+            [ $(wc -c < "${f%.png}.jpg") -gt 46000 ] && sips -s format jpeg -s formatOptions 25 -Z 560 "$f" --out "${f%.png}.jpg" >/dev/null
+          done
+          node scripts/ci/report.js "$RUNNER_TEMP/e2e" mac
 
       - name: Keep the files on the run page
         uses: actions/upload-artifact@v4

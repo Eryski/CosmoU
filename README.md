@@ -1,6 +1,6 @@
 # CosmoU
 
-A free Windows and Linux launcher for the [Cemu](https://cemu.info) Wii U emulator with a Wii U-inspired home menu.
+A free Windows, Linux and macOS launcher for the [Cemu](https://cemu.info) Wii U emulator with a Wii U-inspired home menu.
 
 - Quick Menu (Q or the controller's Home button): last played games, quick switches and every window in one place
 - Favorites, sort & filter (A–Z, Z–A, recently played, most played; all, favorites, Wii U games, apps) and a game menu on right-click
@@ -17,7 +17,7 @@ A free Windows and Linux launcher for the [Cemu](https://cemu.info) Wii U emulat
 - One Settings window with categories (Cemu & Games, Appearance, Graphics, Sound & Music, Overlay, Controllers & TV, Buddies & Plaza, Saves & Data, About), a search across all settings and full controller navigation
 - Per-game quality and global graphics, audio and overlay settings
 - Controller type, API and profiles, plus a button mapper: set A, B, sticks and D-pad for an Xbox controller, an SDL controller or the keyboard right in CosmoU, without opening Cemu
-- Built-in feedback form that fills in your Cemu and Windows / Linux version
+- Built-in feedback form that fills in your Cemu and Windows / Linux / macOS version
 - First-time setup: Cemu, games folder, menu music and your look in five steps
 - Export / import your settings as cosmou-settings.json
 - Small notifications (for example “14 games added”)
@@ -58,23 +58,35 @@ Notes:
 - Steam Deck: download the AppImage in Desktop Mode, make it executable (right-click → Properties → Permissions), and use **Add to Steam** in CosmoU (Settings → Cemu & Games → Steam) so it shows up in Game Mode. TV mode fits the Deck screen.
 - Distros that block user namespaces (Ubuntu 24.04 with AppArmor) are handled: the launcher turns Chromium's sandbox off only when it can't work.
 
+### macOS
+Download `CosmoU-macOS-x.y.z.dmg` (one file for Apple silicon and Intel Macs), open it and drag **CosmoU** into **Applications**.
+
+CosmoU is free and has no paid Apple developer certificate, so macOS stops it the first time:
+- macOS 15 (Sequoia) and newer: open CosmoU once, press **Done**, then go to **System Settings → Privacy & Security**, scroll down and press **Open Anyway** next to CosmoU.
+- macOS 14 and older: right-click CosmoU in Applications → **Open** → **Open**.
+- Or in Terminal: `xattr -dr com.apple.quarantine /Applications/CosmoU.app`
+
+CosmoU finds Cemu in `/Applications` or `~/Applications`, or downloads the official Cemu for Mac for you (Cemu for Intel runs on Apple silicon with Rosetta; macOS offers to install Rosetta the first time). Cemu's files stay in `~/Library/Application Support/Cemu`. On a Mac, Cemu draws with Vulkan through Metal, and controllers work through SDL. TV mode is F11 or ⌃⌘F.
+
 ## Build from source
 ```
 npm install
 npm start      # run
 npm run dist   # build installer + portable .exe into dist/ (on Windows)
 npm run dist:linux  # build AppImage, .deb and .tar.gz into dist/ (on Linux)
+npm run dist:mac    # build the universal .dmg into dist/ (on a Mac)
 npm run preview  # single-file browser preview with demo games
 ```
 
 ## Making a release
-Set the version in `package.json` and push. Then on GitHub open **Releases → Draft a new release**, create a matching tag (for example `v0.8.1`) and press **Publish release**. GitHub Actions builds the two .exe files on Windows and the AppImage, .deb and .tar.gz on Linux, and attaches all of them to the release. **Actions → Build release → Run workflow** makes a test build without a release (the files are on the run page).
+Set the version in `package.json` and push. Then on GitHub open **Releases → Draft a new release**, create a matching tag (for example `v0.8.1`) and press **Publish release**. GitHub Actions builds the two .exe files on Windows, the AppImage, .deb and .tar.gz on Linux and the .dmg on a Mac (and tests it there), and attaches all of them to the release. **Actions → Build release → Run workflow** makes a test build without a release (the files are on the run page).
 
 ## Project layout
 ```
 main.js        Electron main process: Cemu download, game scan, launching, settings.xml, graphic packs
 platform.js    Everything that differs between Windows and Linux (Cemu folders, finding Cemu, Steam, starting programs)
-build/linux/   Linux launcher script (scripts/linux-after-pack.js puts it into the packages)
+build/linux/   Linux launcher script (scripts/after-pack.js puts it into the packages and signs the Mac app)
+scripts/ci/    End-to-end test that GitHub Actions runs on a real Mac after the build
 preload.js     Bridge between the window and main.js
 index.html     Window markup
 css/cosmou.css All styles (themes, Wii U Look, dialogs)
