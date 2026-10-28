@@ -368,6 +368,13 @@ async function waitFor(fn, ms) {
   } catch {}
   ok('Steam shortcuts written', sa && sa.ok && /CosmoU/.test(vdf), { sa, vdf: vdf.slice(0, 500) });
 
+  // Cemu's own log helps when something went wrong
+  try {
+    const cl = fs.readFileSync(path.join(CEMU_DATA, 'log.txt'), 'utf8').trim().split('\n');
+    ok('Cemu log', true, cl.slice(-25).join('\n'));
+  } catch (e) {
+    ok('Cemu log', true, 'none: ' + e.code);
+  }
   await shot('10-end');
   await app.close().catch(() => {});
   const errs = log

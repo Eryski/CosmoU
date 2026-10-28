@@ -832,11 +832,16 @@ function findExe(dir, depth = 0) {
 
 function getJson(url) {
   return new Promise((resolve, reject) => {
-    const req = https.get(url, { headers: { 'User-Agent': 'CosmoU', Accept: 'application/vnd.github+json' } }, res => {
+    const headers = { 'User-Agent': 'CosmoU', Accept: 'application/vnd.github+json' };
+    // only for automatic tests (GitHub Actions): many tests from one address would hit GitHub's hourly limit
+    if (process.env.COSMOU_GITHUB_TOKEN) headers.Authorization = 'Bearer ' + process.env.COSMOU_GITHUB_TOKEN;
+    const req = https.get(url, { headers }, res => {
       let body = '';
       res.setEncoding('utf8');
       res.on('data', c => (body += c));
       res.on('end', () => {
+        if ((res.statusCode === 403 || res.statusCode === 429) && res.headers['x-ratelimit-remaining'] === '0')
+          return reject(new Error('GitHub gets too many requests from your network right now. Try again in an hour.'));
         if (res.statusCode !== 200)
           return reject(new Error('GitHub answered with HTTP ' + res.statusCode + '. Try again later.'));
         try {

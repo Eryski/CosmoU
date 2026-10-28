@@ -102,9 +102,10 @@ jobs:
         id: e2e
         continue-on-error: true
         run: |
-          sudo apt-get install -y xvfb imagemagick >/dev/null
+          # what a normal desktop already has: OpenGL / Vulkan libraries (software drivers here) and FUSE for AppImages
+          sudo apt-get install -y xvfb imagemagick libopengl0 libgl1 libegl1 libvulkan1 mesa-vulkan-drivers libfuse2 >/dev/null
           npm install --prefix "$RUNNER_TEMP/pw" playwright-core@1.48.2
-          PW_PATH="$RUNNER_TEMP/pw/node_modules/playwright-core" CEMU_DOWNLOAD=1 \
+          PW_PATH="$RUNNER_TEMP/pw/node_modules/playwright-core" CEMU_DOWNLOAD=1 COSMOU_GITHUB_TOKEN="${{ github.token }}" \
             xvfb-run -a -s "-screen 0 1280x800x24" node scripts/ci/e2e.js "$PWD/dist/linux-unpacked/cosmou-bin" "$RUNNER_TEMP/e2e"
 
       - name: Report the test
@@ -173,7 +174,7 @@ jobs:
         continue-on-error: true
         run: |
           npm install --prefix "$RUNNER_TEMP/pw" playwright-core@1.48.2
-          PW_PATH="$RUNNER_TEMP/pw/node_modules/playwright-core" CEMU_DOWNLOAD=1 \
+          PW_PATH="$RUNNER_TEMP/pw/node_modules/playwright-core" CEMU_DOWNLOAD=1 COSMOU_GITHUB_TOKEN="${{ github.token }}" \
             node scripts/ci/e2e.js /Applications/CosmoU.app/Contents/MacOS/CosmoU "$RUNNER_TEMP/e2e"
 
       - name: Report the test
