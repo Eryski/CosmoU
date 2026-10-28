@@ -73,15 +73,16 @@
   "nsis": {
    "oneClick": false,
    "allowToChangeInstallationDirectory": true,
-   "artifactName": "CosmoU-Setup-${version}.exe"
+   "artifactName": "CosmoU-Windows-Setup-${version}.exe"
   },
   "portable": {
-   "artifactName": "CosmoU-Portable-${version}.exe"
+   "artifactName": "CosmoU-Windows-Portable-${version}.exe"
   },
   "afterPack": "scripts/linux-after-pack.js",
   "linux": {
    "icon": "build/icon.png",
    "executableName": "cosmou",
+   "artifactName": "CosmoU-Linux-${version}.${ext}",
    "category": "Game",
    "synopsis": "A Wii U style launcher for Cemu",
    "description": "CosmoU is a Wii U style launcher for the Cemu emulator: your games as covers, a grid or the Wii U Home Menu, with graphic packs, save backups, controller support and themes.",
@@ -113,11 +114,7 @@
     }
    ]
   },
-  "appImage": {
-   "artifactName": "CosmoU-${version}-x86_64.${ext}"
-  },
   "deb": {
-   "artifactName": "CosmoU-${version}-amd64.${ext}",
    "depends": [
     "libgtk-3-0 | libgtk-3-0t64",
     "libnotify4",

@@ -37,7 +37,7 @@ A free Windows and Linux launcher for the [Cemu](https://cemu.info) Wii U emulat
 Start CosmoU and follow the first-time setup: it gets Cemu for you, then choose your games folder.
 
 ### Windows
-Download the latest `CosmoU-Setup-x.y.z.exe` (installer) or `CosmoU-Portable-x.y.z.exe` from **Releases** and run it.
+Download the latest `CosmoU-Windows-Setup-x.y.z.exe` (installer) or `CosmoU-Windows-Portable-x.y.z.exe` from **Releases** and run it.
 Windows may show a SmartScreen warning because the app is not code-signed yet: click *More info → Run anyway*.
 
 ### Linux
@@ -45,9 +45,9 @@ Three downloads, pick one:
 
 | File | For | How |
 |---|---|---|
-| `CosmoU-x.y.z-x86_64.AppImage` | every distro, Steam Deck | `chmod +x CosmoU-*.AppImage` then double-click it or run `./CosmoU-*.AppImage` |
-| `CosmoU-x.y.z-amd64.deb` | Ubuntu, Debian, Mint, Pop!_OS | `sudo apt install ./CosmoU-*-amd64.deb`, then start CosmoU from the app menu |
-| `cosmou-x.y.z.tar.gz` | anything else | unpack it and run `./cosmou` |
+| `CosmoU-Linux-x.y.z.AppImage` | every distro, Steam Deck | `chmod +x CosmoU-Linux-*.AppImage` then double-click it or run `./CosmoU-Linux-*.AppImage` |
+| `CosmoU-Linux-x.y.z.deb` | Ubuntu, Debian, Mint, Pop!_OS | `sudo apt install ./CosmoU-Linux-*.deb`, then start CosmoU from the app menu |
+| `CosmoU-Linux-x.y.z.tar.gz` | anything else | unpack it and run `./cosmou` |
 
 CosmoU finds Cemu by itself if you already have it: an AppImage in `~/Applications`, `~/Downloads` or `~/.local/bin`, the Flatpak `info.cemu.Cemu`, or a `cemu` program from your distro. Otherwise it downloads the official Cemu AppImage for you. Cemu's own files are used where Cemu keeps them (`~/.config/Cemu` and `~/.local/share/Cemu`, or the Flatpak / portable folders).
 
