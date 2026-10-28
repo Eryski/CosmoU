@@ -1,4 +1,4 @@
-# Builds CosmoU for Windows (installer + portable .exe) and Linux (AppImage, .deb, .tar.gz)
+# Builds CosmoU for Windows (installer + portable .exe), Linux (AppImage, .deb, .tar.gz) and macOS (.dmg)
 # and attaches the files to a GitHub Release.
 # How to use: on GitHub go to Releases → "Draft a new release", create a tag like v0.12.0
 # (it should match the version in package.json) and press "Publish release".
@@ -13,7 +13,11 @@ on:
   workflow_dispatch:
     inputs:
       to_release:
-        description: Add the Windows and Linux files to this release (tag like v0.11.2, empty = only build)
+        description: Add the files to this release (tag like v0.11.2, empty = only build)
+        required: false
+        default: ''
+      platforms:
+        description: Which builds to make (windows, linux, mac – empty = all)
         required: false
         default: ''
 
@@ -22,6 +26,7 @@ permissions:
 
 jobs:
   windows:
+    if: github.event_name == 'release' || inputs.platforms == '' || contains(inputs.platforms, 'windows')
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -54,6 +59,7 @@ jobs:
             dist/CosmoU-Windows-Portable-*.exe
 
   linux:
+    if: github.event_name == 'release' || inputs.platforms == '' || contains(inputs.platforms, 'linux')
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
@@ -109,3 +115,75 @@ jobs:
             dist/CosmoU-Linux-*.AppImage
             dist/CosmoU-Linux-*.deb
             dist/CosmoU-Linux-*.tar.gz
+
+  mac:
+    if: github.event_name == 'release' || inputs.platforms == '' || contains(inputs.platforms, 'mac')
+    # Apple silicon Mac; the .dmg is universal (Apple silicon and Intel)
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install
+        run: npm install
+
+      - name: Build the .dmg
+        run: npm run dist:mac
+
+      - name: Check the package
+        run: |
+          ls -la dist
+          test -f dist/CosmoU-macOS-*.dmg
+          APP="dist/mac-universal/CosmoU.app"
+          lipo -archs "$APP/Contents/MacOS/CosmoU"
+          lipo -archs "$APP/Contents/MacOS/CosmoU" | grep -q x86_64
+          lipo -archs "$APP/Contents/MacOS/CosmoU" | grep -q arm64
+          codesign --verify --deep --strict --verbose=2 "$APP"
+          # install it the way people do: open the .dmg and copy CosmoU into Applications
+          hdiutil attach -nobrowse -readonly -mountpoint /tmp/cosmou-dmg dist/CosmoU-macOS-*.dmg
+          ls -la /tmp/cosmou-dmg
+          test -d /tmp/cosmou-dmg/CosmoU.app
+          codesign --verify --deep --strict /tmp/cosmou-dmg/CosmoU.app
+          ditto /tmp/cosmou-dmg/CosmoU.app /Applications/CosmoU.app
+          hdiutil detach /tmp/cosmou-dmg
+
+      - name: Test CosmoU on this Mac
+        id: e2e
+        continue-on-error: true
+        run: |
+          npm install --prefix "$RUNNER_TEMP/pw" playwright-core@1.48.2
+          PW_PATH="$RUNNER_TEMP/pw/node_modules/playwright-core" CEMU_DOWNLOAD=1 \
+            node scripts/ci/e2e.js /Applications/CosmoU.app/Contents/MacOS/CosmoU "$RUNNER_TEMP/e2e"
+
+      - name: Report the test
+        if: always()
+        run: |
+          for f in "$RUNNER_TEMP"/e2e/*.png; do [ -f "$f" ] && sips -s format jpeg -s formatOptions 45 -Z 760 "$f" --out "${f%.png}.jpg" >/dev/null; done
+          node scripts/ci/report.js "$RUNNER_TEMP/e2e"
+          node scripts/ci/report.js "$RUNNER_TEMP/e2e" 1 5
+
+      - name: Report the screenshots
+        if: always()
+        run: node scripts/ci/report.js "$RUNNER_TEMP/e2e" 6 10
+
+      - name: Keep the files on the run page
+        uses: actions/upload-artifact@v4
+        with:
+          name: cosmou-mac
+          path: |
+            dist/CosmoU-macOS-*.dmg
+            ${{ runner.temp }}/e2e
+
+      - name: Attach files to the release
+        if: steps.e2e.outcome == 'success' && (github.event_name == 'release' || inputs.to_release != '')
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event_name == 'release' && github.event.release.tag_name || inputs.to_release }}
+          files: dist/CosmoU-macOS-*.dmg
+
+      - name: Stop if the test failed
+        if: steps.e2e.outcome == 'failure'
+        run: exit 1

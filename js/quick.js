@@ -109,7 +109,7 @@ function quickBuild() {
   sw('music', '#f29a3c', 'Menu music', musicOn, musicOn ? 'On' : 'Off', () => $('#mt').click());
   sw('sound', '#e57ac0', 'UI sounds', qOn('#uis'), qOn('#uis') ? 'On' : 'Off', () => $('#uis').click());
   sw('cube', '#8a6cf0', '3D cases', qOn('#hvc'), qOn('#hvc') ? 'On hover' : 'Off', () => $('#hvc').click());
-  sw('tv', '#16b3d9', 'TV mode', !!tv, tv ? 'On · F11' : 'Off · F11', () => toggleTv());
+  sw('tv', '#16b3d9', 'TV mode', !!tv, (tv ? 'On · ' : 'Off · ') + TV_KEY, () => toggleTv());
   // light / dark and the music volume
   document.querySelectorAll('#qmlook button').forEach(b => b.classList.toggle('on', b.dataset.t === theme));
   const v = Math.round(musicVol() * 100);

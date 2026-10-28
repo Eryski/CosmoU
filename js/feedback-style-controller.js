@@ -9,7 +9,8 @@ function gpuName() {
     let r = String(c.getParameter(e.UNMASKED_RENDERER_WEBGL) || '');
     const m = r.match(/^ANGLE \((?:[^,]*), (.+?)(?: Direct3D[^,]*)?(?:, [^,]*)?\)$/);
     if (m) r = m[1];
-    return r.replace(/\s*\(0x[0-9a-f]+\)/gi, '').trim();
+    // macOS: "ANGLE Metal Renderer: Apple M2 Pro" → "Apple M2 Pro"
+    return r.replace(/^ANGLE Metal Renderer:\s*/i, '').replace(/\s*\(0x[0-9a-f]+\)/gi, '').trim();
   } catch {
     return '';
   }
@@ -23,7 +24,7 @@ async function openFeedback() {
     'CosmoU feedback',
     '',
     '- CosmoU version: ' + i.app,
-    (IS_LINUX ? '- Linux: ' : '- Windows: ') + i.os,
+    '- ' + OS_NAME + ': ' + i.os,
     '- Graphics card: ' + (gpuName() || 'unknown'),
     '- Cemu: ' + i.cemu + ' · data folder: ' + i.data,
     '- Games found automatically: ' + i.games,

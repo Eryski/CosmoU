@@ -8,7 +8,8 @@
   "start": "electron .",
   "dist": "electron-builder --win --publish never",
   "preview": "node scripts/build-preview.js",
-  "dist:linux": "electron-builder --linux --publish never"
+  "dist:linux": "electron-builder --linux --publish never",
+  "dist:mac": "electron-builder --mac --publish never"
  },
  "devDependencies": {
   "electron": "^33.0.0",
@@ -78,7 +79,27 @@
   "portable": {
    "artifactName": "CosmoU-Windows-Portable-${version}.exe"
   },
-  "afterPack": "scripts/linux-after-pack.js",
+  "afterPack": "scripts/after-pack.js",
+  "mac": {
+   "icon": "build/icon.png",
+   "category": "public.app-category.games",
+   "artifactName": "CosmoU-macOS-${version}.${ext}",
+   "identity": null,
+   "hardenedRuntime": false,
+   "gatekeeperAssess": false,
+   "target": [
+    {
+     "target": "dmg",
+     "arch": [
+      "universal"
+     ]
+    }
+   ]
+  },
+  "dmg": {
+   "title": "CosmoU",
+   "artifactName": "CosmoU-macOS-${version}.${ext}"
+  },
   "linux": {
    "icon": "build/icon.png",
    "executableName": "cosmou",

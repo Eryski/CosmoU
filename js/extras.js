@@ -128,11 +128,12 @@ async function setTv(on) {
     vind();
     render();
   });
-  toast(tv ? '✓ TV mode · Select or F11 to leave' : '✓ TV mode off', 3000, 'info');
+  toast(tv ? '✓ TV mode · Select or ' + TV_KEY + ' to leave' : '✓ TV mode off', 3000, 'info');
 }
 const toggleTv = () => setTv(!tv);
 addEventListener('keydown', e => {
-  if (e.key === 'F11') {
+  // F11, or ⌃⌘F on a Mac (the usual full screen keys there)
+  if (e.key === 'F11' || (IS_MAC && e.ctrlKey && e.metaKey && e.code === 'KeyF')) {
     e.preventDefault();
     toggleTv();
   } else if (e.key === 'Escape' && tv && !document.querySelector('dialog[open]')) setTv(false);

@@ -429,12 +429,55 @@ function vkToGdk(v) {
   if (v >= 112 && v <= 123) return 0xffbe + v - 112;
   return { 8: 0xff08, 9: 0xff09, 13: 0xff0d, 27: 0xff1b, 32: 0x20, 37: 0xff51, 38: 0xff52, 39: 0xff53, 40: 0xff54 }[v] || v;
 }
-const keyName = c => (IS_LINUX ? gdkName(c) : vkName(c));
+// macOS: Cemu stores the Mac key code (the physical key, like event.code)
+const MAC = {
+  KeyA: 0x00, KeyS: 0x01, KeyD: 0x02, KeyF: 0x03, KeyH: 0x04, KeyG: 0x05, KeyZ: 0x06, KeyX: 0x07, KeyC: 0x08, KeyV: 0x09,
+  IntlBackslash: 0x0a, KeyB: 0x0b, KeyQ: 0x0c, KeyW: 0x0d, KeyE: 0x0e, KeyR: 0x0f, KeyY: 0x10, KeyT: 0x11,
+  Digit1: 0x12, Digit2: 0x13, Digit3: 0x14, Digit4: 0x15, Digit6: 0x16, Digit5: 0x17, Equal: 0x18, Digit9: 0x19,
+  Digit7: 0x1a, Minus: 0x1b, Digit8: 0x1c, Digit0: 0x1d, BracketRight: 0x1e, KeyO: 0x1f, KeyU: 0x20, BracketLeft: 0x21,
+  KeyI: 0x22, KeyP: 0x23, Enter: 0x24, KeyL: 0x25, KeyJ: 0x26, Quote: 0x27, KeyK: 0x28, Semicolon: 0x29, Backslash: 0x2a,
+  Comma: 0x2b, Slash: 0x2c, KeyN: 0x2d, KeyM: 0x2e, Period: 0x2f, Tab: 0x30, Space: 0x31, Backquote: 0x32, Backspace: 0x33,
+  Escape: 0x35, MetaRight: 0x36, MetaLeft: 0x37, ShiftLeft: 0x38, CapsLock: 0x39, AltLeft: 0x3a, ControlLeft: 0x3b,
+  ShiftRight: 0x3c, AltRight: 0x3d, ControlRight: 0x3e, NumpadDecimal: 0x41, NumpadMultiply: 0x43, NumpadAdd: 0x45,
+  NumLock: 0x47, NumpadDivide: 0x4b, NumpadEnter: 0x4c, NumpadSubtract: 0x4e, NumpadEqual: 0x51, Numpad0: 0x52,
+  Numpad1: 0x53, Numpad2: 0x54, Numpad3: 0x55, Numpad4: 0x56, Numpad5: 0x57, Numpad6: 0x58, Numpad7: 0x59, Numpad8: 0x5b,
+  Numpad9: 0x5c, F5: 0x60, F6: 0x61, F7: 0x62, F3: 0x63, F8: 0x64, F9: 0x65, F11: 0x67, F10: 0x6d, F12: 0x6f, Home: 0x73,
+  PageUp: 0x74, Delete: 0x75, F4: 0x76, End: 0x77, F2: 0x78, PageDown: 0x79, F1: 0x7a, ArrowLeft: 0x7b, ArrowRight: 0x7c,
+  ArrowDown: 0x7d, ArrowUp: 0x7e,
+};
+const MAC_LABEL = {
+  Enter: 'Return', Escape: 'Esc', Backspace: 'Delete', Delete: 'Forward Delete', MetaLeft: 'Left ⌘', MetaRight: 'Right ⌘',
+  AltLeft: 'Left ⌥', AltRight: 'Right ⌥', ControlLeft: 'Left ⌃', ControlRight: 'Right ⌃', ShiftLeft: 'Left Shift',
+  ShiftRight: 'Right Shift', CapsLock: 'Caps Lock', ArrowLeft: '←', ArrowRight: '→', ArrowUp: '↑', ArrowDown: '↓',
+  Space: 'Space', Tab: 'Tab', PageUp: 'Page Up', PageDown: 'Page Down', NumpadEnter: 'Num Enter', NumpadAdd: 'Num +',
+  NumpadSubtract: 'Num −', NumpadMultiply: 'Num *', NumpadDivide: 'Num /', NumpadDecimal: 'Num .', NumpadEqual: 'Num =',
+  NumLock: 'Clear', Minus: '-', Equal: '=', BracketLeft: '[', BracketRight: ']', Semicolon: ';', Quote: "'",
+  Backslash: '\\', Comma: ',', Period: '.', Slash: '/', Backquote: '`', IntlBackslash: '§',
+};
+const MAC_CODE = Object.fromEntries(Object.entries(MAC).map(([k, v]) => [v, k]));
+const macOf = e => (e.code in MAC ? MAC[e.code] : e.keyCode);
+function macName(c) {
+  const k = MAC_CODE[c];
+  if (!k) return 'Key ' + c;
+  if (MAC_LABEL[k]) return MAC_LABEL[k];
+  const m = k.match(/^(?:Key|Digit)(.)$|^Numpad(\d)$|^(F\d+)$/);
+  return m ? (m[1] || (m[2] && 'Num ' + m[2]) || m[3]) : k;
+}
+// the Windows defaults, turned into Mac key codes
+function vkToMac(v) {
+  if (v >= 65 && v <= 90) return MAC['Key' + String.fromCharCode(v)];
+  if (v >= 48 && v <= 57) return MAC['Digit' + String.fromCharCode(v)];
+  if (v >= 96 && v <= 105) return MAC['Numpad' + (v - 96)];
+  if (v >= 112 && v <= 123) return MAC['F' + (v - 111)] ?? v;
+  const n = { 8: 'Backspace', 9: 'Tab', 13: 'Enter', 27: 'Escape', 32: 'Space', 37: 'ArrowLeft', 38: 'ArrowUp', 39: 'ArrowRight', 40: 'ArrowDown' }[v];
+  return n ? MAC[n] : v;
+}
+const keyName = c => (IS_LINUX ? gdkName(c) : IS_MAC ? macName(c) : vkName(c));
 const mpCodeName = (api, c) => (api === 'Keyboard' ? keyName(c) : (MP_NAME[api] || {})[c] || 'Button ' + c);
 const MP_SIDE = { ShiftLeft: 160, ShiftRight: 161, ControlLeft: 162, ControlRight: 163, AltLeft: 164, AltRight: 165 };
-const vkOf = e => (IS_LINUX ? gdkOf(e) : MP_SIDE[e.code] || e.keyCode);
+const vkOf = e => (IS_LINUX ? gdkOf(e) : IS_MAC ? macOf(e) : MP_SIDE[e.code] || e.keyCode);
 
-const mp = { slot: 0, info: null, dev: IS_LINUX ? 'kb' : 'xi:0', type: 'Wii U GamePad', maps: {}, wait: null, queue: null };
+const mp = { slot: 0, info: null, dev: IS_WIN ? 'xi:0' : 'kb', type: 'Wii U GamePad', maps: {}, wait: null, queue: null };
 const mpApi = (dev = mp.dev) => (dev === 'kb' ? 'Keyboard' : dev.startsWith('sdl:') ? 'SDLController' : 'XInput');
 const mpUuid = (dev = mp.dev) => (dev === 'kb' ? 'keyboard' : dev.startsWith('sdl:') ? dev.slice(4) : dev.slice(3));
 const devKey = d =>
@@ -443,7 +486,8 @@ function mpDefaults(type = mp.type, api = mpApi()) {
   const out = {},
     d = MP_DEF[api] || {};
   for (const [id, role] of MP_TYPES[type] || [])
-    if (d[role] !== undefined) out[id] = IS_LINUX && api === 'Keyboard' ? vkToGdk(d[role]) : d[role];
+    if (d[role] !== undefined)
+      out[id] = api !== 'Keyboard' ? d[role] : IS_LINUX ? vkToGdk(d[role]) : IS_MAC ? vkToMac(d[role]) : d[role];
   return out;
 }
 // what Cemu has for this device and type, or the defaults when there is nothing yet
@@ -459,7 +503,7 @@ function mpHint() {
     sdlKnown = i && i.devices.some(d => d.api === 'SDLController'),
     nonX = pads().find(p => !/xinput/i.test(p.id));
   let t = '';
-  if (IS_LINUX) {
+  if (!IS_WIN) {
     if (other) t = `In Cemu this controller uses ${other.api}. CosmoU maps SDL controllers and the keyboard – saving here replaces it.`;
     else if (!sdlKnown)
       t =
@@ -640,14 +684,14 @@ async function openMapper(slot) {
   const i = mp.info,
     dev = $('#mpdev'),
     ty = $('#mptype');
-  const opts = IS_LINUX ? [] : [0, 1, 2, 3].map(n => new Option(`Xbox / XInput controller ${n + 1}`, 'xi:' + n));
+  const opts = !IS_WIN ? [] : [0, 1, 2, 3].map(n => new Option(`Xbox / XInput controller ${n + 1}`, 'xi:' + n));
   opts.push(new Option('Keyboard', 'kb'));
   for (const d of i.devices)
     if (d.api === 'SDLController') opts.push(new Option(`${d.name || 'SDL controller'} (SDL)`, 'sdl:' + d.uuid));
   dev.replaceChildren(...opts);
   const mine = i.devices.map(devKey).find(Boolean),
     xpad = pads().find(p => /xinput/i.test(p.id));
-  mp.dev = IS_LINUX
+  mp.dev = !IS_WIN
     ? mine || (i.devices.find(d => d.api === 'SDLController') ? 'sdl:' + i.devices.find(d => d.api === 'SDLController').uuid : 'kb')
     : mine || (xpad ? 'xi:' + Math.min(3, xpad.index) : 'xi:0');
   dev.value = mp.dev;

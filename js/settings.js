@@ -67,12 +67,17 @@ const SCHEMA = {
       g: 'Rendering',
       k: 'api',
       label: 'Graphics API',
-      d: 'Vulkan is usually the faster choice on modern graphics cards.',
+      d: IS_MAC
+        ? 'Cemu on a Mac draws with Vulkan (through Metal), OpenGL isn’t available there.'
+        : 'Vulkan is usually the faster choice on modern graphics cards.',
       type: 'seg',
-      opts: [
-        ['Vulkan', 1],
-        ['OpenGL', 0],
-      ],
+      // Cemu for macOS has no OpenGL renderer
+      opts: IS_MAC
+        ? [['Vulkan', 1]]
+        : [
+            ['Vulkan', 1],
+            ['OpenGL', 0],
+          ],
     },
     {
       g: 'Rendering',

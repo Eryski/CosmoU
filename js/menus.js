@@ -398,7 +398,7 @@ const KEYS = [
     [
       [',', 'Settings'],
       ['Q', 'Quick Menu'],
-      ['F11', 'TV mode'],
+      [IS_MAC ? 'F11 · ⌃⌘F' : 'F11', 'TV mode'],
       ['Esc', 'Close a window'],
       ['?', 'This list'],
     ],
@@ -572,7 +572,7 @@ const TIPS = [
   'Save backups can run before every start – Settings → Saves & Data.',
   'Graphic packs set the resolution and FPS per game.',
   'Your Daily Log counts how long you play each game.',
-  'F11 switches TV mode on and off.',
+  TV_KEY + ' switches TV mode on and off.',
 ];
 new MutationObserver(() => {
   if ($('#launch').classList.contains('on')) $('#ltip').textContent = 'Tip: ' + TIPS[(Math.random() * TIPS.length) | 0];

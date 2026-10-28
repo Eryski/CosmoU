@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog, shell, nativeImage, nativeTheme } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, shell, nativeImage, nativeTheme, Menu } = require('electron');
 const fs = require('fs'),
   path = require('path'),
   { pathToFileURL } = require('url'),
@@ -307,6 +307,15 @@ app.whenReady().then(() => {
     },
   });
   win.setMenu(null);
+  // macOS always shows a menu bar: keep it small (CosmoU, Edit for copy & paste, Window)
+  if (P.IS_MAC)
+    Menu.setApplicationMenu(
+      Menu.buildFromTemplate([
+        { role: 'appMenu' },
+        { role: 'editMenu' },
+        { label: 'Window', submenu: [{ role: 'minimize' }, { role: 'zoom' }, { type: 'separator' }, { role: 'front' }] },
+      ]),
+    );
   mainWin = win;
   win.loadFile('index.html');
 });
@@ -328,21 +337,24 @@ ipcMain.handle('pickCemu', async () => {
   const r = await dialog.showOpenDialog(
     P.IS_WIN
       ? { title: 'Choose Cemu.exe', filters: [{ name: 'Cemu', extensions: ['exe'] }], properties: ['openFile'] }
-      : { title: 'Choose Cemu (the AppImage or the Cemu program)', properties: ['openFile'], defaultPath: os.homedir() },
+      : P.IS_MAC
+        ? { title: 'Choose Cemu', filters: [{ name: 'Apps', extensions: ['app'] }], properties: ['openFile'], defaultPath: '/Applications' }
+        : { title: 'Choose Cemu (the AppImage or the Cemu program)', properties: ['openFile'], defaultPath: os.homedir() },
   );
   if (r.canceled) return read();
-  const f = r.filePaths[0];
+  const f = P.programOf(r.filePaths[0]);
+  if (!f) return { ...read(), error: 'That app can’t be started. Choose Cemu.app.' };
   if (!P.IS_WIN) P.makeRunnable(f);
   if (!P.isProgram(f)) return { ...read(), error: 'This file can’t be started as a program.' };
   const s = { ...read(), cemuPath: f, cemuManaged: false, cemuVersion: '', cemuFound: false };
   write(s);
   return s;
 });
-// Linux: use a Cemu that is already installed (AppImage, Flatpak, package) when none is set yet
+// Linux and macOS: use a Cemu that is already installed (AppImage, Flatpak, package, Cemu.app) when none is set yet
 function adoptCemu() {
   const s = read();
-  if (!P.IS_LINUX || (s.cemuPath && fs.existsSync(s.cemuPath))) return;
-  const found = P.findCemuLinux();
+  if (P.IS_WIN || (s.cemuPath && fs.existsSync(s.cemuPath))) return;
+  const found = P.findCemu();
   if (found) write({ ...s, cemuPath: found, cemuManaged: false, cemuVersion: '', cemuFound: true });
 }
 ipcMain.handle('pickFolder', async () => {
@@ -531,7 +543,8 @@ function playGame(arg) {
       backupSaves(arg.tid, arg.name, true);
     } catch {}
   P.makeRunnable(s.cemuPath);
-  const child = spawn(s.cemuPath, ['-g', gamePath, '-f'], {
+  const [cmd, cargs] = P.launchCommand(s.cemuPath, ['-g', gamePath, '-f']);
+  const child = spawn(cmd, cargs, {
     detached: true,
     stdio: 'ignore',
     cwd: path.dirname(s.cemuPath),
@@ -885,8 +898,15 @@ ipcMain.handle('cemuCancel', () => {
   if (activeReq) activeReq.destroy(new Error('cancelled'));
 });
 // Windows: the official zip (Cemu.exe). Linux: the official AppImage – one file that runs on most distributions.
+// macOS: the official .dmg – the Apple silicon build when there is one, otherwise the Intel build (runs with Rosetta).
 function cemuAsset(rel) {
   const assets = rel.assets || [];
+  if (P.IS_MAC) {
+    const dmgs = assets.filter(a => /^cemu-.*-macos.*\.dmg$/i.test(a.name)),
+      arm = a => /arm64|aarch64|universal/i.test(a.name),
+      intel = a => /x86_64|x64|universal/i.test(a.name);
+    return (process.arch === 'arm64' ? dmgs.find(arm) || dmgs.find(intel) : dmgs.find(intel)) || dmgs[0];
+  }
   if (P.IS_LINUX) {
     const arch = process.arch === 'arm64' ? 'aarch64' : 'x86_64';
     return assets.find(a => new RegExp('^cemu-.*-' + arch + '\\.appimage$', 'i').test(a.name));
@@ -898,12 +918,13 @@ ipcMain.handle('cemuInstall', async () => {
   const send = d => {
     if (mainWin && !mainWin.isDestroyed()) mainWin.webContents.send('cemu-progress', d);
   };
-  const tmp = path.join(app.getPath('userData'), 'cemu-download.tmp');
+  const tmp = path.join(app.getPath('userData'), P.IS_MAC ? 'cemu-download.dmg' : 'cemu-download.tmp');
   try {
     send({ stage: 'find', text: 'Looking for the latest Cemu release…' });
     const rel = await getJson('https://api.github.com/repos/cemu-project/Cemu/releases/latest');
     const asset = cemuAsset(rel);
-    if (!asset) throw new Error('No ' + (P.IS_LINUX ? 'Linux (AppImage)' : 'Windows') + ' download found in the latest Cemu release.');
+    if (!asset)
+      throw new Error('No ' + (P.IS_LINUX ? 'Linux (AppImage)' : P.IS_MAC ? 'macOS' : 'Windows') + ' download found in the latest Cemu release.');
     if (!asset.browser_download_url.startsWith('https://github.com/cemu-project/Cemu/'))
       throw new Error('Unexpected download address.');
     fs.mkdirSync(path.dirname(tmp), { recursive: true });
@@ -916,7 +937,7 @@ ipcMain.handle('cemuInstall', async () => {
       const h = crypto.createHash('sha256').update(fs.readFileSync(tmp)).digest('hex');
       if (h !== asset.digest.slice(7).toLowerCase()) throw new Error('The download is damaged (checksum mismatch).');
     }
-    send({ stage: 'extract', text: P.IS_LINUX ? 'Setting up Cemu…' : 'Unpacking Cemu…' });
+    send({ stage: 'extract', text: P.IS_WIN ? 'Unpacking Cemu…' : 'Setting up Cemu…' });
     await new Promise(r => setTimeout(r, 80));
     fs.mkdirSync(cemuDir(), { recursive: true });
     let exe;
@@ -930,6 +951,8 @@ ipcMain.handle('cemuInstall', async () => {
           try {
             fs.rmSync(path.join(cemuDir(), f), { force: true });
           } catch {}
+    } else if (P.IS_MAC) {
+      exe = installCemuDmg(tmp);
     } else {
       new AdmZip(tmp).extractAllTo(cemuDir(), true); // overwrite only, never delete (keeps Cemu settings and saves)
       exe = findExe(cemuDir());
@@ -947,6 +970,34 @@ ipcMain.handle('cemuInstall', async () => {
     activeReq = null;
   }
 });
+// macOS: open the .dmg, copy Cemu.app into CosmoU's cemu folder and close the .dmg again.
+// Cemu keeps its settings and saves in ~/Library/Application Support/Cemu, so replacing the app loses nothing.
+function installCemuDmg(dmg) {
+  const mnt = fs.mkdtempSync(path.join(os.tmpdir(), 'cosmou-cemu-'));
+  try {
+    execFileSync('hdiutil', ['attach', '-nobrowse', '-readonly', '-noautoopen', '-mountpoint', mnt, dmg], { timeout: 120000, stdio: 'ignore' });
+    const src = fs.readdirSync(mnt).find(f => /\.app$/i.test(f));
+    if (!src) throw new Error('Cemu was not found in the download.');
+    const dst = path.join(cemuDir(), 'Cemu.app'),
+      next = dst + '.new';
+    fs.rmSync(next, { recursive: true, force: true });
+    // ditto keeps the app's signature, symlinks and permissions intact
+    execFileSync('ditto', [path.join(mnt, src), next], { timeout: 180000, stdio: 'ignore' });
+    fs.rmSync(dst, { recursive: true, force: true });
+    fs.renameSync(next, dst);
+    try {
+      execFileSync('xattr', ['-dr', 'com.apple.quarantine', dst], { timeout: 30000, stdio: 'ignore' });
+    } catch {}
+    return P.bundleExe(dst);
+  } finally {
+    try {
+      execFileSync('hdiutil', ['detach', mnt, '-force'], { timeout: 60000, stdio: 'ignore' });
+    } catch {}
+    try {
+      fs.rmSync(mnt, { recursive: true, force: true });
+    } catch {}
+  }
+}
 ipcMain.handle('musicFolder', () => {
   const d = path.join(app.getPath('userData'), 'music');
   fs.mkdirSync(d, { recursive: true });
@@ -1131,7 +1182,10 @@ function cemuSettingsInfo() {
 }
 function applyGlobals(exe, ov) {
   const res = { applied: [], missing: [] };
-  const keys = Object.keys(ov || {}).filter(k => CEMU_KEYS[k] && Number.isFinite(Number(ov[k])));
+  // Cemu for macOS only has Vulkan: an OpenGL choice (from settings brought over from another computer) is skipped
+  const keys = Object.keys(ov || {}).filter(
+    k => CEMU_KEYS[k] && Number.isFinite(Number(ov[k])) && !(P.IS_MAC && k === 'api' && Number(ov[k]) !== 1),
+  );
   if (!keys.length) return res;
   try {
     const d = cemuDirsOf(exe);
@@ -1278,7 +1332,8 @@ ipcMain.handle('inputOpenCemu', () => {
   const s = read();
   if (!s.cemuPath || !fs.existsSync(s.cemuPath)) return { ok: false, error: 'Cemu isn’t installed yet.' };
   P.makeRunnable(s.cemuPath);
-  const c = spawn(s.cemuPath, [], { detached: true, stdio: 'ignore', cwd: path.dirname(s.cemuPath), env: P.childEnv(s.cemuPath) });
+  const [cmd, cargs] = P.launchCommand(s.cemuPath, []);
+  const c = spawn(cmd, cargs, { detached: true, stdio: 'ignore', cwd: path.dirname(s.cemuPath), env: P.childEnv(s.cemuPath) });
   c.on('error', () => {});
   c.unref();
   return { ok: true };
@@ -1621,10 +1676,16 @@ function gpuProfile(name) {
       ? 'amd'
       : /intel/.test(n)
         ? 'intel'
-        : '';
+        : /apple/.test(n)
+          ? 'apple'
+          : '';
   let tier = 'unknown';
   if (!n) tier = 'unknown';
   else if (/swiftshader|llvmpipe|basic render|microsoft basic/.test(n)) tier = 'low';
+  // Apple silicon: Max and Ultra chips are fast, Pro chips in the middle, the plain M chips like integrated graphics
+  else if (/apple m\d+ (max|ultra)/.test(n)) tier = 'high';
+  else if (/apple m\d+ pro/.test(n)) tier = 'mid';
+  else if (/apple/.test(n)) tier = 'low';
   else if (/rtx\s*(40|50)\d\d|rtx\s*30(7|8|9)0|rtx\s*2080|titan|rx\s*(7|9)\d{3}|rx\s*6(7|8|9)\d0|arc\s*b\d/.test(n))
     tier = 'high';
   else if (
@@ -1758,10 +1819,12 @@ ipcMain.handle('appPick', async () => {
   const r = await dialog.showOpenDialog(
     P.IS_WIN
       ? { title: 'Choose a program', filters: [{ name: 'Programs', extensions: ['exe', 'bat', 'cmd', 'lnk'] }], properties: ['openFile'] }
-      : { title: 'Choose a program (AppImage, program, .sh or .desktop)', properties: ['openFile'], defaultPath: os.homedir() },
+        : P.IS_MAC
+        ? { title: 'Choose an app', properties: ['openFile'], defaultPath: '/Applications' }
+        : { title: 'Choose a program (AppImage, program, .sh or .desktop)', properties: ['openFile'], defaultPath: os.homedir() },
   );
   if (r.canceled) return null;
-  const f = r.filePaths[0];
+  const f = r.filePaths[0].replace(/\/$/, '');
   // a .desktop file names the app inside
   let name = path.parse(f).name;
   if (/\.desktop$/i.test(f))
@@ -1781,7 +1844,14 @@ ipcMain.handle('appCoverPick', async () => {
 });
 ipcMain.handle('appSave', (_, a) => {
   if (!a || typeof a.path !== 'string' || !P.appOk(a.path))
-    return { ok: false, error: P.IS_WIN ? 'Please choose a program (.exe) first.' : 'Please choose a program, AppImage, .sh or .desktop file first.' };
+    return {
+      ok: false,
+      error: P.IS_WIN
+        ? 'Please choose a program (.exe) first.'
+        : P.IS_MAC
+          ? 'Please choose an app (.app), a program or a .command file first.'
+          : 'Please choose a program, AppImage, .sh or .desktop file first.',
+    };
   const s = read(),
     apps = [...(s.customApps || [])];
   const id = typeof a.id === 'string' && apps.some(x => x.id === a.id) ? a.id : crypto.randomBytes(6).toString('hex');

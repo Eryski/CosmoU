@@ -1,19 +1,20 @@
 // CosmoU – Shared state and helpers: game list, sorting, cover colours, music, main render loop.
 const $ = s => document.querySelector(s);
-// Windows or Linux (the preview in a browser counts as Windows)
-const OS = (window.api && window.api.platform) || (/[?&]platform=linux\b/.test(location.search) ? 'linux' : 'win32'),
+// Windows, Linux or macOS (the preview in a browser counts as Windows; ?platform=linux or ?platform=darwin to try the others)
+const OS = (window.api && window.api.platform) || ((location.search.match(/[?&]platform=(linux|darwin)\b/) || [])[1] ?? 'win32'),
   IS_LINUX = OS === 'linux',
-  CEMU_FILE = IS_LINUX ? 'Cemu' : 'Cemu.exe';
+  IS_MAC = OS === 'darwin',
+  IS_WIN = !IS_LINUX && !IS_MAC,
+  OS_NAME = IS_LINUX ? 'Linux' : IS_MAC ? 'macOS' : 'Windows',
+  CEMU_FILE = IS_LINUX ? 'Cemu' : IS_MAC ? 'Cemu.app' : 'Cemu.exe',
+  TV_KEY = IS_MAC ? '⌃⌘F' : 'F11';
 document.documentElement.classList.toggle('os-linux', IS_LINUX);
-const demo = [
-  'Star Chaser',
-  'Cloud Racing',
-  'Deep Sea Expedition',
-  'Pixel Fortress',
-  'Night Train',
-  'Spark Flight',
-  'Moon Garden',
-].map(n => ({ name: n, format: 'Demo', path: '' }));
+document.documentElement.classList.toggle('os-mac', IS_MAC);
+// where Cemu is, as people know it (on a Mac the app, not the program inside it)
+const cemuShown = p => (IS_MAC ? String(p || '').replace(/\/Contents\/MacOS\/[^/]+$/, '') : p || '');
+const demo = ['Star Chaser', 'Cloud Racing', 'Deep Sea Expedition', 'Pixel Fortress', 'Night Train', 'Spark Flight', 'Moon Garden'].map(
+  n => ({ name: n, format: 'Demo', path: '' }),
+);
 let games = [],
   cfg = {},
   view = 'lib',
@@ -205,9 +206,7 @@ function render() {
   if (typeof hoverOff === 'function') hoverOff();
   const l = list();
   if (!cur())
-    sel =
-      (games.slice().sort((a, b) => (plays[b.name] || 0) - (plays[a.name] || 0) || a.name.localeCompare(b.name))[0] || {}).name ||
-      '';
+    sel = (games.slice().sort((a, b) => (plays[b.name] || 0) - (plays[a.name] || 0) || a.name.localeCompare(b.name))[0] || {}).name || '';
   if (mode !== 'grid' && l.length && !l.some(x => x.name === sel)) sel = l[0].name;
   const g = cur();
   $('#hero').hidden = !g || mode !== 'grid';

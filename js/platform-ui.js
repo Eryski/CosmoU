@@ -1,5 +1,6 @@
-// CosmoU – texts and small differences for Linux (Windows is what the HTML says by default).
+// CosmoU – texts and small differences for Linux and macOS (Windows is what the HTML says by default).
 (function () {
+  if (IS_MAC) return macTexts();
   if (!IS_LINUX) return;
   const set = (sel, text) => {
     const e = document.querySelector(sel);
@@ -19,3 +20,22 @@
   const ex = document.querySelector('[data-k~="emulator"]');
   if (ex) ex.dataset.k += ' appimage flatpak linux';
 })();
+function macTexts() {
+  const set = (sel, text) => {
+    const e = document.querySelector(sel);
+    if (e) e.textContent = text;
+  };
+  set(
+    '.wz-page[data-s="1"] p',
+    'CosmoU starts your games with Cemu, the Wii U emulator. Get the latest Cemu for Mac automatically, or choose the Cemu.app you already have.',
+  );
+  set('#wzpick', 'Choose Cemu.app');
+  const tvs = document.querySelector('[data-k~="tv"] small');
+  if (tvs && /F11/.test(tvs.textContent)) tvs.textContent = tvs.textContent.replace('F11', '⌃⌘F');
+  const look = document.querySelector('[data-k~="windows"] small');
+  if (look) look.textContent = 'Follow macOS, or always light or dark';
+  const fb = document.querySelector('[data-k~="feedback"] small');
+  if (fb) fb.textContent = 'Collects your Cemu and macOS version so the report is useful';
+  const ex = document.querySelector('[data-k~="emulator"]');
+  if (ex) ex.dataset.k += ' mac macos dmg apple';
+}

@@ -56,7 +56,7 @@ async function load() {
 }
 const fill = () => {
   $('#pc').textContent = cfg.cemuPath
-    ? (cfg.cemuManaged ? 'Managed by CosmoU' + (cfg.cemuVersion ? ' · ' + cfg.cemuVersion : '') + ' · ' : '') + cfg.cemuPath
+    ? (cfg.cemuManaged ? 'Managed by CosmoU' + (cfg.cemuVersion ? ' · ' + cfg.cemuVersion : '') + ' · ' : '') + cemuShown(cfg.cemuPath)
     : 'Not installed';
   $('#pg').textContent = cfg.gamesDir || 'Not selected';
   $('#ct').textContent = cfg.onlineCovers === false ? 'Off' : 'On';
@@ -356,7 +356,7 @@ async function installCemu() {
   setupUi(
     'Preparing Cemu…',
     'CosmoU needs Cemu to run games. Downloading the latest version' +
-      (IS_LINUX ? ' (AppImage)' : '') +
+      (IS_LINUX ? ' (AppImage)' : IS_MAC ? ' for Mac' : '') +
       ' from the official Cemu GitHub page.',
     0,
     ['cancel'],

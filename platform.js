@@ -1,11 +1,12 @@
-// CosmoU – everything that differs between Windows and Linux (main process only).
+// CosmoU – everything that differs between Windows, Linux and macOS (main process only).
 // Cemu's folders, finding Cemu, checking running programs, Steam, and how programs are started.
 const fs = require('fs'),
   path = require('path'),
   os = require('os');
 
 const IS_WIN = process.platform === 'win32',
-  IS_LINUX = process.platform === 'linux';
+  IS_LINUX = process.platform === 'linux',
+  IS_MAC = process.platform === 'darwin';
 const HOME = os.homedir();
 const xdg = (v, d) => (process.env[v] && path.isAbsolute(process.env[v]) ? process.env[v] : path.join(HOME, d));
 const exists = p => {
@@ -18,7 +19,7 @@ const exists = p => {
 
 // ---------- Cemu's folders ----------
 // Cemu splits its files into a config folder (settings.xml, controllerProfiles) and a data folder
-// (graphicPacks, mlc01, keys.txt). On Windows both are the same folder; on Linux they follow XDG.
+// (graphicPacks, mlc01, keys.txt). On Windows and macOS both are the same folder; on Linux they follow XDG.
 // Graphic pack paths in settings.xml are relative to the data folder.
 const FLATPAK_ID = 'info.cemu.Cemu';
 const isFlatpak = exe => IS_LINUX && /(^|[\\/])info\.cemu\.Cemu$/.test(String(exe || ''));
@@ -36,6 +37,14 @@ function cemuDirs(exe) {
       [roaming, '%APPDATA%\\Cemu'],
     ].find(([d]) => has(d));
     return hit ? { config: hit[0], data: hit[0], mode: hit[1] } : null;
+  }
+  if (IS_MAC) {
+    // a "portable" folder next to Cemu.app, otherwise ~/Library/Application Support/Cemu
+    const bundle = appBundleOf(exe),
+      portable = bundle ? path.join(path.dirname(bundle), 'portable') : path.join(dir, 'portable'),
+      lib = path.join(HOME, 'Library', 'Application Support', 'Cemu');
+    if (has(portable)) return { config: portable, data: portable, mode: 'portable' };
+    return has(lib) ? { config: lib, data: lib, mode: '~/Library/Application Support/Cemu' } : null;
   }
   // Linux: a "portable" folder next to the program (or next to the AppImage file) wins
   const portable = path.join(dir, 'portable');
@@ -76,7 +85,60 @@ function findCemuLinux() {
     } catch {}
   return tries.find(p => isProgram(p)) || '';
 }
-// a file that can be started: executable bit on Linux, .exe on Windows
+// macOS: Cemu.app in /Applications or ~/Applications (also Homebrew installs it there)
+function findCemuMac() {
+  if (!IS_MAC) return '';
+  for (const d of ['/Applications', path.join(HOME, 'Applications'), path.join(HOME, 'Downloads'), path.join(HOME, 'Desktop')])
+    try {
+      const apps = fs
+        .readdirSync(d)
+        .filter(f => /^cemu.*\.app$/i.test(f))
+        .sort((a, b) => (a.toLowerCase() === 'cemu.app' ? -1 : b.toLowerCase() === 'cemu.app' ? 1 : 0));
+      for (const a of apps) {
+        const exe = bundleExe(path.join(d, a));
+        if (exe) return exe;
+      }
+    } catch {}
+  return '';
+}
+const findCemu = () => (IS_LINUX ? findCemuLinux() : IS_MAC ? findCemuMac() : '');
+// macOS apps are folders (Something.app); the program itself is Contents/MacOS/<name>
+function appBundleOf(p) {
+  if (!IS_MAC || !p) return '';
+  const m = String(p).match(/^(.*?\.app)(\/|$)/i);
+  return m && exists(path.join(m[1], 'Contents')) ? m[1] : '';
+}
+function bundleExe(app) {
+  const dir = path.join(app, 'Contents', 'MacOS');
+  let name = '';
+  try {
+    const plist = fs.readFileSync(path.join(app, 'Contents', 'Info.plist'), 'utf8');
+    const m = plist.match(/<key>CFBundleExecutable<\/key>\s*<string>([^<]+)<\/string>/);
+    if (m) name = m[1].trim();
+  } catch {}
+  const tries = [name, path.basename(app, path.extname(app))].filter(Boolean);
+  try {
+    for (const f of fs.readdirSync(dir)) if (!tries.includes(f)) tries.push(f);
+  } catch {}
+  for (const n of tries) {
+    const f = path.join(dir, n);
+    if (isProgram(f)) return f;
+  }
+  return '';
+}
+// what the user picked (a program, or on macOS an .app) → the program CosmoU starts
+function programOf(p) {
+  if (IS_MAC && /\.app\/?$/i.test(p)) return bundleExe(p.replace(/\/$/, ''));
+  return p;
+}
+// how to start Cemu: on macOS through "open", so the app comes to the front and macOS can offer Rosetta when needed;
+// -W waits until Cemu is closed (CosmoU counts the play time), -n starts a new Cemu even if one is open
+function launchCommand(exe, args) {
+  const bundle = appBundleOf(exe);
+  if (IS_MAC && bundle) return ['open', ['-W', '-n', '-a', bundle, '--args', ...args]];
+  return [exe, args];
+}
+// a file that can be started: executable bit on Linux and macOS, .exe on Windows
 function isProgram(p) {
   try {
     const st = fs.statSync(p);
@@ -124,9 +186,16 @@ function pathDirsHave(names) {
 }
 
 // ---------- running programs ----------
-// Linux: look at /proc/<pid>/comm (the program name, 15 characters at most)
+// Linux: look at /proc/<pid>/comm (the program name, 15 characters at most); macOS: ask ps
 function procNames() {
   const out = [];
+  if (IS_MAC) {
+    try {
+      const txt = require('child_process').execFileSync('ps', ['-A', '-o', 'comm='], { encoding: 'utf8', timeout: 4000 });
+      for (const l of txt.split('\n')) if (l.trim()) out.push(path.basename(l.trim()));
+    } catch {}
+    return out;
+  }
   try {
     for (const d of fs.readdirSync('/proc')) {
       if (!/^\d+$/.test(d)) continue;
@@ -151,21 +220,18 @@ function running(winImage, linuxRe) {
       return false;
     }
   }
-  if (IS_LINUX) return procNames().some(n => linuxRe.test(n));
+  if (IS_LINUX || IS_MAC) return procNames().some(n => linuxRe.test(n));
   return false;
 }
 const cemuRunning = () => running('Cemu.exe', /^cemu$/i);
-const steamRunning = () => running('steam.exe', /^steam$/);
+const steamRunning = () => running('steam.exe', IS_MAC ? /^steam_osx$/ : /^steam$/);
 
 // ---------- Steam ----------
 const STEAM_FLATPAK = path.join(HOME, '.var', 'app', 'com.valvesoftware.Steam', '.local', 'share', 'Steam');
 function steamRootLinux() {
-  const tries = [
-    path.join(HOME, '.steam', 'steam'),
-    path.join(HOME, '.local', 'share', 'Steam'),
-    path.join(HOME, '.steam', 'root'),
-    STEAM_FLATPAK,
-  ];
+  const tries = IS_MAC
+    ? [path.join(HOME, 'Library', 'Application Support', 'Steam')]
+    : [path.join(HOME, '.steam', 'steam'), path.join(HOME, '.local', 'share', 'Steam'), path.join(HOME, '.steam', 'root'), STEAM_FLATPAK];
   for (const p of tries) {
     if (!exists(path.join(p, 'userdata'))) continue;
     try {
@@ -179,6 +245,9 @@ function steamRootLinux() {
 // the command that controls Steam (shut down / start again)
 function steamCommand(root, args) {
   if (IS_WIN) return [path.join(root, 'steam.exe'), args];
+  // macOS: Steam is an app; steam://exit closes it, "open -a Steam" starts it again
+  if (IS_MAC)
+    return args.includes('-shutdown') ? ['open', ['steam://exit']] : ['open', ['-a', 'Steam', ...(args.length ? ['--args', ...args] : [])]];
   if (root && path.resolve(root) === path.resolve(STEAM_FLATPAK)) return ['flatpak', ['run', 'com.valvesoftware.Steam', ...args]];
   return ['steam', args];
 }
@@ -190,13 +259,15 @@ function appOk(p) {
   if (!p || !exists(p)) return false;
   const ext = path.extname(p).toLowerCase();
   if (IS_WIN) return APP_EXT_WIN.includes(ext);
+  if (IS_MAC && (ext === '.app' || ext === '.command')) return true;
   return ext === '.sh' || ext === '.desktop' || isProgram(p) || /\.appimage$/i.test(p);
 }
 // how to start an app: [command, args] (null = let the system open it)
 function appCommand(p, args) {
   const ext = path.extname(p).toLowerCase();
   if (IS_WIN) return ext === '.exe' ? [p, args] : null;
-  if (ext === '.sh') return ['sh', [p, ...args]];
+  if (IS_MAC && ext === '.app') return ['open', ['-W', '-n', '-a', p, ...(args.length ? ['--args', ...args] : [])]];
+  if (ext === '.sh' || ext === '.command') return ['sh', [p, ...args]];
   if (ext === '.desktop') return ['gio', ['launch', p, ...args]];
   makeRunnable(p);
   return [p, args];
@@ -214,10 +285,19 @@ function osName() {
       sess = process.env.XDG_SESSION_TYPE || '';
     return [name, 'kernel ' + os.release(), [desk, sess].filter(Boolean).join(' / '), os.arch()].filter(Boolean).join(' · ');
   }
+  if (IS_MAC) {
+    let v = '';
+    try {
+      v = require('child_process').execFileSync('sw_vers', ['-productVersion'], { encoding: 'utf8', timeout: 3000 }).trim();
+    } catch {}
+    const cpu = os.cpus()[0];
+    return ['macOS ' + (v || os.release()), cpu && /apple/i.test(cpu.model) ? cpu.model.trim() : '', os.arch()].filter(Boolean).join(' · ');
+  }
   return (os.version ? os.version() + ' · ' : '') + os.release() + ' · ' + os.arch();
 }
 
 // the CosmoU program that Steam should start: the AppImage file, the portable exe or the installed program
+// (on macOS the program inside CosmoU.app, so Steam can pass the game to it)
 function selfExe() {
   return process.env.APPIMAGE || process.env.PORTABLE_EXECUTABLE_FILE || process.execPath;
 }
@@ -225,6 +305,13 @@ function selfExe() {
 module.exports = {
   IS_WIN,
   IS_LINUX,
+  IS_MAC,
+  findCemu,
+  findCemuMac,
+  appBundleOf,
+  bundleExe,
+  programOf,
+  launchCommand,
   cemuDirs,
   isFlatpak,
   findCemuLinux,

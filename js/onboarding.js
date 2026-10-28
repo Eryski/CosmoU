@@ -63,7 +63,7 @@ async function wzRender() {
       ? '✓ ' +
         (cfg.cemuManaged
           ? 'Cemu ' + (cfg.cemuVersion || '') + ' is ready'
-          : (cfg.cemuFound ? 'Found your Cemu: ' : 'Using ') + cfg.cemuPath)
+          : (cfg.cemuFound ? 'Found your Cemu: ' : 'Using ') + cemuShown(cfg.cemuPath))
       : 'Cemu isn’t set up yet';
     $('#wzcemu').classList.toggle('ok', ok);
     $('#wznext').textContent = ok ? 'Next' : 'Skip for now';
