@@ -220,7 +220,11 @@ async function waitFor(fn, ms) {
         const q = sh('xattr', ['-p', 'com.apple.quarantine', bundle]);
         ok('Cemu.app has no quarantine flag', /^ERR/.test(q), q);
         // the official Cemu.app signs only its program, so check that one
-        ok('Cemu program signature is intact', !/^ERR/.test(sh('codesign', ['--verify', st.path])), sh('codesign', ['--verify', st.path]));
+        ok(
+          'Cemu program is signed (own or ad-hoc)',
+          !/^ERR/.test(sh('codesign', ['--verify', st.path])),
+          sh('codesign', ['--verify', st.path]),
+        );
         ok('no leftover .dmg mount', !/cosmou-cemu-/.test(sh('hdiutil', ['info'])), '');
       }
     }
@@ -329,6 +333,11 @@ async function waitFor(fn, ms) {
     const busy = await E(([id, pid]) => api.gpSet(id, 'BOTW', pid, false, {}).then(r => r.error || 'no error'), [BOTW, fps && fps.id]);
     ok('graphic packs locked while Cemu runs', /close Cemu/i.test(busy), busy);
     await shot('09-playing');
+    // the whole screen, to see Cemu's own window
+    if (MAC) {
+      await wait(6000);
+      sh('screencapture', ['-x', path.join(OUT, '11-screen.png')]);
+    }
     sh('pkill', ['-x', 'Cemu']);
     sh('pkill', ['-x', 'cemu']);
     ok('Cemu closed again', await waitFor(() => !procs().some(n => /^cemu$/i.test(n)), 15000), '');

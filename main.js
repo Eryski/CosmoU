@@ -993,7 +993,16 @@ function installCemuDmg(dmg) {
     try {
       execFileSync('xattr', ['-dr', 'com.apple.quarantine', dst], { timeout: 30000, stdio: 'ignore' });
     } catch {}
-    return P.bundleExe(dst);
+    const exe = P.bundleExe(dst);
+    // older Cemu builds come unsigned; Apple silicon only starts signed programs, so give this copy an ad-hoc signature
+    try {
+      execFileSync('codesign', ['--verify', exe], { timeout: 30000, stdio: 'ignore' });
+    } catch {
+      try {
+        execFileSync('codesign', ['--force', '--deep', '--sign', '-', dst], { timeout: 120000, stdio: 'ignore' });
+      } catch {}
+    }
+    return exe;
   } finally {
     try {
       execFileSync('hdiutil', ['detach', mnt, '-force'], { timeout: 60000, stdio: 'ignore' });
