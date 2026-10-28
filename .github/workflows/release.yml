@@ -1,12 +1,21 @@
-# Builds the Windows installer + portable .exe and attaches them to a GitHub Release.
-# How to use: on GitHub go to Releases → "Draft a new release", create a tag like v0.8.1
+# Builds CosmoU for Windows (installer + portable .exe) and Linux (AppImage, .deb, .tar.gz)
+# and attaches the files to a GitHub Release.
+# How to use: on GitHub go to Releases → "Draft a new release", create a tag like v0.12.0
 # (it should match the version in package.json) and press "Publish release".
-# The build starts automatically and the two .exe files appear in the release after a few minutes.
+# The builds start automatically and the files appear in the release after a few minutes.
+# "Run workflow" (manual start) builds and keeps the files as a download on the run page.
+# With "Add the Linux files to this release" (for example v0.11.2) it also attaches the Linux files to that release.
 name: Build release
 
 on:
   release:
     types: [published]
+  workflow_dispatch:
+    inputs:
+      linux_to_release:
+        description: Add the Linux files to this release (tag like v0.11.2, empty = only build)
+        required: false
+        default: ''
 
 permissions:
   contents: write
@@ -27,9 +36,75 @@ jobs:
       - name: Build installer and portable exe
         run: npm run dist
 
+      - name: Keep the files on the run page
+        uses: actions/upload-artifact@v4
+        with:
+          name: cosmou-windows
+          path: |
+            dist/CosmoU-Setup-*.exe
+            dist/CosmoU-Portable-*.exe
+
       - name: Attach files to the release
+        if: github.event_name == 'release'
         uses: softprops/action-gh-release@v2
         with:
           files: |
             dist/CosmoU-Setup-*.exe
             dist/CosmoU-Portable-*.exe
+
+  linux:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install
+        run: npm install
+
+      - name: Build AppImage, .deb and .tar.gz
+        run: npm run dist:linux
+
+      - name: Check the packages
+        run: |
+          ls -la dist
+          test -f dist/CosmoU-*-x86_64.AppImage
+          test -f dist/CosmoU-*-amd64.deb
+          test -f dist/cosmou-*.tar.gz
+          # the launcher script starts the real program and must be in every package
+          test -x dist/linux-unpacked/cosmou && head -1 dist/linux-unpacked/cosmou | grep -q '^#!/bin/sh'
+          test -x dist/linux-unpacked/cosmou-bin
+          dpkg-deb -c dist/CosmoU-*-amd64.deb | grep -q 'opt/CosmoU/cosmou-bin'
+
+      - name: Start CosmoU once (smoke test)
+        continue-on-error: true
+        run: |
+          sudo apt-get update && sudo apt-get install -y xvfb
+          chmod +x dist/CosmoU-*-x86_64.AppImage
+          export HOME="$RUNNER_TEMP/home" && mkdir -p "$HOME"
+          xvfb-run -a timeout 25 dist/CosmoU-*-x86_64.AppImage --appimage-extract-and-run || code=$?
+          # 124 = still running after 25 seconds, which means it started fine
+          echo "exit code: ${code:-0}"
+          test "${code:-0}" = "124"
+          test -f "$HOME/.config/CosmoU/settings.json" -o -d "$HOME/.config/CosmoU"
+
+      - name: Keep the files on the run page
+        uses: actions/upload-artifact@v4
+        with:
+          name: cosmou-linux
+          path: |
+            dist/CosmoU-*-x86_64.AppImage
+            dist/CosmoU-*-amd64.deb
+            dist/cosmou-*.tar.gz
+
+      - name: Attach files to the release
+        if: github.event_name == 'release' || inputs.linux_to_release != ''
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event_name == 'release' && github.event.release.tag_name || inputs.linux_to_release }}
+          files: |
+            dist/CosmoU-*-x86_64.AppImage
+            dist/CosmoU-*-amd64.deb
+            dist/cosmou-*.tar.gz

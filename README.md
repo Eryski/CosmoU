@@ -1,6 +1,6 @@
 # CosmoU
 
-A free Windows launcher for the [Cemu](https://cemu.info) Wii U emulator with a Wii U-inspired home menu.
+A free Windows and Linux launcher for the [Cemu](https://cemu.info) Wii U emulator with a Wii U-inspired home menu.
 
 - Quick Menu (Q or the controller's Home button): last played games, quick switches and every window in one place
 - Favorites, sort & filter (A–Z, Z–A, recently played, most played; all, favorites, Wii U games, apps) and a game menu on right-click
@@ -17,8 +17,8 @@ A free Windows launcher for the [Cemu](https://cemu.info) Wii U emulator with a 
 - One Settings window with categories (Cemu & Games, Appearance, Graphics, Sound & Music, Overlay, Controllers & TV, Buddies & Plaza, Saves & Data, About), a search across all settings and full controller navigation
 - Per-game quality and global graphics, audio and overlay settings
 - Controller type, API and profiles, plus a button mapper: set A, B, sticks and D-pad for an Xbox controller, an SDL controller or the keyboard right in CosmoU, without opening Cemu
-- Built-in feedback form that fills in your Cemu and Windows version
-- First-time setup: Cemu, games folder and menu music in four steps
+- Built-in feedback form that fills in your Cemu and Windows / Linux version
+- First-time setup: Cemu, games folder, menu music and your look in five steps
 - Export / import your settings as cosmou-settings.json
 - Small notifications (for example “14 games added”)
 - Daily Log: play time per game (total, last session, sessions) and a chart of the last 7 days
@@ -29,29 +29,52 @@ A free Windows launcher for the [Cemu](https://cemu.info) Wii U emulator with a 
 - Updates & DLC: finds update and DLC folders in your games folder (or another folder you pick), shows what is installed and installs them where Cemu looks for them
 - Add to Steam: CosmoU or single games as Steam entries with their covers as artwork; a game started from Steam opens through CosmoU (settings, save backups, play time) and CosmoU closes with it
 - Recently played is saved on disk, so it survives restarts and updates
-- Light, dark or follow Windows, smooth view transitions and optional UI sounds
+- Light, dark or follow your system, smooth view transitions and optional UI sounds
 - Update check: shows a hint when a new version is on GitHub
 - Optional background music: an original tune for each of the 21 themes (copied to the music folder on install and update), or your own file
 
 ## Install
-Download the latest `CosmoU-Setup-x.y.z.exe` (installer) or `CosmoU-Portable-x.y.z.exe` from **Releases**, run it, and start CosmoU. It downloads Cemu for you on first launch, then choose your games folder in Settings.
+Start CosmoU and follow the first-time setup: it gets Cemu for you, then choose your games folder.
 
+### Windows
+Download the latest `CosmoU-Setup-x.y.z.exe` (installer) or `CosmoU-Portable-x.y.z.exe` from **Releases** and run it.
 Windows may show a SmartScreen warning because the app is not code-signed yet: click *More info → Run anyway*.
+
+### Linux
+Three downloads, pick one:
+
+| File | For | How |
+|---|---|---|
+| `CosmoU-x.y.z-x86_64.AppImage` | every distro, Steam Deck | `chmod +x CosmoU-*.AppImage` then double-click it or run `./CosmoU-*.AppImage` |
+| `CosmoU-x.y.z-amd64.deb` | Ubuntu, Debian, Mint, Pop!_OS | `sudo apt install ./CosmoU-*-amd64.deb`, then start CosmoU from the app menu |
+| `cosmou-x.y.z.tar.gz` | anything else | unpack it and run `./cosmou` |
+
+CosmoU finds Cemu by itself if you already have it: an AppImage in `~/Applications`, `~/Downloads` or `~/.local/bin`, the Flatpak `info.cemu.Cemu`, or a `cemu` program from your distro. Otherwise it downloads the official Cemu AppImage for you. Cemu's own files are used where Cemu keeps them (`~/.config/Cemu` and `~/.local/share/Cemu`, or the Flatpak / portable folders).
+
+Notes:
+- The AppImage needs FUSE 2. If it doesn't start, install `libfuse2` (Ubuntu 22.04) or `libfuse2t64` (Ubuntu 24.04+), or run it with `--appimage-extract-and-run`.
+- Flatpak Cemu: give it access to your games folder (for example with Flatseal, or `flatpak override --user --filesystem=/path/to/games info.cemu.Cemu`), otherwise Cemu can't open the games CosmoU starts.
+- Controllers: on Linux Cemu uses SDL. Set your controller up once in Cemu (Input settings → API "SDLController"), then the button mapper in CosmoU can change its buttons.
+- Steam Deck: download the AppImage in Desktop Mode, make it executable (right-click → Properties → Permissions), and use **Add to Steam** in CosmoU (Settings → Cemu & Games → Steam) so it shows up in Game Mode. TV mode fits the Deck screen.
+- Distros that block user namespaces (Ubuntu 24.04 with AppArmor) are handled: the launcher turns Chromium's sandbox off only when it can't work.
 
 ## Build from source
 ```
 npm install
 npm start      # run
-npm run dist   # build installer + portable .exe into dist/
+npm run dist   # build installer + portable .exe into dist/ (on Windows)
+npm run dist:linux  # build AppImage, .deb and .tar.gz into dist/ (on Linux)
 npm run preview  # single-file browser preview with demo games
 ```
 
 ## Making a release
-Set the version in `package.json` and push. Then on GitHub open **Releases → Draft a new release**, create a matching tag (for example `v0.8.1`) and press **Publish release**. GitHub Actions builds both .exe files and attaches them to the release.
+Set the version in `package.json` and push. Then on GitHub open **Releases → Draft a new release**, create a matching tag (for example `v0.8.1`) and press **Publish release**. GitHub Actions builds the two .exe files on Windows and the AppImage, .deb and .tar.gz on Linux, and attaches all of them to the release. **Actions → Build release → Run workflow** makes a test build without a release (the files are on the run page).
 
 ## Project layout
 ```
 main.js        Electron main process: Cemu download, game scan, launching, settings.xml, graphic packs
+platform.js    Everything that differs between Windows and Linux (Cemu folders, finding Cemu, Steam, starting programs)
+build/linux/   Linux launcher script (scripts/linux-after-pack.js puts it into the packages)
 preload.js     Bridge between the window and main.js
 index.html     Window markup
 css/cosmou.css All styles (themes, Wii U Look, dialogs)

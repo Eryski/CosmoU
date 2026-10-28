@@ -6,6 +6,7 @@ const fs = require('fs'),
 const https = require('https'),
   crypto = require('crypto'),
   AdmZip = require('adm-zip');
+const P = require('./platform');
 let mainWin = null,
   activeReq = null,
   cancelled = false;
@@ -54,8 +55,25 @@ const tag = (xml, name) => {
   return m ? unxml(m[1]).trim() : '';
 };
 
+// File names are case-sensitive on Linux, and some Wii U dumps use "Meta" or "Code": find the real name
+function ci(base, ...parts) {
+  let p = base;
+  for (const part of parts) {
+    const exact = path.join(p, part);
+    if (P.IS_WIN || fs.existsSync(exact)) {
+      p = exact;
+      continue;
+    }
+    let hit = null;
+    try {
+      hit = fs.readdirSync(p).find(n => n.toLowerCase() === part.toLowerCase());
+    } catch {}
+    p = path.join(p, hit || part);
+  }
+  return p;
+}
 function readMeta(gameDir) {
-  const f = path.join(gameDir, 'meta', 'meta.xml');
+  const f = ci(gameDir, 'meta', 'meta.xml');
   if (!fs.existsSync(f)) return null;
   const x = fs.readFileSync(f, 'utf8');
   return {
@@ -133,7 +151,7 @@ function scan(dir) {
         format: 'Wii U · ' + path.extname(e.name).slice(1).toUpperCase(),
       });
     } else if (e.isDirectory()) {
-      const code = path.join(p, 'code');
+      const code = ci(p, 'code');
       if (!fs.existsSync(code)) continue;
       const rpx = fs.readdirSync(code).find(f => f.toLowerCase().endsWith('.rpx'));
       if (!rpx) continue;
@@ -168,8 +186,8 @@ function scan(dir) {
     if (seen[g.name] > 1) g.name += ' (' + seen[g.name] + ')';
     const key = g.tid || safeName(g.name);
     if (g.dir) {
-      cacheTga(path.join(g.dir, 'meta', 'iconTex.tga'), path.join(autoDir(), key + '-icon.png'));
-      cacheTga(path.join(g.dir, 'meta', 'bootTvTex.tga'), path.join(autoDir(), key + '-hero.png'));
+      cacheTga(ci(g.dir, 'meta', 'iconTex.tga'), path.join(autoDir(), key + '-icon.png'));
+      cacheTga(ci(g.dir, 'meta', 'bootTvTex.tga'), path.join(autoDir(), key + '-hero.png'));
     }
     const icon = path.join(autoDir(), key + '-icon.png');
     const manual = manualCover(g.name);
@@ -269,6 +287,9 @@ async function runBox() {
 
 app.whenReady().then(() => {
   fs.mkdirSync(coversDir(), { recursive: true });
+  try {
+    adoptCemu();
+  } catch {}
   installThemeMusic();
   applyTheme(read().theme);
   const win = new BrowserWindow({
@@ -304,16 +325,26 @@ ipcMain.handle('setOnlineCovers', (_, v) => {
 });
 ipcMain.handle('covers', () => shell.openPath(coversDir()));
 ipcMain.handle('pickCemu', async () => {
-  const r = await dialog.showOpenDialog({
-    title: 'Choose Cemu.exe',
-    filters: [{ name: 'Cemu', extensions: ['exe'] }],
-    properties: ['openFile'],
-  });
+  const r = await dialog.showOpenDialog(
+    P.IS_WIN
+      ? { title: 'Choose Cemu.exe', filters: [{ name: 'Cemu', extensions: ['exe'] }], properties: ['openFile'] }
+      : { title: 'Choose Cemu (the AppImage or the Cemu program)', properties: ['openFile'], defaultPath: os.homedir() },
+  );
   if (r.canceled) return read();
-  const s = { ...read(), cemuPath: r.filePaths[0], cemuManaged: false, cemuVersion: '' };
+  const f = r.filePaths[0];
+  if (!P.IS_WIN) P.makeRunnable(f);
+  if (!P.isProgram(f)) return { ...read(), error: 'This file can’t be started as a program.' };
+  const s = { ...read(), cemuPath: f, cemuManaged: false, cemuVersion: '', cemuFound: false };
   write(s);
   return s;
 });
+// Linux: use a Cemu that is already installed (AppImage, Flatpak, package) when none is set yet
+function adoptCemu() {
+  const s = read();
+  if (!P.IS_LINUX || (s.cemuPath && fs.existsSync(s.cemuPath))) return;
+  const found = P.findCemuLinux();
+  if (found) write({ ...s, cemuPath: found, cemuManaged: false, cemuVersion: '', cemuFound: true });
+}
 ipcMain.handle('pickFolder', async () => {
   const r = await dialog.showOpenDialog({ title: 'Choose games folder', properties: ['openDirectory'] });
   if (r.canceled) return read();
@@ -341,13 +372,13 @@ ipcMain.handle('play', (_, arg) => {
 // ---------- Save backups: mlc01/usr/save/<high>/<low> of a game, zipped into <userData>/saves/<game> ----------
 const savesRoot = () => path.join(app.getPath('userData'), 'saves');
 function mlcDir(exe) {
-  const data = exe && fs.existsSync(exe) ? cemuDataDir(exe) : '';
-  if (!data) return '';
+  const d = cemuDirsOf(exe);
+  if (!d) return '';
   try {
-    const m = tag(fs.readFileSync(path.join(data, 'settings.xml'), 'utf8'), 'mlc_path');
+    const m = tag(fs.readFileSync(path.join(d.config, 'settings.xml'), 'utf8'), 'mlc_path');
     if (m && fs.existsSync(m)) return m;
   } catch {}
-  return path.join(data, 'mlc01');
+  return path.join(d.data, 'mlc01');
 }
 function saveDirOf(tid) {
   tid = String(tid || '').toLowerCase();
@@ -478,8 +509,11 @@ function playGame(arg) {
   const gamePath = typeof arg === 'string' ? arg : arg && arg.path;
   const s = read();
   if (!s.cemuPath || !fs.existsSync(s.cemuPath))
-    return { ok: false, error: 'Cemu isn’t installed yet. Open Settings to download it or choose Cemu.exe.' };
+    return { ok: false, error: 'Cemu isn’t installed yet. Open Settings to download it or choose ' + (P.IS_WIN ? 'Cemu.exe.' : 'Cemu.') };
   if (typeof gamePath !== 'string' || !fs.existsSync(gamePath)) return { ok: false, error: 'The game file no longer exists.' };
+  P.makeRunnable(s.cemuPath);
+  if (!P.isProgram(s.cemuPath))
+    return { ok: false, error: 'Cemu can’t be started. Choose it again in Settings → Cemu & Games.' };
   let note = '',
     preset = '';
   const key = arg && typeof arg === 'object' ? arg.key : '';
@@ -496,7 +530,14 @@ function playGame(arg) {
     try {
       backupSaves(arg.tid, arg.name, true);
     } catch {}
-  const child = spawn(s.cemuPath, ['-g', gamePath, '-f'], { detached: true, stdio: 'ignore', cwd: path.dirname(s.cemuPath) });
+  P.makeRunnable(s.cemuPath);
+  const child = spawn(s.cemuPath, ['-g', gamePath, '-f'], {
+    detached: true,
+    stdio: 'ignore',
+    cwd: path.dirname(s.cemuPath),
+    env: P.childEnv(s.cemuPath),
+  });
+  child.on('error', () => {});
   child.unref();
   return { ok: true, note, preset, child };
 }
@@ -767,7 +808,7 @@ const friendly = e =>
 function findExe(dir, depth = 0) {
   if (depth > 3 || !fs.existsSync(dir)) return '';
   const items = fs.readdirSync(dir, { withFileTypes: true });
-  for (const e of items) if (e.isFile() && e.name.toLowerCase() === 'cemu.exe') return path.join(dir, e.name);
+  for (const e of items) if (e.isFile() && e.name.toLowerCase() === (P.IS_WIN ? 'cemu.exe' : 'cemu')) return path.join(dir, e.name);
   for (const e of items)
     if (e.isDirectory()) {
       const f = findExe(path.join(dir, e.name), depth + 1);
@@ -843,17 +884,26 @@ ipcMain.handle('cemuCancel', () => {
   cancelled = true;
   if (activeReq) activeReq.destroy(new Error('cancelled'));
 });
+// Windows: the official zip (Cemu.exe). Linux: the official AppImage – one file that runs on most distributions.
+function cemuAsset(rel) {
+  const assets = rel.assets || [];
+  if (P.IS_LINUX) {
+    const arch = process.arch === 'arm64' ? 'aarch64' : 'x86_64';
+    return assets.find(a => new RegExp('^cemu-.*-' + arch + '\\.appimage$', 'i').test(a.name));
+  }
+  return assets.find(a => /windows.*x64.*\.zip$/i.test(a.name));
+}
 ipcMain.handle('cemuInstall', async () => {
   cancelled = false;
   const send = d => {
     if (mainWin && !mainWin.isDestroyed()) mainWin.webContents.send('cemu-progress', d);
   };
-  const tmp = path.join(app.getPath('userData'), 'cemu-download.zip.tmp');
+  const tmp = path.join(app.getPath('userData'), 'cemu-download.tmp');
   try {
     send({ stage: 'find', text: 'Looking for the latest Cemu release…' });
     const rel = await getJson('https://api.github.com/repos/cemu-project/Cemu/releases/latest');
-    const asset = (rel.assets || []).find(a => /windows.*x64.*\.zip$/i.test(a.name));
-    if (!asset) throw new Error('No Windows download found in the latest Cemu release.');
+    const asset = cemuAsset(rel);
+    if (!asset) throw new Error('No ' + (P.IS_LINUX ? 'Linux (AppImage)' : 'Windows') + ' download found in the latest Cemu release.');
     if (!asset.browser_download_url.startsWith('https://github.com/cemu-project/Cemu/'))
       throw new Error('Unexpected download address.');
     fs.mkdirSync(path.dirname(tmp), { recursive: true });
@@ -866,13 +916,26 @@ ipcMain.handle('cemuInstall', async () => {
       const h = crypto.createHash('sha256').update(fs.readFileSync(tmp)).digest('hex');
       if (h !== asset.digest.slice(7).toLowerCase()) throw new Error('The download is damaged (checksum mismatch).');
     }
-    send({ stage: 'extract', text: 'Unpacking Cemu…' });
+    send({ stage: 'extract', text: P.IS_LINUX ? 'Setting up Cemu…' : 'Unpacking Cemu…' });
     await new Promise(r => setTimeout(r, 80));
     fs.mkdirSync(cemuDir(), { recursive: true });
-    new AdmZip(tmp).extractAllTo(cemuDir(), true); // overwrite only, never delete (keeps Cemu settings and saves)
-    const exe = findExe(cemuDir());
-    if (!exe) throw new Error('Cemu.exe was not found in the download.');
-    write({ ...read(), cemuPath: exe, cemuManaged: true, cemuVersion: rel.tag_name || '' });
+    let exe;
+    if (P.IS_LINUX) {
+      // keep the AppImage as it is; older CosmoU downloads of it are removed afterwards
+      exe = path.join(cemuDir(), path.basename(asset.name));
+      fs.copyFileSync(tmp, exe);
+      fs.chmodSync(exe, 0o755);
+      for (const f of fs.readdirSync(cemuDir()))
+        if (/^cemu-.*\.appimage$/i.test(f) && f !== path.basename(exe))
+          try {
+            fs.rmSync(path.join(cemuDir(), f), { force: true });
+          } catch {}
+    } else {
+      new AdmZip(tmp).extractAllTo(cemuDir(), true); // overwrite only, never delete (keeps Cemu settings and saves)
+      exe = findExe(cemuDir());
+    }
+    if (!exe) throw new Error('Cemu was not found in the download.');
+    write({ ...read(), cemuPath: exe, cemuManaged: true, cemuVersion: rel.tag_name || '', cemuFound: false });
     return { ok: true };
   } catch (e) {
     if (cancelled) return { ok: false, cancelled: true };
@@ -905,14 +968,10 @@ ipcMain.handle('setGameSetting', (_, key, value) => {
   return n;
 });
 
-function cemuDataDir(exe) {
-  const dir = path.dirname(exe);
-  return (
-    [path.join(dir, 'portable'), dir, path.join(process.env.APPDATA || '', 'Cemu')].find(d =>
-      fs.existsSync(path.join(d, 'settings.xml')),
-    ) || ''
-  );
-}
+// Cemu's folders: { config } holds settings.xml and controllerProfiles, { data } holds graphicPacks and mlc01.
+// Both are the same folder on Windows; on Linux they follow XDG, a portable folder or the Flatpak (see platform.js).
+const cemuDirsOf = exe => (exe && fs.existsSync(exe) ? P.cemuDirs(exe) : null);
+const cemuNow = () => cemuDirsOf(read().cemuPath);
 function findRules(dir, depth = 0, out = []) {
   if (depth > 6 || !fs.existsSync(dir)) return out;
   for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -979,12 +1038,12 @@ function patchSettings(file, rel, pick) {
 }
 function applyResolution(exe, tid, size) {
   try {
-    const data = cemuDataDir(exe);
-    if (!data) return 'no-settings';
+    const dirs = cemuDirsOf(exe);
+    if (!dirs) return 'no-settings';
     const t = (tid || '').toLowerCase();
     if (!t) return 'no-pack';
     let found = null;
-    for (const f of findRules(path.join(data, 'graphicPacks'))) {
+    for (const f of findRules(path.join(dirs.data, 'graphicPacks'))) {
       let txt;
       try {
         txt = fs.readFileSync(f, 'utf8');
@@ -995,12 +1054,12 @@ function applyResolution(exe, tid, size) {
       if (!r.titles.includes(t)) continue;
       const pick = pickPreset(r.presets, size[0], size[1]);
       if (!pick) continue;
-      const rel = path.relative(data, f);
+      const rel = path.relative(dirs.data, f);
       if (!found || /resolution/i.test(rel)) found = { rel, pick };
     }
     if (!found) return 'no-pack';
-    let res = patchSettings(path.join(data, 'settings.xml'), found.rel, found.pick);
-    if (res === 'no-entry') res = enableWithPreset(data, t, found.rel, found.pick.name) ? 'applied' : res;
+    let res = patchSettings(path.join(dirs.config, 'settings.xml'), found.rel, found.pick);
+    if (res === 'no-entry') res = enableWithPreset(dirs, t, found.rel, found.pick.name) ? 'applied' : res;
     return res === 'applied' && !found.pick.exact ? 'nearest' : res;
   } catch {
     return 'error';
@@ -1058,9 +1117,9 @@ function cemuSettingsInfo() {
   const s = read();
   const out = { found: false, current: {}, overrides: s.cemuOverrides || {}, defaultQuality: s.defaultQuality || '' };
   try {
-    const d = s.cemuPath && fs.existsSync(s.cemuPath) ? cemuDataDir(s.cemuPath) : '';
+    const d = cemuDirsOf(s.cemuPath);
     if (d) {
-      const xml = fs.readFileSync(path.join(d, 'settings.xml'), 'utf8');
+      const xml = fs.readFileSync(path.join(d.config, 'settings.xml'), 'utf8');
       out.found = true;
       for (const [k, [sec, tag, kind]] of Object.entries(CEMU_KEYS)) {
         const v = readTag(xml, sec, tag);
@@ -1075,12 +1134,12 @@ function applyGlobals(exe, ov) {
   const keys = Object.keys(ov || {}).filter(k => CEMU_KEYS[k] && Number.isFinite(Number(ov[k])));
   if (!keys.length) return res;
   try {
-    const d = cemuDataDir(exe);
+    const d = cemuDirsOf(exe);
     if (!d) {
       res.missing = keys;
       return res;
     }
-    const f = path.join(d, 'settings.xml');
+    const f = path.join(d.config, 'settings.xml');
     let xml = fs.readFileSync(f, 'utf8');
     for (const k of keys) {
       const [sec, tag, kind] = CEMU_KEYS[k],
@@ -1119,11 +1178,11 @@ ipcMain.handle('setDefaultQuality', (_, name) => {
 
 // ---------- Input (controller type / API / profiles). The button mapper itself stays in Cemu. ----------
 const IN_TYPES = ['Wii U GamePad', 'Wii U Pro Controller', 'Wii U Classic Controller', 'Wiimote'];
-const IN_APIS = ['Keyboard', 'XInput', 'SDLController', 'DirectInput', 'DSUController'];
+// XInput and DirectInput only exist in Cemu for Windows
+const IN_APIS = P.IS_WIN ? ['Keyboard', 'XInput', 'SDLController', 'DirectInput', 'DSUController'] : ['Keyboard', 'SDLController', 'DSUController'];
 function inputDir() {
-  const s = read();
-  const d = s.cemuPath && fs.existsSync(s.cemuPath) ? cemuDataDir(s.cemuPath) : '';
-  return d ? path.join(d, 'controllerProfiles') : '';
+  const d = cemuNow();
+  return d ? path.join(d.config, 'controllerProfiles') : '';
 }
 const profName = n =>
   String(n || '')
@@ -1218,7 +1277,10 @@ ipcMain.handle('inputProfile', (_, slot, action, name) => {
 ipcMain.handle('inputOpenCemu', () => {
   const s = read();
   if (!s.cemuPath || !fs.existsSync(s.cemuPath)) return { ok: false, error: 'Cemu isn’t installed yet.' };
-  spawn(s.cemuPath, [], { detached: true, stdio: 'ignore', cwd: path.dirname(s.cemuPath) }).unref();
+  P.makeRunnable(s.cemuPath);
+  const c = spawn(s.cemuPath, [], { detached: true, stdio: 'ignore', cwd: path.dirname(s.cemuPath), env: P.childEnv(s.cemuPath) });
+  c.on('error', () => {});
+  c.unref();
   return { ok: true };
 });
 
@@ -1316,12 +1378,12 @@ function gameMatches(def, tid, name) {
   return a.length >= 4 && b.length >= 4 && (a.includes(b) || b.includes(a));
 }
 function gpList(tid, name) {
-  const s = read();
-  const data = s.cemuPath && fs.existsSync(s.cemuPath) ? cemuDataDir(s.cemuPath) : '';
-  if (!data) return { found: false, packs: [], total: 0 };
+  const dirs = cemuNow();
+  if (!dirs) return { found: false, packs: [], total: 0 };
+  const data = dirs.data;
   let ent = {};
   try {
-    ent = gpEntries(fs.readFileSync(path.join(data, 'settings.xml'), 'utf8'));
+    ent = gpEntries(fs.readFileSync(path.join(dirs.config, 'settings.xml'), 'utf8'));
   } catch {}
   const all = findRules(path.join(data, 'graphicPacks'));
   const packs = [];
@@ -1380,18 +1442,10 @@ function gpList(tid, name) {
     })(),
   };
 }
-function cemuRunning() {
-  if (process.platform !== 'win32') return false;
-  try {
-    return /cemu\.exe/i.test(
-      execFileSync('tasklist', ['/FI', 'IMAGENAME eq Cemu.exe', '/NH'], { encoding: 'utf8', timeout: 4000, windowsHide: true }),
-    );
-  } catch {
-    return false;
-  }
-}
-function gpWrite(data, rel, enabled, presets) {
-  const file = path.join(data, 'settings.xml');
+const cemuRunning = P.cemuRunning;
+function gpWrite(dirs, rel, enabled, presets) {
+  if (!dirs) throw new Error('Cemu’s settings file wasn’t found. Start Cemu once first.');
+  const file = path.join(dirs.config, 'settings.xml');
   let xml = fs.readFileSync(file, 'utf8');
   const nl = xml.includes('\r\n') ? '\r\n' : '\n';
   if (/<GraphicPack\s*\/>/.test(xml)) xml = xml.replace(/<GraphicPack\s*\/>/, '<GraphicPack>' + nl + '\t</GraphicPack>');
@@ -1451,7 +1505,7 @@ ipcMain.handle('gpSet', (_, tid, name, id, enabled, presets) => {
     clean[c.name] = c.options.includes(v) ? v : c.active;
   }
   try {
-    gpWrite(cemuDataDir(read().cemuPath), pack.id, !!enabled, clean);
+    gpWrite(cemuNow(), pack.id, !!enabled, clean);
   } catch (e) {
     return { ...before, error: e.message };
   }
@@ -1462,10 +1516,9 @@ ipcMain.handle('gpDownload', async () => {
   const send = d => {
     if (mainWin && !mainWin.isDestroyed()) mainWin.webContents.send('gp-progress', d);
   };
-  const s = read(),
-    data = s.cemuPath && fs.existsSync(s.cemuPath) ? cemuDataDir(s.cemuPath) : '';
-  if (!data) return { ok: false, error: 'Cemu’s data folder wasn’t found. Start Cemu once first.' };
-  const root = path.join(data, 'graphicPacks'),
+  const dirs = cemuNow();
+  if (!dirs) return { ok: false, error: 'Cemu’s data folder wasn’t found. Start Cemu once first.' };
+  const root = path.join(dirs.data, 'graphicPacks'),
     dest = path.join(root, 'downloadedGraphicPacks'),
     tmpDir = dest + '.cosmou-new',
     tmp = path.join(root, 'cosmou-packs.zip.tmp');
@@ -1509,22 +1562,15 @@ ipcMain.handle('gpDownload', async () => {
 // ---------- Feedback: system info for bug reports ----------
 ipcMain.handle('feedbackInfo', () => {
   const s = read();
-  const data = s.cemuPath && fs.existsSync(s.cemuPath) ? cemuDataDir(s.cemuPath) : '';
-  let mode = 'not found';
-  if (data)
-    mode =
-      data === path.join(path.dirname(s.cemuPath), 'portable')
-        ? 'portable'
-        : data === path.dirname(s.cemuPath)
-          ? 'next to Cemu.exe'
-          : '%APPDATA%\\Cemu';
+  const dirs = cemuNow();
+  const mode = dirs ? dirs.mode : 'not found';
   let packs = 0,
     ctrl = 0;
   try {
-    if (data) packs = findRules(path.join(data, 'graphicPacks')).length;
+    if (dirs) packs = findRules(path.join(dirs.data, 'graphicPacks')).length;
   } catch {}
   try {
-    if (data) ctrl = fs.readdirSync(path.join(data, 'controllerProfiles')).filter(n => /^controller\d\.xml$/i.test(n)).length;
+    if (dirs) ctrl = fs.readdirSync(path.join(dirs.config, 'controllerProfiles')).filter(n => /^controller\d\.xml$/i.test(n)).length;
   } catch {}
   let games = 0;
   try {
@@ -1532,9 +1578,10 @@ ipcMain.handle('feedbackInfo', () => {
   } catch {}
   return {
     app: app.getVersion(),
-    os: (os.version ? os.version() + ' · ' : '') + os.release() + ' · ' + os.arch(),
+    os: P.osName(),
+    platform: process.platform,
     cemu: s.cemuPath
-      ? (s.cemuVersion || 'unknown version') + (s.cemuManaged ? ' (downloaded by CosmoU)' : ' (chosen manually)')
+      ? (s.cemuVersion || 'unknown version') + (s.cemuManaged ? ' (downloaded by CosmoU)' : s.cemuFound ? ' (found automatically)' : ' (chosen manually)')
       : 'not installed',
     data: mode,
     games,
@@ -1552,13 +1599,13 @@ ipcMain.handle('openIssue', (_, body) => {
   shell.openExternal(url);
 });
 
-function enableWithPreset(data, tid, rel, presetName) {
+function enableWithPreset(dirs, tid, rel, presetName) {
   try {
     const pk = gpList(tid, '').packs.find(p => normRel(p.id) === normRel(rel));
     if (!pk) return false;
     const pr = {};
     for (const c of pk.categories) pr[c.name] = c.options.includes(presetName) ? presetName : c.active;
-    gpWrite(data, pk.id, true, pr);
+    gpWrite(dirs, pk.id, true, pr);
     return true;
   } catch {
     return false;
@@ -1605,7 +1652,7 @@ ipcMain.handle('autoOptimize', (_, tid, name, key, gpu) => {
     cemuOverrides: { ...(s.cemuOverrides || {}), api: 1, asyncCompile: true },
   });
   done.push('Quick quality: ' + preset + ' (' + QRES[preset].join('×') + ')', 'Graphics API: Vulkan', 'Async shader compile: on');
-  const data = s.cemuPath && fs.existsSync(s.cemuPath) ? cemuDataDir(s.cemuPath) : '';
+  const data = cemuDirsOf(s.cemuPath);
   if (!data) skipped.push('Graphic packs: Cemu’s data folder wasn’t found yet');
   else if (cemuRunning()) skipped.push('Graphic packs: close Cemu and press Auto-optimize again');
   else {
@@ -1667,7 +1714,7 @@ ipcMain.handle('autoOptimize', (_, tid, name, key, gpu) => {
 });
 
 // ---------- Other apps (emulators, PC games) in the library ----------
-const APP_EXT = ['.exe', '.bat', '.cmd', '.lnk'];
+// Windows: .exe, .bat, .cmd, .lnk · Linux: AppImages, programs, .sh scripts and .desktop files (see platform.js)
 const appsDir = () => path.join(app.getPath('userData'), 'covers-apps');
 function withApps(list) {
   const names = new Set(list.map(g => g.name));
@@ -1683,7 +1730,7 @@ function withApps(list) {
       appId: a.id,
       kind: 'app',
       args: a.args || '',
-      format: 'App · ' + path.extname(a.path).slice(1).toUpperCase(),
+      format: 'App' + (path.extname(a.path) ? ' · ' + path.extname(a.path).slice(1).toUpperCase() : ''),
       cover: a.cover && fs.existsSync(a.cover) ? pathToFileURL(a.cover).href : '',
     });
   }
@@ -1697,9 +1744,10 @@ function launchApp(id) {
   if (!a) return { ok: false, error: 'This app isn’t in your library anymore.' };
   if (!fs.existsSync(a.path))
     return { ok: false, error: 'The program file no longer exists. Edit the entry to choose it again.' };
-  const ext = path.extname(a.path).toLowerCase();
-  if (ext === '.exe') {
-    const child = spawn(a.path, splitArgs(a.args), { detached: true, stdio: 'ignore', cwd: path.dirname(a.path) });
+  const cmd = P.appCommand(a.path, splitArgs(a.args));
+  if (cmd) {
+    const child = spawn(cmd[0], cmd[1], { detached: true, stdio: 'ignore', cwd: path.dirname(a.path), env: P.childEnv(a.path) });
+    child.on('error', () => {});
     child.unref();
     return { ok: true, note: 'app', child };
   }
@@ -1707,13 +1755,21 @@ function launchApp(id) {
   return { ok: true, note: 'app' };
 }
 ipcMain.handle('appPick', async () => {
-  const r = await dialog.showOpenDialog({
-    title: 'Choose a program',
-    filters: [{ name: 'Programs', extensions: ['exe', 'bat', 'cmd', 'lnk'] }],
-    properties: ['openFile'],
-  });
+  const r = await dialog.showOpenDialog(
+    P.IS_WIN
+      ? { title: 'Choose a program', filters: [{ name: 'Programs', extensions: ['exe', 'bat', 'cmd', 'lnk'] }], properties: ['openFile'] }
+      : { title: 'Choose a program (AppImage, program, .sh or .desktop)', properties: ['openFile'], defaultPath: os.homedir() },
+  );
   if (r.canceled) return null;
-  return { path: r.filePaths[0], name: path.parse(r.filePaths[0]).name };
+  const f = r.filePaths[0];
+  // a .desktop file names the app inside
+  let name = path.parse(f).name;
+  if (/\.desktop$/i.test(f))
+    try {
+      const m = fs.readFileSync(f, 'utf8').match(/^Name=(.+)$/m);
+      if (m) name = m[1].trim();
+    } catch {}
+  return { path: f, name };
 });
 ipcMain.handle('appCoverPick', async () => {
   const r = await dialog.showOpenDialog({
@@ -1724,8 +1780,8 @@ ipcMain.handle('appCoverPick', async () => {
   return r.canceled ? null : r.filePaths[0];
 });
 ipcMain.handle('appSave', (_, a) => {
-  if (!a || typeof a.path !== 'string' || !fs.existsSync(a.path) || !APP_EXT.includes(path.extname(a.path).toLowerCase()))
-    return { ok: false, error: 'Please choose a program (.exe) first.' };
+  if (!a || typeof a.path !== 'string' || !P.appOk(a.path))
+    return { ok: false, error: P.IS_WIN ? 'Please choose a program (.exe) first.' : 'Please choose a program, AppImage, .sh or .desktop file first.' };
   const s = read(),
     apps = [...(s.customApps || [])];
   const id = typeof a.id === 'string' && apps.some(x => x.id === a.id) ? a.id : crypto.randomBytes(6).toString('hex');
@@ -1947,7 +2003,7 @@ ipcMain.handle('importSettings', async () => {
 
 // ---------- Button mapping inside CosmoU: writes Cemu's controllerProfiles/controllerN.xml ----------
 // Mapping ids belong to the emulated controller (VPADController.h etc.), button codes to the API (Controller.h).
-const MAP_APIS = ['XInput', 'SDLController', 'Keyboard'];
+const MAP_APIS = P.IS_WIN ? ['XInput', 'SDLController', 'Keyboard'] : ['SDLController', 'Keyboard'];
 const xmlEsc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 function mapRead(slot) {
   const dir = inputDir(),
@@ -2068,7 +2124,7 @@ ipcMain.handle('inputMapSave', (_, slot, d) => {
 const ADDON_KIND = { '0005000e': 'update', '0005000c': 'dlc', '00050000': 'game' };
 function titleMeta(dir) {
   try {
-    const x = fs.readFileSync(path.join(dir, 'meta', 'meta.xml'), 'utf8'),
+    const x = fs.readFileSync(ci(dir, 'meta', 'meta.xml'), 'utf8'),
       tid = tag(x, 'title_id').toLowerCase();
     if (!/^[0-9a-f]{16}$/.test(tid)) return null;
     return {
@@ -2098,7 +2154,7 @@ const titleDir = (mlc, kind, low) => path.join(mlc, 'usr', 'title', kind === 'up
 function installedAddons(mlc, low) {
   const up = titleDir(mlc, 'update', low),
     dlc = titleDir(mlc, 'dlc', low),
-    m = fs.existsSync(path.join(up, 'meta', 'meta.xml')) ? titleMeta(up) : null;
+    m = fs.existsSync(ci(up, 'meta', 'meta.xml')) ? titleMeta(up) : null;
   return { update: m ? m.version : null, dlc: fs.existsSync(dlc) && fs.readdirSync(dlc).length > 0 };
 }
 function findAddons(roots) {
@@ -2115,13 +2171,13 @@ function findAddons(roots) {
       if (!e.isDirectory()) continue;
       const p = path.join(dir, e.name);
       if (seen.has(p.toLowerCase())) continue;
-      if (fs.existsSync(path.join(p, 'meta', 'meta.xml'))) {
+      if (fs.existsSync(ci(p, 'meta', 'meta.xml'))) {
         seen.add(p.toLowerCase());
         const m = titleMeta(p);
         if (m && (m.kind === 'update' || m.kind === 'dlc')) out.push({ ...m, dir: p, format: 'folder' });
         continue; // never look inside a title
       }
-      if (fs.existsSync(path.join(p, 'title.tmd'))) {
+      if (fs.existsSync(ci(p, 'title.tmd'))) {
         seen.add(p.toLowerCase());
         const tid = nusTid(p),
           kind = ADDON_KIND[tid.slice(0, 8)];
@@ -2251,7 +2307,7 @@ ipcMain.handle('addonsAddFolder', async (_, lows) => {
   const p = r.filePaths[0],
     s = read(),
     // an update folder itself was picked: remember the folder it sits in
-    keep = fs.existsSync(path.join(p, 'meta', 'meta.xml')) || fs.existsSync(path.join(p, 'title.tmd')) ? path.dirname(p) : p;
+    keep = fs.existsSync(ci(p, 'meta', 'meta.xml')) || fs.existsSync(ci(p, 'title.tmd')) ? path.dirname(p) : p;
   write({ ...s, addonDirs: [...new Set([...(Array.isArray(s.addonDirs) ? s.addonDirs : []), keep])].slice(-10) });
   return addonsInfo(lows);
 });
@@ -2348,10 +2404,8 @@ function steamRoot() {
       if (m && fs.existsSync(m[1].trim())) return path.normalize(m[1].trim());
     } catch {}
   }
-  const tries =
-    process.platform === 'win32'
-      ? ['C:\\Program Files (x86)\\Steam', 'C:\\Program Files\\Steam']
-      : [path.join(os.homedir(), '.steam', 'steam'), path.join(os.homedir(), '.local', 'share', 'Steam')];
+  if (!P.IS_WIN) return P.steamRootLinux();
+  const tries = ['C:\\Program Files (x86)\\Steam', 'C:\\Program Files\\Steam'];
   return tries.find(p => fs.existsSync(path.join(p, 'userdata'))) || '';
 }
 function steamUsers(root) {
@@ -2387,20 +2441,22 @@ function readShortcuts(root, user) {
   if (!top.length || top[0][1] !== 0) throw new Error('Steam’s shortcuts file looks unusual, nothing was changed.');
   return top;
 }
-function steamRunning() {
-  if (process.platform !== 'win32') return false;
-  try {
-    return /steam\.exe/i.test(
-      execFileSync('tasklist', ['/FI', 'IMAGENAME eq steam.exe', '/NH'], { encoding: 'utf8', timeout: 4000, windowsHide: true }),
-    );
-  } catch {
-    return false;
-  }
-}
+const steamRunning = P.steamRunning;
 // how Steam starts CosmoU: the installed exe, the portable exe, or electron + app folder while developing
 function selfLaunch() {
-  const exe = process.env.PORTABLE_EXECUTABLE_FILE || process.execPath;
+  const exe = P.selfExe();
   return { exe, dir: path.dirname(exe), pre: app.isPackaged ? '' : `"${app.getAppPath()}" ` };
+}
+// Steam on Linux can't use a program as its icon: give it CosmoU's icon as a picture file
+function selfIcon() {
+  if (P.IS_WIN) return selfLaunch().exe;
+  const dst = path.join(app.getPath('userData'), 'cosmou-icon.png');
+  try {
+    if (!fs.existsSync(dst)) fs.copyFileSync(path.join(__dirname, 'build', 'icon.png'), dst);
+    return dst;
+  } catch {
+    return '';
+  }
 }
 const q = s => '"' + s + '"';
 function steamInfo(user) {
@@ -2448,7 +2504,7 @@ function addShortcuts(root, user, items, art) {
       exe = q(me.exe),
       appid = steamAppId(exe, name);
     if (!name || (!isApp && (typeof it.path !== 'string' || !fs.existsSync(it.path) || !fs.statSync(it.path).isFile()))) continue;
-    const icon = isApp ? me.exe : fromUrl(it.icon) || me.exe;
+    const icon = isApp ? selfIcon() : fromUrl(it.icon) || selfIcon();
     const entry = [
       ['appid', 2, appid | 0],
       ['AppName', 1, name],
@@ -2522,7 +2578,7 @@ ipcMain.handle('steamInfo', (_, user) => steamInfo(typeof user === 'string' ? us
 ipcMain.handle('steamAdd', async (_, d) => {
   try {
     const root = steamRoot();
-    if (!root) return { ok: false, error: 'Steam wasn’t found on this PC.' };
+    if (!root) return { ok: false, error: 'Steam wasn’t found on this ' + (P.IS_WIN ? 'PC.' : 'computer.') };
     const users = steamUsers(root),
       u = users.find(x => x.id === (d && d.user)) || users[0];
     if (!u) return { ok: false, error: 'Sign in to Steam once, then try again.' };
@@ -2532,13 +2588,21 @@ ipcMain.handle('steamAdd', async (_, d) => {
     // Steam rewrites shortcuts.vdf when it quits, so it has to be closed while CosmoU writes the file
     if (wasRunning) {
       if (!d.restart) return { ok: false, needRestart: true };
-      spawn(path.join(root, 'steam.exe'), ['-shutdown'], { detached: true, stdio: 'ignore' }).unref();
+      const [c, a] = P.steamCommand(root, ['-shutdown']);
+      const sp = spawn(c, a, { detached: true, stdio: 'ignore', env: P.childEnv(c) });
+      sp.on('error', () => {});
+      sp.unref();
       if (!(await waitFor(() => !steamRunning(), 30000)))
         return { ok: false, error: 'Steam didn’t close. Close it yourself and try again.' };
       await new Promise(r => setTimeout(r, 1500));
     }
     const added = addShortcuts(root, u.id, items, d.art !== false);
-    if (wasRunning) spawn(path.join(root, 'steam.exe'), [], { detached: true, stdio: 'ignore' }).unref();
+    if (wasRunning) {
+      const [c, a] = P.steamCommand(root, []);
+      const sp = spawn(c, a, { detached: true, stdio: 'ignore', env: P.childEnv(c) });
+      sp.on('error', () => {});
+      sp.unref();
+    }
     return { ok: true, added, restarted: wasRunning };
   } catch (e) {
     return { ok: false, error: friendly(e) };

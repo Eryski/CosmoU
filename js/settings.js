@@ -450,7 +450,7 @@ function renderPane(t) {
     line(
       'Cemu',
       cfg.cemuPath
-        ? (cfg.cemuManaged ? 'Managed by CosmoU' : 'Chosen manually') + (cfg.cemuVersion ? ' · ' + cfg.cemuVersion : '')
+        ? (cfg.cemuManaged ? 'Managed by CosmoU' : cfg.cemuFound ? 'Found on this computer' : 'Chosen manually') + (cfg.cemuVersion ? ' · ' + cfg.cemuVersion : '')
         : 'Not installed',
     );
     line(

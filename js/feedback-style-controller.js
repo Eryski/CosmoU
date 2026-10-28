@@ -23,7 +23,7 @@ async function openFeedback() {
     'CosmoU feedback',
     '',
     '- CosmoU version: ' + i.app,
-    '- Windows: ' + i.os,
+    (IS_LINUX ? '- Linux: ' : '- Windows: ') + i.os,
     '- Graphics card: ' + (gpuName() || 'unknown'),
     '- Cemu: ' + i.cemu + ' · data folder: ' + i.data,
     '- Games found automatically: ' + i.games,

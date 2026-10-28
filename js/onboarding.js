@@ -60,7 +60,10 @@ async function wzRender() {
   if (s === 1) {
     const ok = !!(cfg.cemuPath && (window.api ? (await api.cemuStatus()).installed : true));
     $('#wzcemu').textContent = ok
-      ? '✓ ' + (cfg.cemuManaged ? 'Cemu ' + (cfg.cemuVersion || '') + ' is ready' : 'Using ' + cfg.cemuPath)
+      ? '✓ ' +
+        (cfg.cemuManaged
+          ? 'Cemu ' + (cfg.cemuVersion || '') + ' is ready'
+          : (cfg.cemuFound ? 'Found your Cemu: ' : 'Using ') + cfg.cemuPath)
       : 'Cemu isn’t set up yet';
     $('#wzcemu').classList.toggle('ok', ok);
     $('#wznext').textContent = ok ? 'Next' : 'Skip for now';
@@ -107,6 +110,7 @@ $('#wzdl').onclick = async () => {
 $('#wzpick').onclick = async () => {
   if (!need()) return;
   cfg = await api.pickCemu();
+  if (cfg.error) toast(cfg.error, 6000);
   fill();
   wzRender();
 };

@@ -212,6 +212,7 @@ $('#pickG').onclick = pickFolder;
 $('#pickC').onclick = async () => {
   if (need()) {
     cfg = await api.pickCemu();
+    if (cfg.error) toast(cfg.error, 6000);
     fill();
   }
 };
@@ -329,9 +330,10 @@ function setupUi(h, p, pct, btns) {
     cancel: ['Cancel', () => api.cemuCancel()],
     retry: ['Try again', installCemu],
     manual: [
-      'Choose Cemu.exe manually',
+      'Choose ' + CEMU_FILE + ' manually',
       async () => {
         cfg = await api.pickCemu();
+        if (cfg.error) toast(cfg.error, 6000);
         fill();
         $('#setup').classList.remove('on');
       },
@@ -353,7 +355,9 @@ async function installCemu() {
   $('#setup').classList.add('on');
   setupUi(
     'Preparing Cemu…',
-    'CosmoU needs Cemu to run games. Downloading the latest version from the official Cemu GitHub page.',
+    'CosmoU needs Cemu to run games. Downloading the latest version' +
+      (IS_LINUX ? ' (AppImage)' : '') +
+      ' from the official Cemu GitHub page.',
     0,
     ['cancel'],
   );
@@ -365,7 +369,7 @@ async function installCemu() {
     setTimeout(() => $('#setup').classList.remove('on'), 1500);
   } else if (r.cancelled) $('#setup').classList.remove('on');
   else
-    setupUi('Couldn’t get Cemu', (r.error || 'Something went wrong.') + ' You can try again or choose Cemu.exe yourself.', 0, [
+    setupUi('Couldn’t get Cemu', (r.error || 'Something went wrong.') + ' You can try again or choose ' + CEMU_FILE + ' yourself.', 0, [
       'retry',
       'manual',
       'close',

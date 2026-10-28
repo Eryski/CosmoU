@@ -1,5 +1,10 @@
 // CosmoU – Shared state and helpers: game list, sorting, cover colours, music, main render loop.
 const $ = s => document.querySelector(s);
+// Windows or Linux (the preview in a browser counts as Windows)
+const OS = (window.api && window.api.platform) || (/[?&]platform=linux\b/.test(location.search) ? 'linux' : 'win32'),
+  IS_LINUX = OS === 'linux',
+  CEMU_FILE = IS_LINUX ? 'Cemu' : 'Cemu.exe';
+document.documentElement.classList.toggle('os-linux', IS_LINUX);
 const demo = [
   'Star Chaser',
   'Cloud Racing',

@@ -64,6 +64,7 @@ contextBridge.exposeInMainWorld('api', {
   steamAdd: d => r.invoke('steamAdd', d),
   launchPlay: r.sendSync('launchArg'),
   appVersion: r.sendSync('appVersion'),
+  platform: process.platform,
   onSessionEnded: cb => r.on('session-ended', (_, d) => cb(d)),
   exportSettings: ui => r.invoke('exportSettings', ui),
   importSettings: () => r.invoke('importSettings'),

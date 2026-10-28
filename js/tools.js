@@ -339,11 +339,102 @@ function vkName(c) {
   if (c >= 112 && c <= 135) return 'F' + (c - 111);
   return VK[c] || 'Key ' + c;
 }
-const mpCodeName = (api, c) => (api === 'Keyboard' ? vkName(c) : (MP_NAME[api] || {})[c] || 'Button ' + c);
+// Linux: Cemu stores GDK key codes for the keyboard instead of Windows key codes
+const GDK = {
+  Space: 0x20,
+  Enter: 0xff0d,
+  Escape: 0xff1b,
+  Backspace: 0xff08,
+  Tab: 0xff09,
+  ArrowLeft: 0xff51,
+  ArrowUp: 0xff52,
+  ArrowRight: 0xff53,
+  ArrowDown: 0xff54,
+  ShiftLeft: 0xffe1,
+  ShiftRight: 0xffe2,
+  ControlLeft: 0xffe3,
+  ControlRight: 0xffe4,
+  AltLeft: 0xffe9,
+  AltRight: 0xffea,
+  CapsLock: 0xffe5,
+  Insert: 0xff63,
+  Delete: 0xffff,
+  Home: 0xff50,
+  End: 0xff57,
+  PageUp: 0xff55,
+  PageDown: 0xff56,
+  Pause: 0xff13,
+  NumpadEnter: 0xff8d,
+  NumpadAdd: 0xffab,
+  NumpadSubtract: 0xffad,
+  NumpadMultiply: 0xffaa,
+  NumpadDivide: 0xffaf,
+  NumpadDecimal: 0xffae,
+};
+const GDK_NAME = {
+  0x20: 'Space',
+  0xff0d: 'Enter',
+  0xff1b: 'Esc',
+  0xff08: 'Backspace',
+  0xff09: 'Tab',
+  0xff51: '←',
+  0xff52: '↑',
+  0xff53: '→',
+  0xff54: '↓',
+  0xffe1: 'Left Shift',
+  0xffe2: 'Right Shift',
+  0xffe3: 'Left Ctrl',
+  0xffe4: 'Right Ctrl',
+  0xffe9: 'Left Alt',
+  0xffea: 'Right Alt',
+  0xfe03: 'Alt Gr',
+  0xffe5: 'Caps Lock',
+  0xff63: 'Insert',
+  0xffff: 'Delete',
+  0xff50: 'Home',
+  0xff57: 'End',
+  0xff55: 'Page Up',
+  0xff56: 'Page Down',
+  0xff13: 'Pause',
+  0xff8d: 'Num Enter',
+  0xffab: 'Num +',
+  0xffad: 'Num −',
+  0xffaa: 'Num *',
+  0xffaf: 'Num /',
+  0xffae: 'Num .',
+};
+function gdkOf(e) {
+  if (GDK[e.code]) return GDK[e.code];
+  let m = e.code.match(/^Numpad(\d)$/);
+  if (m) return 0xffb0 + +m[1];
+  m = e.code.match(/^F(\d{1,2})$/);
+  if (m) return 0xffbe + +m[1] - 1;
+  // printable keys follow the keyboard layout; Latin-1 characters are their own GDK code
+  const k = e.key && e.key.length === 1 ? e.key.toLowerCase().charCodeAt(0) : 0;
+  if (k > 0x20 && k <= 0xff) return k;
+  m = e.code.match(/^(?:Key([A-Z])|Digit(\d))$/);
+  return m ? (m[1] || m[2]).toLowerCase().charCodeAt(0) : e.keyCode;
+}
+function gdkName(c) {
+  if (GDK_NAME[c]) return GDK_NAME[c];
+  if (c >= 0xffb0 && c <= 0xffb9) return 'Num ' + (c - 0xffb0);
+  if (c >= 0xffbe && c <= 0xffc9) return 'F' + (c - 0xffbe + 1);
+  if (c > 0x20 && c <= 0xff) return String.fromCharCode(c).toUpperCase();
+  return 'Key ' + c;
+}
+// the Windows defaults, turned into GDK codes
+function vkToGdk(v) {
+  if ((v >= 65 && v <= 90) || (v >= 48 && v <= 57)) return String.fromCharCode(v).toLowerCase().charCodeAt(0);
+  if (v >= 96 && v <= 105) return 0xffb0 + v - 96;
+  if (v >= 112 && v <= 123) return 0xffbe + v - 112;
+  return { 8: 0xff08, 9: 0xff09, 13: 0xff0d, 27: 0xff1b, 32: 0x20, 37: 0xff51, 38: 0xff52, 39: 0xff53, 40: 0xff54 }[v] || v;
+}
+const keyName = c => (IS_LINUX ? gdkName(c) : vkName(c));
+const mpCodeName = (api, c) => (api === 'Keyboard' ? keyName(c) : (MP_NAME[api] || {})[c] || 'Button ' + c);
 const MP_SIDE = { ShiftLeft: 160, ShiftRight: 161, ControlLeft: 162, ControlRight: 163, AltLeft: 164, AltRight: 165 };
-const vkOf = e => MP_SIDE[e.code] || e.keyCode;
+const vkOf = e => (IS_LINUX ? gdkOf(e) : MP_SIDE[e.code] || e.keyCode);
 
-const mp = { slot: 0, info: null, dev: 'xi:0', type: 'Wii U GamePad', maps: {}, wait: null, queue: null };
+const mp = { slot: 0, info: null, dev: IS_LINUX ? 'kb' : 'xi:0', type: 'Wii U GamePad', maps: {}, wait: null, queue: null };
 const mpApi = (dev = mp.dev) => (dev === 'kb' ? 'Keyboard' : dev.startsWith('sdl:') ? 'SDLController' : 'XInput');
 const mpUuid = (dev = mp.dev) => (dev === 'kb' ? 'keyboard' : dev.startsWith('sdl:') ? dev.slice(4) : dev.slice(3));
 const devKey = d =>
@@ -351,7 +442,8 @@ const devKey = d =>
 function mpDefaults(type = mp.type, api = mpApi()) {
   const out = {},
     d = MP_DEF[api] || {};
-  for (const [id, role] of MP_TYPES[type] || []) if (d[role] !== undefined) out[id] = d[role];
+  for (const [id, role] of MP_TYPES[type] || [])
+    if (d[role] !== undefined) out[id] = IS_LINUX && api === 'Keyboard' ? vkToGdk(d[role]) : d[role];
   return out;
 }
 // what Cemu has for this device and type, or the defaults when there is nothing yet
@@ -367,6 +459,16 @@ function mpHint() {
     sdlKnown = i && i.devices.some(d => d.api === 'SDLController'),
     nonX = pads().find(p => !/xinput/i.test(p.id));
   let t = '';
+  if (IS_LINUX) {
+    if (other) t = `In Cemu this controller uses ${other.api}. CosmoU maps SDL controllers and the keyboard – saving here replaces it.`;
+    else if (!sdlKnown)
+      t =
+        'To map a controller here, choose it once in Cemu (Input settings → API “SDLController”, pick your controller, save). After that it shows up in this list.';
+    else if (mpApi() !== 'Keyboard' && !pads().length) t = 'No controller found yet. Plug it in and press any button on it.';
+    $('#mphint').textContent = t;
+    $('#mphint').hidden = !t;
+    return;
+  }
   if (other)
     t = `In Cemu this controller uses ${other.api}. CosmoU maps Xbox (XInput), SDL controllers and the keyboard – saving here replaces it.`;
   else if (nonX && !sdlKnown && mpApi() === 'XInput')
@@ -538,14 +640,16 @@ async function openMapper(slot) {
   const i = mp.info,
     dev = $('#mpdev'),
     ty = $('#mptype');
-  const opts = [0, 1, 2, 3].map(n => new Option(`Xbox / XInput controller ${n + 1}`, 'xi:' + n));
+  const opts = IS_LINUX ? [] : [0, 1, 2, 3].map(n => new Option(`Xbox / XInput controller ${n + 1}`, 'xi:' + n));
   opts.push(new Option('Keyboard', 'kb'));
   for (const d of i.devices)
     if (d.api === 'SDLController') opts.push(new Option(`${d.name || 'SDL controller'} (SDL)`, 'sdl:' + d.uuid));
   dev.replaceChildren(...opts);
   const mine = i.devices.map(devKey).find(Boolean),
     xpad = pads().find(p => /xinput/i.test(p.id));
-  mp.dev = mine || (xpad ? 'xi:' + Math.min(3, xpad.index) : 'xi:0');
+  mp.dev = IS_LINUX
+    ? mine || (i.devices.find(d => d.api === 'SDLController') ? 'sdl:' + i.devices.find(d => d.api === 'SDLController').uuid : 'kb')
+    : mine || (xpad ? 'xi:' + Math.min(3, xpad.index) : 'xi:0');
   dev.value = mp.dev;
   ty.replaceChildren(...Object.keys(MP_TYPES).map(t => new Option(t, t)));
   mp.type = MP_TYPES[i.type] ? i.type : 'Wii U GamePad';
