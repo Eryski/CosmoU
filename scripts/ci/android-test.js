@@ -95,7 +95,14 @@ function tga() {
 (async () => {
   fs.mkdirSync(OUT, { recursive: true });
   at('devices');
-  const sh = async c => adb('shell', c);
+  // a shell command on the device; its output, also when it ends with an error
+  const sh = async c => {
+    try {
+      return adb('shell', c);
+    } catch (e) {
+      return String(e.stdout || '').trim() + ' ' + String(e.stderr || '').trim();
+    }
+  };
   const shot = async n => {
     await wait(900);
     fs.writeFileSync(path.join(OUT, n + '.png'), cp.execFileSync('adb', ['exec-out', 'screencap', '-p'], { maxBuffer: 64e6 }));
