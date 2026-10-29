@@ -760,14 +760,14 @@
     }
   };
 
-  // ---------- screen size: lay the page out at least 1100 × 560 and let Android scale it to the screen ----------
+  // ---------- screen size: lay the page out at least 1100 × 600 and let Android scale it to the screen ----------
   function fit() {
     const w = screen.width,
       h = screen.height,
       landscape = w >= h,
       lw = Math.max(w, h),
       lh = Math.min(w, h);
-    const want = landscape ? Math.max(1100, Math.ceil((560 * lw) / lh)) : 760;
+    const want = landscape ? Math.max(1100, Math.ceil((600 * lw) / lh)) : 760;
     let m = document.querySelector('meta[name=viewport]');
     if (!m) {
       m = document.createElement('meta');
