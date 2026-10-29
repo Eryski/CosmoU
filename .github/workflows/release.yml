@@ -294,7 +294,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
-          for f in "$RUNNER_TEMP"/e2e/*.png; do [ -f "$f" ] && convert "$f" -resize 720x720 -quality 40 "${f%.png}.jpg"; done
+          command -v magick >/dev/null || command -v convert >/dev/null || sudo apt-get install -y imagemagick >/dev/null
+          IM=$(command -v magick || command -v convert)
+          for f in "$RUNNER_TEMP"/e2e/*.png; do [ -f "$f" ] && "$IM" "$f" -resize 720x720 -quality 40 "${f%.png}.jpg"; done
           node scripts/ci/report.js "$RUNNER_TEMP/e2e" android
 
       - name: Keep the files on the run page
