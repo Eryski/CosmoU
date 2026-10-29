@@ -415,6 +415,8 @@ jobs:
   ios-test:
     needs: ios
     runs-on: macos-15
+    # the Simulator on GitHub's Macs sometimes stops responding; then the job ends instead of waiting for hours
+    timeout-minutes: 50
     strategy:
       fail-fast: false
       matrix:
