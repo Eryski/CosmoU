@@ -251,9 +251,15 @@ public class MainActivity extends Activity {
         boolean remote = (e.getSource() & InputDevice.SOURCE_DPAD) == InputDevice.SOURCE_DPAD
                 && (b != null || e.getKeyCode() == KeyEvent.KEYCODE_DPAD_CENTER);
         if (e.getKeyCode() == KeyEvent.KEYCODE_DPAD_CENTER) b = 0;
-        // the WebView's own controller support (Gamepad API) and keyboard come first
+        // controllers: all their buttons go to the page's "gamepad" (js/android-api.js), so they act the same on every device
+        if (b != null && pad) {
+            if (e.getAction() == KeyEvent.ACTION_DOWN && e.getRepeatCount() == 0) js("window.__cosmoPad&&__cosmoPad(" + b + ",true)");
+            else if (e.getAction() == KeyEvent.ACTION_UP) js("window.__cosmoPad&&__cosmoPad(" + b + ",false)");
+            return true;
+        }
+        // keyboards and TV remotes: the page's own key handling (arrows, Enter, Esc) first
         if (super.dispatchKeyEvent(e)) return true;
-        if (b != null && (pad || remote)) {
+        if (b != null && remote) {
             if (e.getAction() == KeyEvent.ACTION_DOWN && e.getRepeatCount() == 0) js("window.__cosmoPad&&__cosmoPad(" + b + ",true)");
             else if (e.getAction() == KeyEvent.ACTION_UP) js("window.__cosmoPad&&__cosmoPad(" + b + ",false)");
             return true;
@@ -265,7 +271,6 @@ public class MainActivity extends Activity {
 
     @Override
     public boolean dispatchGenericMotionEvent(MotionEvent e) {
-        if (super.dispatchGenericMotionEvent(e)) return true;
         if (fromPad(e.getSource()) && e.getAction() == MotionEvent.ACTION_MOVE) {
             float x = dz(e.getAxisValue(MotionEvent.AXIS_X)), y = dz(e.getAxisValue(MotionEvent.AXIS_Y));
             if (x != lastX || y != lastY) {
@@ -291,7 +296,7 @@ public class MainActivity extends Activity {
             }
             return true;
         }
-        return false;
+        return super.dispatchGenericMotionEvent(e);
     }
 
     static float dz(float v) {

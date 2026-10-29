@@ -55,7 +55,7 @@
   // the automatic test can start without menu music
   if (INFO.quiet)
     try {
-      localStorage.setItem('cosmou.music', 'false');
+      for (const k of ['music', 'uiSounds', 'boot']) localStorage.setItem('cosmou.' + k, 'false');
     } catch {}
   const ORIGIN = location.origin;
   const pubUrl = rel => ORIGIN + '/files/' + rel.split('/').map(encodeURIComponent).join('/');
