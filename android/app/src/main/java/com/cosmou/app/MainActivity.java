@@ -82,6 +82,24 @@ public class MainActivity extends Activity {
             }
 
             @Override
+            public void onPageFinished(WebView view, String url) {
+                Log.i(TAG, "page finished: " + url);
+            }
+
+            @Override
+            public void onReceivedError(WebView view, WebResourceRequest req, android.webkit.WebResourceError err) {
+                Log.w(TAG, "load error: " + req.getUrl() + " " + err.getErrorCode() + " " + err.getDescription());
+            }
+
+            // if the page's drawing process stops, start the page again instead of closing CosmoU
+            @Override
+            public boolean onRenderProcessGone(WebView view, android.webkit.RenderProcessGoneDetail d) {
+                Log.e(TAG, "page process gone, crashed=" + d.didCrash());
+                recreate();
+                return true;
+            }
+
+            @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest req) {
                 Uri u = req.getUrl();
                 if (HOST.equals(u.getHost())) return false;

@@ -266,6 +266,7 @@ function tga() {
       .then(r => r.status + ' ' + r.headers.get('content-type'))
       .catch(e => String(e)),
   }));
+  if (!pg || !/index\.html/.test(pg.href)) ok('log', true, adb('logcat', '-d', '-t', '300', '-s', 'CosmoU:*', 'chromium:*', 'cr_*:*', 'WebViewFactory:*').slice(-5000));
   ok('page loaded', pg && /index\.html/.test(pg.href) && pg.html > 5000, pg);
   const info = await E(() => ({
     os: OS,
@@ -395,6 +396,7 @@ function tga() {
   await sh('input gamepad keyevent KEYCODE_DPAD_RIGHT');
   await page.waitForTimeout(800);
   const after = await E(() => cur() && cur().name);
+  ok('presses after the D-pad', true, await E(() => [window.__cosmoPadCount, typeof step, pad.prev]));
   ok('controller D-pad moves', before !== after, [before, after]);
   await E(() => openSettings('about'));
   await shot('07-about');

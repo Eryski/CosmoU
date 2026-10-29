@@ -284,10 +284,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: android 14 plain page
-            api: 34
-            gpu: swiftshader_indirect
-            plain: true
           - name: android 14 swangle
             api: 34
             gpu: swangle_indirect
