@@ -1,6 +1,6 @@
 # CosmoU
 
-A free Windows, Linux and macOS launcher for the [Cemu](https://cemu.info) Wii U emulator with a Wii U-inspired home menu.
+A free Windows, Linux, macOS and Android launcher for the [Cemu](https://cemu.info) Wii U emulator with a Wii U-inspired home menu.
 
 - Quick Menu (Q or the controller's Home button): last played games, quick switches and every window in one place
 - Favorites, sort & filter (A–Z, Z–A, recently played, most played; all, favorites, Wii U games, apps) and a game menu on right-click
@@ -68,6 +68,16 @@ CosmoU is free and has no paid Apple developer certificate, so macOS stops it th
 
 CosmoU finds Cemu in `/Applications` or `~/Applications`, or downloads the official Cemu for Mac for you (Cemu for Intel runs on Apple silicon with Rosetta; macOS offers to install Rosetta the first time). Cemu's files stay in `~/Library/Application Support/Cemu`. On a Mac, Cemu draws with Vulkan through Metal, and controllers work through SDL. TV mode is F11 or ⌃⌘F.
 
+### Android
+Download `CosmoU-Android-x.y.z.apk` on your phone or tablet and open it (Android asks once to allow installing apps from your browser or file app). Works on Android 8 and newer – Samsung, Xiaomi, OPPO, OnePlus, Huawei, Pixel and any other Android device.
+
+On Android, CosmoU starts your games in **Cemu for Android**, a community version of Cemu ([SSimco/Cemu](https://github.com/SSimco/Cemu/releases)). Install it once; CosmoU finds it by itself and **Get Cemu for Android** in the setup opens its download page. Cemu for Android needs Android 11+ and a fast phone (Snapdragon 8 Gen 2 or similar).
+
+- Choose your games folder once with Android's folder picker. `.wua`, `.wud`, `.wux` and game folders (`code`, `content`, `meta`) are found; `.wua` works best on Android
+- Covers, themes with their music, buddies, the Plaza, favorites, play time and Android apps in your library work like on the PC
+- Controllers work in CosmoU (D-pad, A, B, Start, Home), the back button closes windows
+- Cemu's own settings, graphic packs, controllers and saves are set up inside Cemu for Android, so those parts of CosmoU are hidden there
+
 ## Build from source
 ```
 npm install
@@ -75,6 +85,7 @@ npm start      # run
 npm run dist   # build installer + portable .exe into dist/ (on Windows)
 npm run dist:linux  # build AppImage, .deb and .tar.gz into dist/ (on Linux)
 npm run dist:mac    # build the universal .dmg into dist/ (on a Mac)
+gradle -p android :app:assembleRelease   # build the Android app (needs the Android SDK)
 npm run preview  # single-file browser preview with demo games
 ```
 
@@ -86,7 +97,8 @@ Set the version in `package.json` and push. Then on GitHub open **Releases → D
 main.js        Electron main process: Cemu download, game scan, launching, settings.xml, graphic packs
 platform.js    Everything that differs between Windows and Linux (Cemu folders, finding Cemu, Steam, starting programs)
 build/linux/   Linux launcher script (scripts/after-pack.js puts it into the packages and signs the Mac app)
-scripts/ci/    End-to-end test that GitHub Actions runs on a real Mac after the build
+android/       Android app: the same window in a WebView, plus a small bridge to Android (js/android-api.js)
+scripts/ci/    End-to-end tests that GitHub Actions runs after each build (real Mac, Linux PC, Android emulator)
 preload.js     Bridge between the window and main.js
 index.html     Window markup
 css/cosmou.css All styles (themes, Wii U Look, dialogs)

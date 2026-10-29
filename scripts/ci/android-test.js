@@ -14,6 +14,18 @@ const ok = (name, pass, detail) => {
   console.log((pass ? 'PASS ' : 'FAIL ') + name + (detail !== undefined ? '  ' + String(results.at(-1).detail).slice(0, 400) : ''));
 };
 const wait = ms => new Promise(r => setTimeout(r, ms));
+// files and apps go to the device with adb itself (more reliable than Playwright's own push)
+const cp = require('child_process'),
+  os = require('os');
+const adb = (...args) => cp.execFileSync('adb', args, { encoding: 'utf8', timeout: 180000 }).trim();
+let tmpN = 0;
+function push(data, remote) {
+  const f = path.join(os.tmpdir(), 'cosmou-push-' + tmpN++);
+  fs.writeFileSync(f, data);
+  adb('push', f, remote);
+  fs.rmSync(f);
+}
+const install = apk => adb('install', '-r', '-g', apk);
 // what the test is doing right now, so a hang shows where it stopped
 let step = 'start';
 const t0 = Date.now();
@@ -70,28 +82,28 @@ function tga() {
   await sh(
     `rm -rf /sdcard/CosmoU-test; mkdir -p ${G}/BOTW/code ${G}/BOTW/meta ${G}/BOTW/content "${G}/Splatoon [0005000010176a00]/Code" "${G}/Splatoon [0005000010176a00]/Meta"`,
   );
-  await dev.push(Buffer.from('RPX test file'), `${G}/BOTW/code/U-King.rpx`);
-  await dev.push(
+  push(Buffer.from('RPX test file'), `${G}/BOTW/code/U-King.rpx`);
+  push(
     Buffer.from(
       '<menu><title_id type="hexBinary" length="8">00050000101C9500</title_id><longname_en>The Legend of Zelda\nBreath of the Wild</longname_en><product_code>WUP-P-ALZP</product_code><company_code>0001</company_code></menu>',
     ),
     `${G}/BOTW/meta/meta.xml`,
   );
-  await dev.push(tga(), `${G}/BOTW/meta/iconTex.tga`);
-  await dev.push(Buffer.from('RPX'), `${G}/Splatoon [0005000010176a00]/Code/Gambit.rpx`);
-  await dev.push(
+  push(tga(), `${G}/BOTW/meta/iconTex.tga`);
+  push(Buffer.from('RPX'), `${G}/Splatoon [0005000010176a00]/Code/Gambit.rpx`);
+  push(
     Buffer.from(
       '<menu><title_id type="hexBinary" length="8">0005000010176A00</title_id><longname_en>Splatoon</longname_en><product_code>WUP-P-AGMP</product_code><company_code>0001</company_code></menu>',
     ),
     `${G}/Splatoon [0005000010176a00]/Meta/meta.xml`,
   );
-  await dev.push(Buffer.from('WUA test file'), `${G}/Mario Kart 8.wua`);
-  await dev.push(Buffer.from('notes'), `${G}/readme.txt`);
+  push(Buffer.from('WUA test file'), `${G}/Mario Kart 8.wua`);
+  push(Buffer.from('notes'), `${G}/readme.txt`);
 
   at('install');
   // ---- install ----
   await sh(`pm uninstall ${PKG}; pm uninstall info.cemu.cemu`);
-  await dev.installApk(fs.readFileSync(APK));
+  install(APK);
   ok('CosmoU installed', /package:/.test(await sh(`pm path ${PKG}`)), await sh(`dumpsys package ${PKG} | grep -m1 versionName`));
   // first start creates the app's folder, then the test file goes in (it opens the folder picker in the games folder)
   await sh(`am start -W -n ${PKG}/.MainActivity`);
@@ -99,10 +111,7 @@ function tga() {
   await sh(`am force-stop ${PKG}`);
   const ext = `/sdcard/Android/data/${PKG}/files`;
   await sh(`mkdir -p ${ext}`);
-  await dev.push(
-    Buffer.from('content://com.android.externalstorage.documents/document/primary%3ACosmoU-test%2FGames'),
-    `${ext}/cosmou-test`,
-  );
+  push(Buffer.from('content://com.android.externalstorage.documents/document/primary%3ACosmoU-test%2FGames'), `${ext}/cosmou-test`);
   await sh(`am start -W -n ${PKG}/.MainActivity`);
   at('connect to the page');
   const wv = await dev.webView({ pkg: PKG }, { timeout: 60000 });
@@ -164,7 +173,7 @@ function tga() {
 
   at('Cemu');
   // ---- Cemu: get it, then play ----
-  await dev.installApk(fs.readFileSync(STUB));
+  install(STUB);
   const c1 = await E(() => api.cemuStatus());
   ok('Cemu for Android found', c1.installed && c1.path === 'info.cemu.cemu', c1);
   await sh('logcat -c');
