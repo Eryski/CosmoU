@@ -219,13 +219,22 @@ function tga() {
   );
   at('connect to the page');
   // the page inside CosmoU, through Chrome's DevTools connection of the Android WebView
-  const pid = await sh('pidof ' + PKG);
-  const sock =
-    (await sh('cat /proc/net/unix')).match(new RegExp('@(webview_devtools_remote_' + pid + ')\\b')) ||
-    (await sh('cat /proc/net/unix')).match(/@(webview_devtools_remote_\d+)/);
-  if (!sock) throw new Error('no WebView DevTools socket for pid ' + pid);
-  adb('forward', 'tcp:9333', 'localabstract:' + sock[1]);
-  const page = await cdpPage(9333);
+  let page = null,
+    lastErr = '';
+  for (let k = 0; k < 20 && !page; k++) {
+    try {
+      const pid = (await sh('pidof ' + PKG)).split(/\s+/)[0];
+      const unix = await sh('cat /proc/net/unix');
+      const sock = unix.match(new RegExp('@(webview_devtools_remote_' + pid + ')\\b')) || unix.match(/@(webview_devtools_remote_\d+)/);
+      if (!sock) throw new Error('no WebView DevTools socket for pid ' + pid);
+      adb('forward', 'tcp:9333', 'localabstract:' + sock[1]);
+      page = await cdpPage(9333);
+    } catch (e) {
+      lastErr = e.message;
+      await wait(2000);
+    }
+  }
+  if (!page) throw new Error('could not connect to the page: ' + lastErr);
   const errs = page.errors;
   await page.waitForTimeout(3500);
   const E = async (fn, arg) => {
