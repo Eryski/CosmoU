@@ -8582,3 +8582,8 @@ nav button {
 .wz-page[data-s='4'] p {
   margin-bottom: 12px;
 }
+
+/* Android: hide what only the desktop Cemu allows */
+.os-android .no-android {
+  display: none !important;
+}

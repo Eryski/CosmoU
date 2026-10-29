@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Test stand-in for Cemu for Android: same package and same game activity as the real app -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application android:label="Cemu (test)">
+        <activity
+            android:name=".emulation.EmulationActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="content" />
+                <data android:mimeType="*/*" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

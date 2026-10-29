@@ -405,15 +405,9 @@ async function renderInput(box) {
   prompt0.className = 'sel';
   prompt0.style.width = '150px';
   g2.append(
-    row('Saved profiles', 'Copies Cemu’s controller file', [
-      ps,
-      btn('Load', '', act('load')),
-      btn('Delete', 'ghost', act('delete')),
-    ]),
+    row('Saved profiles', 'Copies Cemu’s controller file', [ps, btn('Load', '', act('load')), btn('Delete', 'ghost', act('delete'))]),
   );
-  g2.append(
-    row('Save current setup as…', 'e.g. Keyboard, Xbox Controller, DualSense', [prompt0, btn('Save', 'main', act('save'))]),
-  );
+  g2.append(row('Save current setup as…', 'e.g. Keyboard, Xbox Controller, DualSense', [prompt0, btn('Save', 'main', act('save'))]));
   box.append(g2);
   const bw = document.createElement('div');
   bw.style.cssText = 'margin:18px 0 6px;display:flex;justify-content:center';
@@ -455,15 +449,22 @@ function renderPane(t) {
     line(
       'Cemu',
       cfg.cemuPath
-        ? (cfg.cemuManaged ? 'Managed by CosmoU' : cfg.cemuFound ? 'Found on this computer' : 'Chosen manually') + (cfg.cemuVersion ? ' · ' + cfg.cemuVersion : '')
+        ? (IS_ANDROID
+            ? 'Cemu for Android'
+            : cfg.cemuManaged
+              ? 'Managed by CosmoU'
+              : cfg.cemuFound
+                ? 'Found on this computer'
+                : 'Chosen manually') + (cfg.cemuVersion ? ' · ' + cfg.cemuVersion : '')
         : 'Not installed',
     );
-    line(
-      'Last launch',
-      la
-        ? `${la.applied.length} settings applied` + (la.missing.length ? `, ${la.missing.length} not found in Cemu’s file` : '')
-        : 'No game started yet',
-    );
+    if (!IS_ANDROID)
+      line(
+        'Last launch',
+        la
+          ? `${la.applied.length} settings applied` + (la.missing.length ? `, ${la.missing.length} not found in Cemu’s file` : '')
+          : 'No game started yet',
+      );
     return;
   }
   if (t === 'input') {
@@ -517,6 +518,7 @@ const SX_ICON = {
     '<svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="12" fill="none" stroke="#fff" stroke-width="3"/><circle cx="16" cy="10.4" r="2" fill="#fff"/><path d="M16 15v8" stroke="#fff" stroke-width="3.2" stroke-linecap="round"/></svg>',
 };
 // [id, name, description, color, Cemu pane that lives inside it]
+// (on Android, Cemu's own settings live inside Cemu for Android, so the Cemu panes are left out)
 const SX = [
   ['general', 'Cemu & Games', 'Cemu, your games folder, covers and your library', '#1e8fe0', ''],
   ['look', 'Appearance', 'Theme, light or dark and how the views look', '#e57ac0', ''],
@@ -527,7 +529,17 @@ const SX = [
   ['plaza', 'Buddies & Plaza', 'Your buddies, their posts and the greeting at start', '#3aa86b', ''],
   ['data', 'Saves & Data', 'Save backups, play time and your settings file', '#e0a91e', ''],
   ['about', 'About', 'Version, updates, feedback and the community', '#8b959e', 'about'],
-];
+]
+  .filter(c => !IS_ANDROID || !['graphics', 'overlay'].includes(c[0]))
+  .map(c =>
+    IS_ANDROID && c[0] === 'sound'
+      ? [c[0], c[1], 'Menu music and UI sounds', c[3], '']
+      : IS_ANDROID && c[0] === 'controls'
+        ? [c[0], 'Controllers & TV', 'TV mode and every shortcut', c[3], '']
+        : IS_ANDROID && c[0] === 'data'
+          ? [c[0], 'Play time & Data', 'Play time and your settings file', c[3], '']
+          : c,
+  );
 const sxOf = id => SX.find(c => c[0] === id) || SX[0];
 let sxCat = 'general';
 try {
@@ -661,11 +673,7 @@ function sxPlaza() {
       nb ? `${nb} ${nb === 1 ? 'buddy' : 'buddies'}` : 'No buddies yet',
       nb ? 'Walking around the Plaza' : 'Open the Buddy maker',
     ),
-    card(
-      np > 0,
-      np ? `${np} ${np === 1 ? 'post' : 'posts'}` : 'No posts yet',
-      np ? 'Shown as speech bubbles' : 'Write one below',
-    ),
+    card(np > 0, np ? `${np} ${np === 1 ? 'post' : 'posts'}` : 'No posts yet', np ? 'Shown as speech bubbles' : 'Write one below'),
     card(hi, hi ? 'Greeting on' : 'Greeting off', hi ? 'Your buddy says hello at start' : 'Turn it on below'),
   );
 }
@@ -768,10 +776,7 @@ addEventListener('keydown', e => {
     }
     return;
   }
-  if (
-    (e.key === 'f' && (e.ctrlKey || e.metaKey)) ||
-    (e.key === '/' && !/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName))
-  ) {
+  if ((e.key === 'f' && (e.ctrlKey || e.metaKey)) || (e.key === '/' && !/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName))) {
     e.preventDefault();
     $('#sq').focus();
     $('#sq').select();

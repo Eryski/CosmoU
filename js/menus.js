@@ -211,8 +211,7 @@ function sortUi() {
 }
 function sortMenu(anchor) {
   const n = k =>
-    games.filter(g => (k === 'fav' ? favs.has(g.name) : k === 'apps' ? g.kind === 'app' : k === 'wiiu' ? g.kind !== 'app' : true))
-      .length;
+    games.filter(g => (k === 'fav' ? favs.has(g.name) : k === 'apps' ? g.kind === 'app' : k === 'wiiu' ? g.kind !== 'app' : true)).length;
   const hasApps = games.some(g => g.kind === 'app');
   openMenu(
     anchor,
@@ -271,10 +270,10 @@ function gameMenu(g, at) {
         fn: () => toggleFav(g),
       },
       '-',
-      !app && { label: 'Graphic packs', icon: 'packs', hint: 'G', fn: pick(() => openPacks(g)) },
+      !app && !IS_ANDROID && { label: 'Graphic packs', icon: 'packs', hint: 'G', fn: pick(() => openPacks(g)) },
       app && { label: 'Edit app', icon: 'edit', fn: pick(() => openApp(g)) },
-      g.path && { label: 'Show in folder', icon: 'folder', fn: () => need() && api.showInFolder(g.path) },
-      !app && { label: 'Add to Steam', icon: 'steam', fn: pick(() => openSteam(g)) },
+      g.path && !IS_ANDROID && { label: 'Show in folder', icon: 'folder', fn: () => need() && api.showInFolder(g.path) },
+      !app && !IS_ANDROID && { label: 'Add to Steam', icon: 'steam', fn: pick(() => openSteam(g)) },
       {
         label: 'Copy name',
         icon: 'copy',
@@ -316,8 +315,7 @@ for (const ev of ['pointerup', 'pointercancel', 'pointermove']) addEventListener
 const typing = e => e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable);
 addEventListener('keydown', e => {
   if (e.ctrlKey || e.metaKey || e.altKey || typing(e)) return;
-  if (document.querySelector('dialog[open]') || $('#launch').classList.contains('on') || $('#setup').classList.contains('on'))
-    return;
+  if (document.querySelector('dialog[open]') || $('#launch').classList.contains('on') || $('#setup').classList.contains('on')) return;
   const g = cur();
   const k = e.key;
   if (k === '?' || (k === '/' && e.shiftKey)) {
@@ -332,7 +330,7 @@ addEventListener('keydown', e => {
   } else if ((k === 'i' || k === 'I' || k === 'y' || k === 'Y') && g) {
     e.preventDefault();
     openDetail(g);
-  } else if ((k === 'g' || k === 'G') && g && g.kind !== 'app') {
+  } else if ((k === 'g' || k === 'G') && g && g.kind !== 'app' && !IS_ANDROID) {
     e.preventDefault();
     openPacks(g);
   } else if (k === 's' || k === 'S') {
@@ -540,14 +538,7 @@ function emptySteps() {
     'Download',
     () => need() && installCemu(),
   );
-  step(
-    2,
-    !!cfg.gamesDir,
-    'Choose your games folder',
-    cfg.gamesDir || 'WUA, WUD, WUX, RPX or folder games',
-    'Choose folder',
-    pickFolder,
-  );
+  step(2, !!cfg.gamesDir, 'Choose your games folder', cfg.gamesDir || 'WUA, WUD, WUX, RPX or folder games', 'Choose folder', pickFolder);
   step(3, false, 'Play', 'Covers load on their own. Other emulators or PC games:', 'Add app', () => need() && openApp(null));
 }
 // empty "Favorites" (or other filter): a button back to all games

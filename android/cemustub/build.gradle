@@ -1,0 +1,20 @@
+plugins {
+    id 'com.android.application'
+}
+// Only for the automatic test on the Android emulator: pretends to be Cemu for Android (same package name)
+// and writes what CosmoU sent it to the log. Never part of a release.
+android {
+    namespace 'info.cemu.cemu'
+    compileSdk 35
+    defaultConfig {
+        applicationId 'info.cemu.cemu'
+        minSdk 26
+        targetSdk 35
+        versionCode 1
+        versionName '0.0-test'
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}

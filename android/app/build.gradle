@@ -1,0 +1,75 @@
+import groovy.json.JsonSlurper
+
+plugins {
+    id 'com.android.application'
+}
+
+// the version comes from the desktop app's package.json, so every system has the same number
+def pkg = new JsonSlurper().parse(rootProject.file('../package.json'))
+def ver = pkg.version as String
+def parts = ver.tokenize('.-').take(3).collect { it.isInteger() ? it.toInteger() : 0 }
+while (parts.size() < 3) parts << 0
+def code = parts[0] * 10000 + parts[1] * 100 + parts[2]
+
+// the window of CosmoU (same files as on Windows, Linux and macOS) becomes the app's "www" assets
+def wwwDir = new File(layout.buildDirectory.get().asFile, 'generated/www')
+def resDir = new File(layout.buildDirectory.get().asFile, 'generated/res')
+tasks.register('copyWww', Copy) {
+    into new File(wwwDir, 'www')
+    from(rootProject.file('..')) {
+        include 'index.html', 'css/**', 'js/**', 'build/icon.png'
+        include 'assets/music/*.wav', 'assets/music/*.mp3', 'assets/music/*.ogg', 'assets/music/themes/*.ogg'
+    }
+}
+tasks.register('copyIcon', Copy) {
+    from(rootProject.file('../build/icon.png')) { rename { 'ic_launcher.png' } }
+    into new File(resDir, 'mipmap-xxxhdpi')
+}
+preBuild.dependsOn 'copyWww', 'copyIcon'
+
+android {
+    namespace 'com.cosmou.app'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'com.cosmou.app'
+        minSdk 26
+        targetSdk 35
+        versionCode code
+        versionName ver
+    }
+
+    sourceSets {
+        main {
+            assets.srcDir wwwDir
+            res.srcDir resDir
+        }
+    }
+
+    // GitHub Actions passes the signing key in these variables (see .github/workflows/release.yml)
+    signingConfigs {
+        release {
+            def ks = System.getenv('COSMOU_KEYSTORE')
+            if (ks) {
+                storeFile file(ks)
+                storePassword System.getenv('COSMOU_KEYSTORE_PASSWORD')
+                keyAlias System.getenv('COSMOU_KEY_ALIAS') ?: 'cosmou'
+                keyPassword System.getenv('COSMOU_KEY_PASSWORD') ?: System.getenv('COSMOU_KEYSTORE_PASSWORD')
+            }
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            if (System.getenv('COSMOU_KEYSTORE')) signingConfig signingConfigs.release
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    // the bundled music must stay uncompressed so it can be streamed
+    androidResources {
+        noCompress 'ogg', 'wav', 'mp3'
+    }
+}

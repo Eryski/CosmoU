@@ -1,15 +1,17 @@
 // CosmoU – Shared state and helpers: game list, sorting, cover colours, music, main render loop.
 const $ = s => document.querySelector(s);
-// Windows, Linux or macOS (the preview in a browser counts as Windows; ?platform=linux or ?platform=darwin to try the others)
-const OS = (window.api && window.api.platform) || ((location.search.match(/[?&]platform=(linux|darwin)\b/) || [])[1] ?? 'win32'),
+// Windows, Linux, macOS or Android (the preview in a browser counts as Windows; ?platform=linux, darwin or android to try the others)
+const OS = (window.api && window.api.platform) || ((location.search.match(/[?&]platform=(linux|darwin|android)\b/) || [])[1] ?? 'win32'),
   IS_LINUX = OS === 'linux',
   IS_MAC = OS === 'darwin',
-  IS_WIN = !IS_LINUX && !IS_MAC,
-  OS_NAME = IS_LINUX ? 'Linux' : IS_MAC ? 'macOS' : 'Windows',
-  CEMU_FILE = IS_LINUX ? 'Cemu' : IS_MAC ? 'Cemu.app' : 'Cemu.exe',
+  IS_ANDROID = OS === 'android',
+  IS_WIN = !IS_LINUX && !IS_MAC && !IS_ANDROID,
+  OS_NAME = IS_LINUX ? 'Linux' : IS_MAC ? 'macOS' : IS_ANDROID ? 'Android' : 'Windows',
+  CEMU_FILE = IS_LINUX ? 'Cemu' : IS_MAC ? 'Cemu.app' : IS_ANDROID ? 'Cemu for Android' : 'Cemu.exe',
   TV_KEY = IS_MAC ? '⌃⌘F' : 'F11';
 document.documentElement.classList.toggle('os-linux', IS_LINUX);
 document.documentElement.classList.toggle('os-mac', IS_MAC);
+document.documentElement.classList.toggle('os-android', IS_ANDROID);
 // where Cemu is, as people know it (on a Mac the app, not the program inside it)
 const cemuShown = p => (IS_MAC ? String(p || '').replace(/\/Contents\/MacOS\/[^/]+$/, '') : p || '');
 const demo = ['Star Chaser', 'Cloud Racing', 'Deep Sea Expedition', 'Pixel Fortress', 'Night Train', 'Spark Flight', 'Moon Garden'].map(
