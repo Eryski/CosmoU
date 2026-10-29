@@ -209,7 +209,9 @@ function tga() {
     'shell',
     'am start -W -n ' +
       PKG +
-      '/.MainActivity --es cosmou_test content://com.android.externalstorage.documents/document/primary%3ACosmoU-test%2FGames',
+      '/.MainActivity --ez cosmou_quiet ' +
+      (process.env.COSMOU_QUIET === 'true') +
+      ' --es cosmou_test content://com.android.externalstorage.documents/document/primary%3ACosmoU-test%2FGames',
   );
   await wait(3000);
   const crash = await sh('logcat -d -b crash');

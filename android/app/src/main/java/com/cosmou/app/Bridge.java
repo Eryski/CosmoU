@@ -78,6 +78,8 @@ public class Bridge {
 
     /** where the folder picker starts in the automatic test (set by MainActivity) */
     static String testStart = null;
+    /** the automatic test can start CosmoU without its menu music */
+    static boolean testQuiet = false;
 
     /** a file inside the app's folder, or null when the path tries to leave it */
     File file(String rel) {
@@ -121,6 +123,8 @@ public class Bridge {
                 o.put("manufacturer", Build.MANUFACTURER);
                 o.put("model", Build.MODEL);
                 o.put("abi", Build.SUPPORTED_ABIS.length > 0 ? Build.SUPPORTED_ABIS[0] : "");
+                if (testStart != null) o.put("test", true);
+                if (testQuiet) o.put("quiet", true);
                 return o;
             }
             case "read": {

@@ -51,6 +51,7 @@ public class MainActivity extends Activity {
         String test = getIntent().getStringExtra("cosmou_test");
         if (test != null) {
             Bridge.testStart = test;
+            Bridge.testQuiet = getIntent().getBooleanExtra("cosmou_quiet", false);
             Log.i(TAG, "test mode");
         }
         if (debuggable || test != null) WebView.setWebContentsDebuggingEnabled(true);
