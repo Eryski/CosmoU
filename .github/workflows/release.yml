@@ -287,7 +287,9 @@ jobs:
           target: google_apis
           arch: x86_64
           disable-animations: true
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          ram-size: 4096M
+          # the picture is drawn inside Android itself, so a crash there can't take the whole emulator down
+          emulator-options: -no-window -gpu guest -noaudio -no-boot-anim -no-snapshot -camera-back none
           script: bash scripts/ci/android-run.sh
 
       - name: Report the test
