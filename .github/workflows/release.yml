@@ -252,13 +252,18 @@ jobs:
 
       - name: Build the APK
         run: |
-          gradle -p android --no-daemon :app:assembleRelease :cemustub:assembleDebug
+          set -o pipefail
+          gradle -p android --no-daemon --console=plain :app:assembleRelease :cemustub:assembleDebug 2>&1 | tee "$RUNNER_TEMP/build.log"
           VERSION=$(node -p "require('./package.json').version")
           mkdir -p dist
           cp android/app/build/outputs/apk/release/app-release.apk "dist/CosmoU-Android-$VERSION.apk"
           cp android/cemustub/build/outputs/apk/debug/cemustub-debug.apk "$RUNNER_TEMP/cemu-stub.apk"
           ls -la dist
           "$ANDROID_HOME"/build-tools/*/apksigner verify --print-certs "dist/CosmoU-Android-$VERSION.apk" | head -3
+
+      - name: Show what went wrong in the build
+        if: failure()
+        run: node scripts/ci/log-note.js "$RUNNER_TEMP/build.log" "Android build"
 
       - name: Allow the emulator to use KVM
         run: |
