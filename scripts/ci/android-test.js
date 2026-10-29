@@ -36,6 +36,9 @@ const at = s => {
 setTimeout(() => {
   results.push({ name: 'test finished in time', pass: false, detail: 'stopped after 12 minutes at: ' + step });
   try {
+    results.push({ name: 'CosmoU log', pass: true, detail: adb('logcat', '-d', '-t', '120', '-s', 'CosmoU:*', 'chromium:*').slice(-6000) });
+  } catch {}
+  try {
     fs.mkdirSync(OUT, { recursive: true });
     fs.writeFileSync(path.join(OUT, 'results.json'), JSON.stringify({ platform: 'android', arch: 'emulator', results }, null, 1));
   } catch {}
@@ -105,14 +108,19 @@ function tga() {
   await sh(`pm uninstall ${PKG}; pm uninstall info.cemu.cemu`);
   install(APK);
   ok('CosmoU installed', /package:/.test(await sh(`pm path ${PKG}`)), await sh(`dumpsys package ${PKG} | grep -m1 versionName`));
-  // first start creates the app's folder, then the test file goes in (it opens the folder picker in the games folder)
-  await sh(`am start -W -n ${PKG}/.MainActivity`);
-  await wait(4000);
-  await sh(`am force-stop ${PKG}`);
-  const ext = `/sdcard/Android/data/${PKG}/files`;
-  await sh(`mkdir -p ${ext}`);
-  push(Buffer.from('content://com.android.externalstorage.documents/document/primary%3ACosmoU-test%2FGames'), `${ext}/cosmou-test`);
-  await sh(`am start -W -n ${PKG}/.MainActivity`);
+  // test mode: the page can be looked into with adb, and the folder picker starts in the test games folder
+  adb(
+    'shell',
+    'am start -W -n ' +
+      PKG +
+      '/.MainActivity --es cosmou_test content://com.android.externalstorage.documents/document/primary%3ACosmoU-test%2FGames',
+  );
+  await wait(3000);
+  ok(
+    'test mode on',
+    /test mode/.test(adb('logcat', '-d', '-s', 'CosmoU:I')),
+    adb('shell', 'cat /proc/net/unix | grep -c devtools_remote || true'),
+  );
   at('connect to the page');
   const wv = await dev.webView({ pkg: PKG }, { timeout: 60000 });
   const page = await wv.page();
@@ -269,6 +277,7 @@ function tga() {
   await page.waitForTimeout(800);
   await shot('09-end');
 
+  ok('CosmoU log', true, adb('logcat', '-d', '-t', '60', '-s', 'CosmoU:*').slice(-4000));
   fs.writeFileSync(path.join(OUT, 'results.json'), JSON.stringify({ platform: 'android', arch: 'emulator', results, errs }, null, 1));
   const failed = results.filter(r => !r.pass).length;
   console.log(failed ? failed + ' FAILED' : 'ALL PASSED');

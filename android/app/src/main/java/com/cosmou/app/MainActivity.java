@@ -47,8 +47,13 @@ public class MainActivity extends Activity {
         super.onCreate(saved);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         boolean debuggable = (getApplicationInfo().flags & ApplicationInfo.FLAG_DEBUGGABLE) != 0;
-        // the automatic test (and only that) puts this file there with adb, to look into the page
-        if (debuggable || Bridge.testFile(this) != null) WebView.setWebContentsDebuggingEnabled(true);
+        // the automatic test starts CosmoU with "cosmou_test" (only adb can look into the page then)
+        String test = getIntent().getStringExtra("cosmou_test");
+        if (test != null) {
+            Bridge.testStart = test;
+            Log.i(TAG, "test mode");
+        }
+        if (debuggable || test != null) WebView.setWebContentsDebuggingEnabled(true);
 
         web = new WebView(this);
         web.setBackgroundColor(Color.rgb(0xf4, 0xf9, 0xfb));

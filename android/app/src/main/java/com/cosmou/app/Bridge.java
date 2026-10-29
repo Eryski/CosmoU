@@ -76,12 +76,8 @@ public class Bridge {
         new File(root, "public").mkdirs();
     }
 
-    /** the file the automatic test puts on the device (Android/data/com.cosmou.app/files/cosmou-test) */
-    static File testFile(Context c) {
-        File d = c.getExternalFilesDir(null);
-        File f = d == null ? null : new File(d, "cosmou-test");
-        return f != null && f.isFile() ? f : null;
-    }
+    /** where the folder picker starts in the automatic test (set by MainActivity) */
+    static String testStart = null;
 
     /** a file inside the app's folder, or null when the path tries to leave it */
     File file(String rel) {
@@ -367,11 +363,8 @@ public class Bridge {
     Object pickFolder(int id) throws Exception {
         Intent i = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
         i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
-        File t = testFile(act);
-        if (t != null && Build.VERSION.SDK_INT >= 26) {
-            String start = new String(readAll(new FileInputStream(t), 4096), StandardCharsets.UTF_8).trim();
-            if (start.startsWith("content://")) i.putExtra(DocumentsContract.EXTRA_INITIAL_URI, Uri.parse(start));
-        }
+        if (testStart != null && testStart.startsWith("content://"))
+            i.putExtra(DocumentsContract.EXTRA_INITIAL_URI, Uri.parse(testStart));
         return startPicker(id, i, (code, data) -> {
             Uri tree = data.getData();
             if (tree == null) return cancel();
