@@ -123,8 +123,13 @@ public class MainActivity extends Activity {
         // the automatic test can open a plain page instead, to tell problems of the device from problems of CosmoU's page
         String plain = test != null ? getIntent().getStringExtra("cosmou_plain") : null;
         if (plain != null) web.loadDataWithBaseURL("https://" + HOST + "/", "<html><body><h1>" + plain + "</h1></body></html>", "text/html", "utf-8", null);
-        else if (saved == null) web.loadUrl(START);
-        else web.restoreState(saved);
+        else {
+            // Android may close CosmoU while a game runs (Cemu needs a lot of memory); the WebView can't always bring
+            // the page back from its saved state, so CosmoU simply starts its page again
+            if (saved == null || web.restoreState(saved) == null || !onOurPage()) web.loadUrl(START);
+        }
+        // and if the page still isn't there after a moment, load it again
+        web.postDelayed(this::ensurePage, 4000);
     }
 
     @SuppressWarnings("deprecation")
@@ -138,6 +143,18 @@ public class MainActivity extends Activity {
         super.onConfigurationChanged(c);
         boolean night = (c.uiMode & android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES;
         js("window.__cosmoEvent && __cosmoEvent('night','" + night + "')");
+    }
+
+    boolean onOurPage() {
+        String u = web == null ? null : web.getUrl();
+        return u != null && u.contains(HOST);
+    }
+
+    void ensurePage() {
+        if (web != null && getIntent().getStringExtra("cosmou_plain") == null && !onOurPage()) {
+            Log.w(TAG, "page missing (" + web.getUrl() + "), loading it again");
+            web.loadUrl(START);
+        }
     }
 
     @Override
@@ -236,6 +253,7 @@ public class MainActivity extends Activity {
     protected void onResume() {
         super.onResume();
         immersive();
+        ensurePage();
         js("window.__cosmoEvent && __cosmoEvent('resumed','{}'); dispatchEvent(new Event('focus'))");
     }
 

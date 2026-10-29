@@ -76,7 +76,15 @@ async function cdpPage(port) {
 }
 // the Android screen as text: the buttons and labels uiautomator sees, with their position
 function uiNodes() {
-  adb('shell', 'uiautomator dump /sdcard/ui.xml >/dev/null');
+  // uiautomator sometimes fails once while the screen changes: try again
+  for (let k = 0; ; k++)
+    try {
+      adb('shell', 'uiautomator dump /sdcard/ui.xml >/dev/null');
+      break;
+    } catch (e) {
+      if (k >= 3) throw e;
+      cp.execFileSync('sleep', ['1']);
+    }
   const x = adb('shell', 'cat /sdcard/ui.xml');
   return [...x.matchAll(/<node [^>]*?text="([^"]*)"[^>]*?bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"/g)].map(m => ({
     text: m[1].replace(/&amp;/g, '&'),
