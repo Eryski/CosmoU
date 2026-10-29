@@ -488,6 +488,7 @@
   // MeloCafe is installed with SideStore, AltStore or PlumeImpactor; its page explains how
   const MELOCAFE = 'https://github.com/stossy11/MeloCafe#download--install';
   const EMU_PAGE = IOS ? MELOCAFE : CEMU_ANDROID;
+  const STIKDEBUG = 'https://github.com/StephenDev0/StikDebug#readme';
   const no = what => async () => ({ ok: false, error: what + ' isn’t available on ' + (IOS ? 'iPhone and iPad' : 'Android') + '.' });
 
   window.api = {
@@ -503,7 +504,9 @@
       // iPhone and iPad: MeloCafe opened for a moment and sent its game list
       if (IOS) {
         if (r && r.ok) {
-          write({ ...read(), gamesDir: 'melocafe', gamesDirName: 'MeloCafe' });
+          const s = { ...read(), gamesDir: 'melocafe', gamesDirName: 'MeloCafe' };
+          if (r.bundle) s.meloBundle = r.bundle;
+          write(s);
           lastScanError = r.count ? '' : 'MeloCafe has no games yet. Add your games in MeloCafe, then get them again here.';
         } else if (r && !r.cancel) {
           lastScanError = r.error || 'MeloCafe didn’t send its games.';
@@ -531,6 +534,19 @@
       return { ok: false, cancelled: true };
     },
     cemuCancel: async () => {},
+    // iPhone and iPad: start MeloCafe with JIT through StikDebug (full speed)
+    jitStart: async () => {
+      if (!IOS) return { ok: false };
+      const c = sync('cemuInfo') || {};
+      if (!c.installed) return { ok: false, error: 'MeloCafe isn’t installed yet.' };
+      if (!c.stikdebug) {
+        sync('openUrl', STIKDEBUG);
+        return { ok: false, error: 'StikDebug gives MeloCafe JIT. Install it from the page that opened, then try again.' };
+      }
+      const b = read().meloBundle;
+      if (!b) return { ok: false, error: 'Get your games from MeloCafe first, so CosmoU knows which MeloCafe to start.' };
+      return sync('startJit', b) ? { ok: true } : { ok: false, error: 'StikDebug couldn’t be opened.' };
+    },
     onCemuProgress: () => {},
     play,
     playLog: async () => {

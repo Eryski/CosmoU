@@ -40,6 +40,7 @@
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>melocafe</string>
+		<string>stikjit</string>
 		<string>melonx</string>
 		<string>delta</string>
 		<string>retroarch</string>

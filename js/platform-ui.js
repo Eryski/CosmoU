@@ -97,7 +97,7 @@ function iosTexts() {
   set('.wz-page[data-s="1"] h2', 'Get MeloCafe');
   set(
     '.wz-page[data-s="1"] p',
-    'CosmoU starts your games with MeloCafe, the Wii U emulator for iPhone and iPad (based on Cemu). Install it once, then CosmoU finds it by itself.',
+    'CosmoU starts your games with MeloCafe, the Wii U emulator for iPhone and iPad (based on Cemu). Install it once, then CosmoU finds it by itself. For full speed MeloCafe needs JIT from StikDebug.',
   );
   set('#wzdl', 'Get MeloCafe');
   set('[data-k~="emulator"] strong', 'MeloCafe');
@@ -122,6 +122,21 @@ function iosTexts() {
   if (fb) fb.textContent = 'Collects your MeloCafe and ' + OS_NAME + ' version so the report is useful';
   const ex = document.querySelector('[data-k~="emulator"]');
   if (ex) ex.dataset.k += ' ios ipados iphone ipad melocafe';
+  // MeloCafe is only fast with JIT, which StikDebug gives it; games CosmoU starts then run in that MeloCafe
+  if (ex && window.api && api.jitStart) {
+    const row = document.createElement('div');
+    row.className = 'set';
+    row.dataset.k = 'jit speed fast slow stikdebug melocafe performance';
+    row.innerHTML =
+      '<div class="lbl"><strong>Full speed (JIT)</strong><small>Start MeloCafe with JIT through StikDebug, then come back and play</small></div>' +
+      '<button class="btn" id="jitb">Start with JIT</button>';
+    ex.after(row);
+    row.querySelector('button').onclick = async () => {
+      const r = await api.jitStart();
+      if (r.ok) toast('✓ StikDebug starts MeloCafe with JIT – then come back to CosmoU and play', 6000);
+      else if (r.error) toast(r.error, 7000);
+    };
+  }
   // CosmoU gets new games when you ask MeloCafe again, not by looking into a folder
   const re = document.querySelector('[data-k~="rescan"]');
   if (re) re.classList.add('no-android');

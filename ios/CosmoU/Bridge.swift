@@ -6,6 +6,8 @@
 //   melocafe://gameInfo?scheme=cosmou   MeloCafe opens and sends back cosmou://melocafe?games=<base64url JSON>
 //                                       (title id, title and icon of every game it has)
 //   melocafe://game?id=<title id>       starts that game
+// For full speed MeloCafe needs JIT, which StikDebug gives it: stikjit://enable-jit?bundle-id=<MeloCafe's bundle id>
+// starts MeloCafe with JIT; games CosmoU starts after that run in that MeloCafe.
 import UIKit
 import UniformTypeIdentifiers
 
@@ -120,7 +122,15 @@ final class Bridge {
             return ((try? fm.contentsOfDirectory(atPath: res.appendingPathComponent(str(a, 0)).path)) ?? []).sorted()
         case "cemuInfo":
             let installed = UIApplication.shared.canOpenURL(URL(string: "melocafe://")!)
-            return ["installed": installed, "pkg": installed ? "MeloCafe" : "", "version": ""] as [String: Any]
+            return ["installed": installed, "pkg": installed ? "MeloCafe" : "", "version": "",
+                    "stikdebug": UIApplication.shared.canOpenURL(URL(string: "stikjit://")!)] as [String: Any]
+        case "startJit":
+            // MeloCafe's bundle id is different for everyone (SideStore and AltStore change it), MeloCafe tells it
+            let b = str(a, 0)
+            guard b.range(of: "^[A-Za-z0-9.-]+$", options: .regularExpression) != nil,
+                  let u = URL(string: "stikjit://enable-jit?bundle-id=" + b), UIApplication.shared.canOpenURL(u) else { return false }
+            UIApplication.shared.open(u)
+            return true
         case "night":
             return host?.traitCollection.userInterfaceStyle == .dark
         case "appInstalled":
@@ -244,7 +254,9 @@ final class Bridge {
         let icons = root.appendingPathComponent("public/covers-auto", isDirectory: true)
         try? fm.createDirectory(at: icons, withIntermediateDirectories: true)
         var out: [[String: Any]] = []
+        var bundle = ""
         for g in list {
+            if let b = g["bundleId"] as? String, !b.isEmpty { bundle = b }
             guard let idNum = g["id"] as? NSNumber else { continue }
             let id = idNum.uint64Value
             if id == 0 { continue }
@@ -260,7 +272,7 @@ final class Bridge {
             try? d.write(to: root.appendingPathComponent("melocafe-games.json"), options: .atomic)
         }
         if gamesWaiting.isEmpty { host?.event("covers-updated") }
-        finishGames(ok(["count": out.count]))
+        finishGames(ok(["count": out.count, "bundle": bundle]))
     }
 
     static func averageColor(_ img: UIImage) -> String? {

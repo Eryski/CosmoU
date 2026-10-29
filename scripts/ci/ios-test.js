@@ -253,6 +253,23 @@ setTimeout(() => {
   await back();
   noAnswer('pick-app');
 
+  // ---- JIT: StikDebug starts MeloCafe (the stand-in answers StikDebug's link too) ----
+  at('jit');
+  await E(() => {
+    window.__jit = null;
+    api.jitStart().then(r => (window.__jit = r));
+    return true;
+  });
+  await wait(2500);
+  ok(
+    'Start with JIT asks StikDebug to start this MeloCafe',
+    stubLinks().includes('stikjit://enable-jit?bundle-id=' + STUB_ID),
+    stubLinks().split('\n').slice(-2).join(' '),
+  );
+  await back();
+  const jit = await waitFor(() => window.__jit, 10000);
+  ok('… and answers ok', jit && jit.ok === true, jit);
+
   // ---- light and dark ----
   at('dark mode');
   const bg = async () => {
@@ -350,7 +367,7 @@ setTimeout(() => {
   );
   ok(
     'only the iOS settings are shown',
-    Array.isArray(rows) && !rows.includes('Steam') && !rows.some(r => /DLC|Rescan/.test(r)) && rows.includes('Games'),
+    Array.isArray(rows) && !rows.includes('Steam') && !rows.some(r => /DLC|Rescan/.test(r)) && rows.includes('Games') && rows.includes('Full speed (JIT)'),
     rows,
   );
   await E(() => document.querySelector('#dlg').close());

@@ -20,7 +20,7 @@
 	<string>1</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
-	<!-- answers the same links as MeloCafe; "melonx" makes it look like another emulator app is installed too -->
+	<!-- answers the same links as MeloCafe; "melonx" and "stikjit" make it look like MeloNX and StikDebug are installed too -->
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
@@ -30,6 +30,7 @@
 			<array>
 				<string>melocafe</string>
 				<string>melonx</string>
+				<string>stikjit</string>
 			</array>
 		</dict>
 	</array>

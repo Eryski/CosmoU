@@ -85,10 +85,12 @@ final class StubScene: UIResponder, UIWindowSceneDelegate {
         switch url.host {
         case "gameInfo":
             // the same answer as MeloCafe: [{id, title, path, icon (base64)}] as base64url JSON
-            let list: [[String: Any]] = StubScene.games.map { g in
+            var list: [[String: Any]] = StubScene.games.map { g in
                 ["id": NSNumber(value: UInt64(g.0, radix: 16)!), "title": g.1, "path": "/var/mobile/roms/" + g.1,
                  "icon": StubScene.icon(g.1, g.2).base64EncodedString()]
             }
+            // like MeloCafe: the first game also carries MeloCafe's own bundle id (for starting it with JIT)
+            list[0]["bundleId"] = Bundle.main.bundleIdentifier ?? ""
             let data = (try? JSONSerialization.data(withJSONObject: list)) ?? Data()
             let b = data.base64EncodedString().replacingOccurrences(of: "+", with: "-")
                 .replacingOccurrences(of: "/", with: "_").replacingOccurrences(of: "=", with: "")
