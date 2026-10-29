@@ -79,16 +79,16 @@ setTimeout(() => {
     const f = path.join(OUT, n + '.png');
     const t = Date.now();
     try {
-      cp.execFileSync('xcrun', ['simctl', 'io', U, 'screenshot', '--type=png', f], { stdio: 'ignore', timeout: 60000 });
+      cp.execFileSync('xcrun', ['simctl', 'io', U, 'screenshot', '--type=png', f], { stdio: 'ignore', timeout: 240000 });
     } catch (e) {
       console.log('screenshot ' + n + ': ' + e.message.slice(0, 200));
     }
     try {
-      const s = cp.execFileSync('sips', ['-g', 'pixelWidth', '-g', 'pixelHeight', f], { encoding: 'utf8', timeout: 30000 });
+      const s = cp.execFileSync('sips', ['-g', 'pixelWidth', '-g', 'pixelHeight', f], { encoding: 'utf8', timeout: 120000 });
       const w = +s.match(/pixelWidth: (\d+)/)[1],
         h = +s.match(/pixelHeight: (\d+)/)[1];
-      if (h > w && !IPAD) cp.execFileSync('sips', ['-r', '270', f], { stdio: 'ignore', timeout: 30000 });
-      if (h > w && IPAD && ratio) cp.execFileSync('sips', ['-c', String(Math.round(w * ratio)), String(w), f], { stdio: 'ignore', timeout: 30000 });
+      if (h > w && !IPAD) cp.execFileSync('sips', ['-r', '270', f], { stdio: 'ignore', timeout: 120000 });
+      if (h > w && IPAD && ratio) cp.execFileSync('sips', ['-c', String(Math.round(w * ratio)), String(w), f], { stdio: 'ignore', timeout: 120000 });
     } catch (e) {
       console.log('picture ' + n + ': ' + e.message.slice(0, 200));
     }
@@ -141,6 +141,15 @@ setTimeout(() => {
     } catch {
       return '';
     }
+  };
+  // the stand-in got this link (the simulator on GitHub can be slow)
+  const gotLink = async (text, ms = 60000) => {
+    const end = Date.now() + ms;
+    while (Date.now() < end) {
+      if (stubLinks().includes(text)) return true;
+      await wait(500);
+    }
+    return false;
   };
   // back to CosmoU (like tapping it in the app switcher); a link would ask "Open in CosmoU?" first
   const back = async () => {
@@ -195,9 +204,10 @@ setTimeout(() => {
   });
   await wait(400);
   await shot('02-melocafe-sends-games');
-  const picked = await waitFor(() => window.__picked, 40000);
+  const picked = await waitFor(() => window.__picked, 120000);
   ok('games from MeloCafe', picked && picked.gamesDir === 'MeloCafe' && !picked.error, picked);
-  ok('MeloCafe was asked with its link', /melocafe:\/\/gameInfo\?scheme=cosmou/.test(stubLinks()), stubLinks());
+  const links1 = stubLinks();
+  ok('MeloCafe was asked with its link', /melocafe:\/\/gameInfo\?scheme=cosmou/.test(links1), links1);
   const games = await E(async () => (await api.scan()).map(g => ({ name: g.name, path: g.path, tid: g.tid, icon: g.icon, color: g.color, format: g.format })));
   ok('three games in the library', Array.isArray(games) && games.length === 3, games);
   const zelda = Array.isArray(games) && games.find(g => /Zelda/.test(g.name));
@@ -225,11 +235,12 @@ setTimeout(() => {
     api.play({ path: z.path, name: z.name }).then(r => (window.__played = r));
     return true;
   }, zelda);
-  await wait(2500);
+  const started = await gotLink('melocafe://game?id=' + BigInt('0x00050000101C9500'));
+  await wait(1500);
   await shot('04-melocafe-starts-the-game');
-  ok('MeloCafe starts the game', stubLinks().includes('melocafe://game?id=' + BigInt('0x00050000101C9500')), stubLinks().split('\n').slice(-3).join(' '));
+  ok('MeloCafe starts the game', started, stubLinks().split('\n').slice(-3).join(' '));
   await back();
-  const played = await waitFor(() => window.__played, 15000);
+  const played = await waitFor(() => window.__played, 60000);
   ok('play answers ok', played && played.ok, played);
   ok('back in CosmoU', (await E(() => document.visibilityState)) === 'visible', '');
 
@@ -248,8 +259,7 @@ setTimeout(() => {
     api.play(a).then(r => (window.__appPlayed = r));
     return a.appId;
   });
-  await wait(2500);
-  ok('the app opens', stubLinks().includes('melonx://'), [appPlay, stubLinks().split('\n').slice(-2).join(' ')]);
+  ok('the app opens', await gotLink('melonx://'), [appPlay, stubLinks().split('\n').slice(-2).join(' ')]);
   await back();
   noAnswer('pick-app');
 
@@ -260,14 +270,13 @@ setTimeout(() => {
     api.jitStart().then(r => (window.__jit = r));
     return true;
   });
-  await wait(2500);
   ok(
     'Start with JIT asks StikDebug to start this MeloCafe',
-    stubLinks().includes('stikjit://enable-jit?bundle-id=' + STUB_ID),
+    await gotLink('stikjit://enable-jit?bundle-id=' + STUB_ID),
     stubLinks().split('\n').slice(-2).join(' '),
   );
   await back();
-  const jit = await waitFor(() => window.__jit, 10000);
+  const jit = await waitFor(() => window.__jit, 60000);
   ok('… and answers ok', jit && jit.ok === true, jit);
 
   // ---- light and dark ----
@@ -378,10 +387,13 @@ setTimeout(() => {
   await pad(9, false);
   await wait(1200);
   ok('controller Start opens Settings', (await E(() => document.querySelector('#dlg').open)) === true, await E(() => navigator.getGamepads().map(p => p && p.id)));
-  await pad(1, true);
-  await wait(150);
-  await pad(1, false);
-  await wait(900);
+  // B goes back: from the options to the categories first, then it closes Settings
+  for (let k = 0; k < 2 && (await E(() => document.querySelector('#dlg').open)) === true; k++) {
+    await pad(1, true);
+    await wait(150);
+    await pad(1, false);
+    await wait(900);
+  }
   ok('controller B closes it', (await E(() => !document.querySelector('#dlg').open)) === true, '');
   const before = await E(() => cur() && cur().name);
   await pad(15, true);
