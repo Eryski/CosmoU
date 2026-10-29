@@ -258,11 +258,10 @@ jobs:
             gradle -p android --no-daemon --console=plain :app:assembleRelease :cemustub:assembleDebug
             VERSION=$(node -p "require('./package.json').version")
             mkdir -p dist
-            ls -la android/app/build/outputs/apk/release
             cp android/app/build/outputs/apk/release/app-release.apk "dist/CosmoU-Android-$VERSION.apk"
-            cp android/cemustub/build/outputs/apk/debug/cemustub-debug.apk "$RUNNER_TEMP/cemu-stub.apk"
+            cp android/cemustub/build/outputs/apk/debug/cemustub-debug.apk dist/cemu-stub.apk
             ls -la dist
-            unzip -l "dist/CosmoU-Android-$VERSION.apk" | grep -E "assets/www/(index.html|js/core.js|css/)" | head
+            unzip -l "dist/CosmoU-Android-$VERSION.apk" | grep -E "assets/www/(index.html|js/core.js)" | head
             TOOLS=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
             "$TOOLS/apksigner" verify --print-certs "dist/CosmoU-Android-$VERSION.apk" | head -3
           } 2>&1 | tee "$RUNNER_TEMP/build.log"
@@ -270,6 +269,45 @@ jobs:
       - name: Show what went wrong in the build
         if: failure()
         run: node scripts/ci/log-note.js "$RUNNER_TEMP/build.log" "Android build"
+
+      - name: Keep the files on the run page
+        uses: actions/upload-artifact@v4
+        with:
+          name: cosmou-android
+          path: dist/*.apk
+
+  # the test runs on several emulators: phones and tablets differ, and so does how the picture is drawn
+  android-test:
+    needs: android
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: android 14
+            api: 34
+            gpu: swiftshader_indirect
+          - name: android 14 guest
+            api: 34
+            gpu: guest
+          - name: android 14 quiet
+            api: 34
+            gpu: swiftshader_indirect
+            quiet: true
+          - name: android 11
+            api: 30
+            gpu: swiftshader_indirect
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: cosmou-android
+          path: dist
 
       - name: Allow the emulator to use KVM
         run: |
@@ -283,14 +321,13 @@ jobs:
         timeout-minutes: 30
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 34
+          api-level: ${{ matrix.api }}
           target: google_apis
           arch: x86_64
           disable-animations: true
           ram-size: 4096M
-          # the picture is drawn inside Android itself, so a crash there can't take the whole emulator down
-          emulator-options: -no-window -gpu guest -noaudio -no-boot-anim -no-snapshot -camera-back none
-          script: bash scripts/ci/android-run.sh
+          emulator-options: -no-window -gpu ${{ matrix.gpu }} -noaudio -no-boot-anim -no-snapshot -camera-back none
+          script: COSMOU_QUIET=${{ matrix.quiet || 'false' }} bash scripts/ci/android-run.sh
 
       - name: Report the test
         if: always()
@@ -300,21 +337,24 @@ jobs:
           command -v magick >/dev/null || command -v convert >/dev/null || sudo apt-get install -y imagemagick >/dev/null
           IM=$(command -v magick || command -v convert)
           for f in "$RUNNER_TEMP"/e2e/*.png; do [ -f "$f" ] && "$IM" "$f" -resize 720x720 -quality 40 "${f%.png}.jpg"; done
-          node scripts/ci/report.js "$RUNNER_TEMP/e2e" android
-
-      - name: Keep the files on the run page
-        uses: actions/upload-artifact@v4
-        with:
-          name: cosmou-android
-          path: dist/CosmoU-Android-*.apk
-
-      - name: Attach files to the release
-        if: steps.e2e.outcome == 'success' && (github.event_name == 'release' || inputs.to_release != '')
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ github.event_name == 'release' && github.event.release.tag_name || inputs.to_release }}
-          files: dist/CosmoU-Android-*.apk
+          node scripts/ci/report.js "$RUNNER_TEMP/e2e" "${{ matrix.name }}"
 
       - name: Stop if the test failed
         if: steps.e2e.outcome == 'failure'
         run: exit 1
+
+  android-release:
+    needs: [android, android-test]
+    if: github.event_name == 'release' || inputs.to_release != ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: cosmou-android
+          path: dist
+
+      - name: Attach files to the release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event_name == 'release' && github.event.release.tag_name || inputs.to_release }}
+          files: dist/CosmoU-Android-*.apk
