@@ -739,6 +739,10 @@
       if (down) {
         downAt[button] = performance.now();
         setBtn(button, true);
+      } else if (!vpad.buttons[button].pressed) {
+        // only the release arrived (Android sometimes keeps the press of a D-pad for itself): count it as a tap
+        setBtn(button, true);
+        setTimeout(() => setBtn(button, false), 120);
       } else {
         const held = performance.now() - (downAt[button] || 0);
         if (held >= 120) setBtn(button, false);

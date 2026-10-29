@@ -276,7 +276,8 @@ jobs:
           name: cosmou-android
           path: dist/*.apk
 
-  # the test runs on several emulators: phones and tablets differ, and so does how the picture is drawn
+  # the test runs on emulators with Android 11, 14 and 15 (newer ones draw with SwiftShader through ANGLE,
+  # which the emulator on GitHub's computers handles more reliably)
   android-test:
     needs: android
     runs-on: ubuntu-latest
@@ -284,7 +285,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: android 14 swangle
+          - name: android 15
+            api: 35
+            gpu: swangle_indirect
+          - name: android 14
             api: 34
             gpu: swangle_indirect
           - name: android 11
