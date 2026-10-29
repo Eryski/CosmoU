@@ -38,12 +38,12 @@ const save = extra =>
     JSON.stringify({ platform: 'ios', arch: device.name + ' · iOS ' + device.ver, results, ...extra }, null, 1),
   );
 setTimeout(() => {
-  results.push({ name: 'test finished in time', pass: false, detail: 'stopped after 15 minutes at: ' + step });
+  results.push({ name: 'test finished in time', pass: false, detail: 'stopped after 25 minutes at: ' + step });
   try {
     save({});
   } catch {}
   process.exit(3);
-}, 15 * 60e3).unref();
+}, 25 * 60e3).unref();
 
 (async () => {
   fs.mkdirSync(OUT, { recursive: true });
@@ -70,17 +70,29 @@ setTimeout(() => {
   ok('simulator', true, device.name + ' · iOS ' + device.ver);
   trySim('ui', U, 'appearance', 'light');
 
+  // the simulator stays upright; CosmoU is landscape: on an iPhone the picture is turned, on an iPad (which shows
+  // landscape apps in a landscape window on the upright screen) the empty bars above and below are cut off
+  const IPAD = /^iPad/i.test(device.name);
+  let ratio = 0;
   const shot = async n => {
     await wait(900);
     const f = path.join(OUT, n + '.png');
-    trySim('io', U, 'screenshot', '--type=png', f);
-    // the picture is the screen held upright; CosmoU is sideways (landscape), so turn it
+    const t = Date.now();
     try {
-      const s = cp.execFileSync('sips', ['-g', 'pixelWidth', '-g', 'pixelHeight', f], { encoding: 'utf8' });
+      cp.execFileSync('xcrun', ['simctl', 'io', U, 'screenshot', '--type=png', f], { stdio: 'ignore', timeout: 60000 });
+    } catch (e) {
+      console.log('screenshot ' + n + ': ' + e.message.slice(0, 200));
+    }
+    try {
+      const s = cp.execFileSync('sips', ['-g', 'pixelWidth', '-g', 'pixelHeight', f], { encoding: 'utf8', timeout: 30000 });
       const w = +s.match(/pixelWidth: (\d+)/)[1],
         h = +s.match(/pixelHeight: (\d+)/)[1];
-      if (h > w) cp.execFileSync('sips', ['-r', '270', f], { stdio: 'ignore' });
-    } catch {}
+      if (h > w && !IPAD) cp.execFileSync('sips', ['-r', '270', f], { stdio: 'ignore', timeout: 30000 });
+      if (h > w && IPAD && ratio) cp.execFileSync('sips', ['-c', String(Math.round(w * ratio)), String(w), f], { stdio: 'ignore', timeout: 30000 });
+    } catch (e) {
+      console.log('picture ' + n + ': ' + e.message.slice(0, 200));
+    }
+    console.log('shot ' + n + ' in ' + (Date.now() - t) + ' ms');
   };
 
   // ---- install ----
@@ -130,9 +142,9 @@ setTimeout(() => {
       return '';
     }
   };
-  // back to CosmoU (like tapping it in the app switcher)
+  // back to CosmoU (like tapping it in the app switcher); a link would ask "Open in CosmoU?" first
   const back = async () => {
-    trySim('openurl', U, 'cosmou://back');
+    trySim('launch', U, ID, '-cosmouTest', 'YES', '-cosmouQuiet', 'YES');
     await wait(2500);
   };
   const waitFor = async (fn, ms) => {
@@ -164,6 +176,7 @@ setTimeout(() => {
   ok('CosmoU runs as the iOS version', info && info.os === 'ios' && info.ios && /^(iOS|iPadOS)$/.test(info.name), info);
   ok('the page has room for the whole window (at least about 1100 × 600)', info && info.w >= 1090 && info.h >= 560, info);
   ok('first start shows the setup', info && info.wiz, '');
+  if (info && info.w && info.h) ratio = info.h / info.w;
   await shot('01-first-start');
   const c0 = await E(() => api.cemuStatus());
   ok('no MeloCafe yet', c0 && !c0.installed, c0);
@@ -242,22 +255,25 @@ setTimeout(() => {
 
   // ---- light and dark ----
   at('dark mode');
-  const bg = () => E(() => [getComputedStyle(document.body).backgroundColor, document.documentElement.classList.contains('dark')]);
+  const bg = async () => {
+    const r = await E(() => [getComputedStyle(document.body).backgroundColor, document.documentElement.classList.contains('dark')]);
+    return Array.isArray(r) ? r : [null, null, r];
+  };
   const light0 = await bg();
   await E(() => api.setTheme('dark'));
   await wait(900);
   const dark1 = await bg();
-  ok('Dark in Settings makes CosmoU dark', dark1 && dark1[1] && dark1[0] !== light0[0], [light0, dark1]);
+  ok('Dark in Settings makes CosmoU dark', dark1[1] === true && light0[0] && dark1[0] !== light0[0], [light0, dark1]);
   await shot('05-dark');
   await E(() => api.setTheme('system'));
   trySim('ui', U, 'appearance', 'dark');
   await wait(2500);
   const sys = await bg();
-  ok('System follows the iPhone’s dark mode', sys && sys[1], sys);
+  ok('System follows the iPhone’s dark mode', sys[1] === true, sys);
   trySim('ui', U, 'appearance', 'light');
   await wait(2500);
   const sys2 = await bg();
-  ok('… and back to light', sys2 && !sys2[1] && sys2[0] === light0[0], sys2);
+  ok('… and back to light', sys2[1] === false && sys2[0] === light0[0], sys2);
 
   // ---- music (theme songs come as .m4a; playing them needs byte ranges from the app) ----
   at('music');

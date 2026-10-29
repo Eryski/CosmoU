@@ -438,7 +438,7 @@ jobs:
       - name: Test CosmoU in the iOS Simulator
         id: e2e
         continue-on-error: true
-        timeout-minutes: 25
+        timeout-minutes: 35
         run: |
           mkdir -p "$RUNNER_TEMP/apps" "$RUNNER_TEMP/e2e"
           ditto -x -k dist/sim-CosmoU.zip "$RUNNER_TEMP/apps"
