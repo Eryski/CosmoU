@@ -6,6 +6,20 @@
   const N = window.CosmoNative;
   if (!N || window.api) return;
 
+  // older Android System WebView versions (Android 8–11 without updates) miss a few newer functions
+  for (const P of [Element.prototype, Document.prototype, DocumentFragment.prototype])
+    if (!P.replaceChildren)
+      P.replaceChildren = function (...nodes) {
+        while (this.lastChild) this.removeChild(this.lastChild);
+        if (nodes.length) this.append(...nodes);
+      };
+  if (!Array.prototype.at)
+    Array.prototype.at = function (i) {
+      i = Math.trunc(i) || 0;
+      return this[i < 0 ? this.length + i : i];
+    };
+  const chrome = +((navigator.userAgent.match(/Chrome\/(\d+)/) || [])[1] || 0);
+
   // ---------- bridge ----------
   const sync = (name, ...args) => {
     try {
@@ -711,9 +725,10 @@
   };
   let vpadOn = false;
   const realPads = navigator.getGamepads ? navigator.getGamepads.bind(navigator) : () => [];
+  // when Android hands controller buttons over itself (the WebView didn't take them), that controller comes first
   navigator.getGamepads = () => {
     const real = [...realPads()].filter(Boolean);
-    return real.length || !vpadOn ? real : [vpad];
+    return vpadOn ? [vpad, ...real] : real;
   };
   window.__cosmoPad = (button, down, ax, ay) => {
     if (button >= 0 && vpad.buttons[button]) vpad.buttons[button] = { pressed: !!down, touched: !!down, value: down ? 1 : 0 };
@@ -746,5 +761,10 @@
   }
   fit();
   addEventListener('orientationchange', () => setTimeout(fit, 300));
+  // a very old WebView still works, but some colors and effects look plainer
+  if (chrome && chrome < 100)
+    setTimeout(() => {
+      if (typeof toast === 'function') toast('Tip: update “Android System WebView” in the Play Store for the full CosmoU look.', 7000);
+    }, 5000);
   document.documentElement.classList.add('os-android');
 })();

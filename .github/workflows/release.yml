@@ -284,16 +284,12 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: android 14
-            api: 34
+          - name: android 15
+            api: 35
             gpu: swiftshader_indirect
-          - name: android 14 guest
-            api: 34
-            gpu: guest
-          - name: android 14 quiet
-            api: 34
+          - name: android 13
+            api: 33
             gpu: swiftshader_indirect
-            quiet: true
           - name: android 11
             api: 30
             gpu: swiftshader_indirect
