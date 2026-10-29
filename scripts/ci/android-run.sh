@@ -3,7 +3,7 @@
 mkdir -p "$RUNNER_TEMP/e2e"
 echo "adb devices: $(adb devices | tr '\n' ' ')" > "$RUNNER_TEMP/e2e/test.log"
 APK=$(ls dist/CosmoU-Android-*.apk | head -1)
-PW_PATH="$RUNNER_TEMP/pw/node_modules/playwright-core" node scripts/ci/android-test.js "$APK" "$RUNNER_TEMP/cemu-stub.apk" "$RUNNER_TEMP/e2e" >> "$RUNNER_TEMP/e2e/test.log" 2>&1
+node scripts/ci/android-test.js "$APK" "$RUNNER_TEMP/cemu-stub.apk" "$RUNNER_TEMP/e2e" >> "$RUNNER_TEMP/e2e/test.log" 2>&1
 code=$?
 echo "exit code $code" >> "$RUNNER_TEMP/e2e/test.log"
 cat "$RUNNER_TEMP/e2e/test.log"

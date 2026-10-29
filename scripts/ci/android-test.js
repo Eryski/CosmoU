@@ -2,7 +2,6 @@
 // Installs CosmoU and a stand-in for Cemu for Android, puts test games on the device, chooses the games folder with
 // the real Android folder picker, starts a game and an app, and uses the controller and the back button.
 // usage: node android-test.js <CosmoU.apk> <cemu-stub.apk> <out folder>     env: PW_PATH = playwright-core
-const { chromium } = require(process.env.PW_PATH || 'playwright-core');
 const fs = require('fs'),
   path = require('path');
 const [APK, STUB] = process.argv.slice(2, 4),
@@ -26,6 +25,55 @@ function push(data, remote) {
   fs.rmSync(f);
 }
 const install = apk => adb('install', '-r', '-g', apk);
+// the page inside the WebView, through the Chrome DevTools protocol (Node's own WebSocket)
+async function cdpPage(port) {
+  const targets = await (await fetch(`http://127.0.0.1:${port}/json`)).json();
+  const t = targets.find(x => x.type === 'page' && /index\.html/.test(x.url)) || targets.find(x => x.type === 'page');
+  if (!t) throw new Error('no page in the WebView: ' + JSON.stringify(targets).slice(0, 300));
+  const ws = new WebSocket(t.webSocketDebuggerUrl);
+  await new Promise((res, rej) => {
+    ws.onopen = res;
+    ws.onerror = () => rej(new Error('DevTools connection failed'));
+  });
+  let id = 0;
+  const wait = {},
+    errors = [];
+  ws.onmessage = m => {
+    const d = JSON.parse(m.data);
+    if (d.id && wait[d.id]) {
+      wait[d.id](d);
+      delete wait[d.id];
+    } else if (d.method === 'Runtime.exceptionThrown') {
+      const e = d.params.exceptionDetails;
+      errors.push((e.exception && e.exception.description) || e.text);
+    }
+  };
+  const send = (method, params) =>
+    new Promise(res => {
+      const n = ++id;
+      wait[n] = res;
+      ws.send(JSON.stringify({ id: n, method, params }));
+    });
+  await send('Runtime.enable', {});
+  return {
+    errors,
+    async evaluate(fn, arg) {
+      const r = await send('Runtime.evaluate', {
+        expression: `(${fn})(${arg === undefined ? '' : JSON.stringify(arg)})`,
+        awaitPromise: true,
+        returnByValue: true,
+      });
+      if (r.error) throw new Error(r.error.message);
+      if (r.result.exceptionDetails)
+        throw new Error(
+          (r.result.exceptionDetails.exception && r.result.exceptionDetails.exception.description) || r.result.exceptionDetails.text,
+        );
+      return r.result.result.value;
+    },
+    waitForTimeout: ms => new Promise(r => setTimeout(r, ms)),
+    close: () => ws.close(),
+  };
+}
 // the Android screen as text: the buttons and labels uiautomator sees, with their position
 function uiNodes() {
   adb('shell', 'uiautomator dump /sdcard/ui.xml >/dev/null');
@@ -177,14 +225,8 @@ function tga() {
     (await sh('cat /proc/net/unix')).match(/@(webview_devtools_remote_\d+)/);
   if (!sock) throw new Error('no WebView DevTools socket for pid ' + pid);
   adb('forward', 'tcp:9333', 'localabstract:' + sock[1]);
-  const browser = await chromium.connectOverCDP('http://127.0.0.1:9333', { timeout: 60000 });
-  const page =
-    browser
-      .contexts()[0]
-      .pages()
-      .find(p => /index\.html/.test(p.url())) || browser.contexts()[0].pages()[0];
-  const errs = [];
-  page.on('pageerror', e => errs.push(e.message));
+  const page = await cdpPage(9333);
+  const errs = page.errors;
   await page.waitForTimeout(3500);
   const E = async (fn, arg) => {
     try {
@@ -340,7 +382,7 @@ function tga() {
   fs.writeFileSync(path.join(OUT, 'results.json'), JSON.stringify({ platform: 'android', arch: 'emulator', results, errs }, null, 1));
   const failed = results.filter(r => !r.pass).length;
   console.log(failed ? failed + ' FAILED' : 'ALL PASSED');
-  await browser.close().catch(() => {});
+  page.close();
   process.exit(failed ? 1 : 0);
 })().catch(e => {
   console.log('CRASH', e.stack);
