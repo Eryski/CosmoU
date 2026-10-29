@@ -2,7 +2,7 @@
 // Installs CosmoU and a stand-in for Cemu for Android, puts test games on the device, chooses the games folder with
 // the real Android folder picker, starts a game and an app, and uses the controller and the back button.
 // usage: node android-test.js <CosmoU.apk> <cemu-stub.apk> <out folder>     env: PW_PATH = playwright-core
-const { _android } = require(process.env.PW_PATH || 'playwright-core');
+const { chromium } = require(process.env.PW_PATH || 'playwright-core');
 const fs = require('fs'),
   path = require('path');
 const [APK, STUB] = process.argv.slice(2, 4),
@@ -26,6 +26,39 @@ function push(data, remote) {
   fs.rmSync(f);
 }
 const install = apk => adb('install', '-r', '-g', apk);
+// the Android screen as text: the buttons and labels uiautomator sees, with their position
+function uiNodes() {
+  adb('shell', 'uiautomator dump /sdcard/ui.xml >/dev/null');
+  const x = adb('shell', 'cat /sdcard/ui.xml');
+  return [...x.matchAll(/<node [^>]*?text="([^"]*)"[^>]*?bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"/g)].map(m => ({
+    text: m[1].replace(/&amp;/g, '&'),
+    x: (+m[2] + +m[4]) >> 1,
+    y: (+m[3] + +m[5]) >> 1,
+  }));
+}
+async function waitText(re, ms) {
+  const end = Date.now() + ms;
+  while (Date.now() < end) {
+    if (uiNodes().some(n => re.test(n.text))) return;
+    await new Promise(r => setTimeout(r, 700));
+  }
+  throw new Error(
+    'not on screen: ' +
+      re +
+      ' – seen: ' +
+      uiNodes()
+        .map(n => n.text)
+        .filter(Boolean)
+        .slice(0, 30)
+        .join(' | '),
+  );
+}
+async function tapText(re) {
+  const n = uiNodes().find(n => re.test(n.text));
+  if (!n) throw new Error('nothing to tap: ' + re);
+  adb('shell', `input tap ${n.x} ${n.y}`);
+  await new Promise(r => setTimeout(r, 900));
+}
 // what the test is doing right now, so a hang shows where it stopped
 let step = 'start';
 const t0 = Date.now();
@@ -62,12 +95,10 @@ function tga() {
 (async () => {
   fs.mkdirSync(OUT, { recursive: true });
   at('devices');
-  const [dev] = await _android.devices();
-  if (!dev) throw new Error('no Android device');
-  const sh = async c => String(await dev.shell(c)).trim();
+  const sh = async c => adb('shell', c);
   const shot = async n => {
     await wait(900);
-    fs.writeFileSync(path.join(OUT, n + '.png'), await dev.screenshot());
+    fs.writeFileSync(path.join(OUT, n + '.png'), cp.execFileSync('adb', ['exec-out', 'screencap', '-p'], { maxBuffer: 64e6 }));
   };
   ok(
     'device',
@@ -122,8 +153,19 @@ function tga() {
     adb('shell', 'cat /proc/net/unix | grep -c devtools_remote || true'),
   );
   at('connect to the page');
-  const wv = await dev.webView({ pkg: PKG }, { timeout: 60000 });
-  const page = await wv.page();
+  // the page inside CosmoU, through Chrome's DevTools connection of the Android WebView
+  const pid = await sh('pidof ' + PKG);
+  const sock =
+    (await sh('cat /proc/net/unix')).match(new RegExp('@(webview_devtools_remote_' + pid + ')\\b')) ||
+    (await sh('cat /proc/net/unix')).match(/@(webview_devtools_remote_\d+)/);
+  if (!sock) throw new Error('no WebView DevTools socket for pid ' + pid);
+  adb('forward', 'tcp:9333', 'localabstract:' + sock[1]);
+  const browser = await chromium.connectOverCDP('http://127.0.0.1:9333', { timeout: 60000 });
+  const page =
+    browser
+      .contexts()[0]
+      .pages()
+      .find(p => /index\.html/.test(p.url())) || browser.contexts()[0].pages()[0];
   const errs = [];
   page.on('pageerror', e => errs.push(e.message));
   await page.waitForTimeout(3500);
@@ -155,11 +197,11 @@ function tga() {
     api.pickFolder().then(s => (window.__picked = s.gamesDir));
   });
   try {
-    await dev.wait({ text: /use this folder/i }, { timeout: 20000 });
+    await waitText(/use this folder/i, 20000);
     await shot('02-folder-picker');
-    await dev.tap({ text: /use this folder/i });
-    await dev.wait({ text: /^allow$/i }, { timeout: 10000 });
-    await dev.tap({ text: /^allow$/i });
+    await tapText(/use this folder/i);
+    await waitText(/^allow$/i, 10000);
+    await tapText(/^allow$/i);
   } catch (e) {
     ok('folder picker', false, e.message.slice(0, 300));
     await shot('02-folder-picker');
@@ -219,9 +261,9 @@ function tga() {
     api.appPick().then(a => (window.__app = a));
   });
   try {
-    await dev.wait({ text: 'Cemu (test)' }, { timeout: 10000 });
+    await waitText(/^Cemu \(test\)$/, 10000);
     await shot('05-app-picker');
-    await dev.tap({ text: 'Cemu (test)' });
+    await tapText(/^Cemu \(test\)$/);
   } catch (e) {
     ok('app picker', false, e.message.slice(0, 200));
   }
@@ -281,7 +323,7 @@ function tga() {
   fs.writeFileSync(path.join(OUT, 'results.json'), JSON.stringify({ platform: 'android', arch: 'emulator', results, errs }, null, 1));
   const failed = results.filter(r => !r.pass).length;
   console.log(failed ? failed + ' FAILED' : 'ALL PASSED');
-  await dev.close();
+  await browser.close().catch(() => {});
   process.exit(failed ? 1 : 0);
 })().catch(e => {
   console.log('CRASH', e.stack);
