@@ -282,6 +282,7 @@ jobs:
       - name: Test CosmoU on the Android emulator
         id: e2e
         continue-on-error: true
+        timeout-minutes: 30
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 34

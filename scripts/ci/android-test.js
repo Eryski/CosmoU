@@ -14,6 +14,21 @@ const ok = (name, pass, detail) => {
   console.log((pass ? 'PASS ' : 'FAIL ') + name + (detail !== undefined ? '  ' + String(results.at(-1).detail).slice(0, 400) : ''));
 };
 const wait = ms => new Promise(r => setTimeout(r, ms));
+// what the test is doing right now, so a hang shows where it stopped
+let step = 'start';
+const t0 = Date.now();
+const at = s => {
+  step = s;
+  console.log(`[${Math.round((Date.now() - t0) / 1000)}s] ${s}`);
+};
+setTimeout(() => {
+  results.push({ name: 'test finished in time', pass: false, detail: 'stopped after 12 minutes at: ' + step });
+  try {
+    fs.mkdirSync(OUT, { recursive: true });
+    fs.writeFileSync(path.join(OUT, 'results.json'), JSON.stringify({ platform: 'android', arch: 'emulator', results }, null, 1));
+  } catch {}
+  process.exit(3);
+}, 12 * 60e3).unref();
 
 // a tiny 4×4 Wii U style icon (uncompressed 32-bit TGA, top-left origin)
 function tga() {
@@ -31,6 +46,7 @@ function tga() {
 
 (async () => {
   fs.mkdirSync(OUT, { recursive: true });
+  at('devices');
   const [dev] = await _android.devices();
   if (!dev) throw new Error('no Android device');
   const sh = async c => String(await dev.shell(c)).trim();
@@ -48,6 +64,7 @@ function tga() {
       (await sh('getprop ro.product.cpu.abi')),
   );
 
+  at('push test games');
   // ---- test games ----
   const G = '/sdcard/CosmoU-test/Games';
   await sh(
@@ -71,6 +88,7 @@ function tga() {
   await dev.push(Buffer.from('WUA test file'), `${G}/Mario Kart 8.wua`);
   await dev.push(Buffer.from('notes'), `${G}/readme.txt`);
 
+  at('install');
   // ---- install ----
   await sh(`pm uninstall ${PKG}; pm uninstall info.cemu.cemu`);
   await dev.installApk(fs.readFileSync(APK));
@@ -86,6 +104,7 @@ function tga() {
     `${ext}/cosmou-test`,
   );
   await sh(`am start -W -n ${PKG}/.MainActivity`);
+  at('connect to the page');
   const wv = await dev.webView({ pkg: PKG }, { timeout: 60000 });
   const page = await wv.page();
   const errs = [];
@@ -112,6 +131,7 @@ function tga() {
   const c0 = await E(() => api.cemuStatus());
   ok('no Cemu yet', !c0.installed, c0);
 
+  at('folder picker');
   // ---- choose the games folder with Android's own folder picker ----
   await E(() => {
     window.__picked = null;
@@ -142,6 +162,7 @@ function tga() {
   await E(() => load());
   await shot('03-library');
 
+  at('Cemu');
   // ---- Cemu: get it, then play ----
   await dev.installApk(fs.readFileSync(STUB));
   const c1 = await E(() => api.cemuStatus());
@@ -174,6 +195,7 @@ function tga() {
   await sh(`am start -W -n ${PKG}/.MainActivity`);
   await page.waitForTimeout(1500);
 
+  at('apps');
   // ---- an Android app in the library ----
   await E(() => {
     window.__app = null;
@@ -194,6 +216,7 @@ function tga() {
   const apps = await E(async () => (await api.scan()).filter(g => g.kind === 'app').map(g => [g.name, g.cover.split('/').pop()]));
   ok('app in the library with its icon', Array.isArray(apps) && apps.length === 1 && /\.png$/.test(apps[0][1]), apps);
 
+  at('back and controller');
   // ---- back button and controller ----
   await E(() => openSettings('general'));
   await page.waitForTimeout(800);
