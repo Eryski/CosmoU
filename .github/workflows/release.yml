@@ -253,13 +253,18 @@ jobs:
       - name: Build the APK
         run: |
           set -o pipefail
-          gradle -p android --no-daemon --console=plain :app:assembleRelease :cemustub:assembleDebug 2>&1 | tee "$RUNNER_TEMP/build.log"
-          VERSION=$(node -p "require('./package.json').version")
-          mkdir -p dist
-          cp android/app/build/outputs/apk/release/app-release.apk "dist/CosmoU-Android-$VERSION.apk"
-          cp android/cemustub/build/outputs/apk/debug/cemustub-debug.apk "$RUNNER_TEMP/cemu-stub.apk"
-          ls -la dist
-          "$ANDROID_HOME"/build-tools/*/apksigner verify --print-certs "dist/CosmoU-Android-$VERSION.apk" | head -3
+          {
+            set -e
+            gradle -p android --no-daemon --console=plain :app:assembleRelease :cemustub:assembleDebug
+            VERSION=$(node -p "require('./package.json').version")
+            mkdir -p dist
+            ls -la android/app/build/outputs/apk/release
+            cp android/app/build/outputs/apk/release/app-release.apk "dist/CosmoU-Android-$VERSION.apk"
+            cp android/cemustub/build/outputs/apk/debug/cemustub-debug.apk "$RUNNER_TEMP/cemu-stub.apk"
+            ls -la dist
+            TOOLS=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+            "$TOOLS/apksigner" verify --print-certs "dist/CosmoU-Android-$VERSION.apk" | head -3
+          } 2>&1 | tee "$RUNNER_TEMP/build.log"
 
       - name: Show what went wrong in the build
         if: failure()
