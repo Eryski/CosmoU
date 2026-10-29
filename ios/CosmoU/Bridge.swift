@@ -129,7 +129,7 @@ final class Bridge {
             let b = str(a, 0)
             guard b.range(of: "^[A-Za-z0-9.-]+$", options: .regularExpression) != nil,
                   let u = URL(string: "stikjit://enable-jit?bundle-id=" + b), UIApplication.shared.canOpenURL(u) else { return false }
-            UIApplication.shared.open(u)
+            open(u)
             return true
         case "night":
             return host?.traitCollection.userInterfaceStyle == .dark
@@ -140,12 +140,12 @@ final class Bridge {
             return false
         case "openUrl":
             guard let u = URL(string: str(a, 0)), ["https", "http", "mailto"].contains(u.scheme ?? "") else { return false }
-            UIApplication.shared.open(u)
+            open(u)
             return true
         case "openCemu":
             let u = URL(string: "melocafe://")!
             guard UIApplication.shared.canOpenURL(u) else { return false }
-            UIApplication.shared.open(u)
+            open(u)
             return true
         case "immersive":
             return true
@@ -155,6 +155,8 @@ final class Bridge {
         case "bg":
             host?.setStripColor(str(a, 0))
             return true
+        case "openLog":
+            return Test.on ? openLog : nil
         case "testPad":
             guard Test.on, a.count >= 2, let b = (a[0] as? NSNumber)?.intValue else { return false }
             Pads.shared.press(b, (a[1] as? Bool) ?? false)
@@ -170,6 +172,18 @@ final class Bridge {
         uname(&u)
         return withUnsafeBytes(of: &u.machine) { b in
             String(cString: b.bindMemory(to: CChar.self).baseAddress!)
+        }
+    }
+
+    // other apps are opened here (the last ones are kept for the automatic test)
+    private(set) var openLog: [String] = []
+    func open(_ u: URL, _ done: ((Bool) -> Void)? = nil) {
+        let t0 = Date()
+        UIApplication.shared.open(u, options: [:]) { [weak self] ok in
+            let line = String(format: "%.1fs ", Date().timeIntervalSince(t0)) + String(u.absoluteString.prefix(70)) + (ok ? " → opened" : " → refused")
+            self?.openLog = Array(((self?.openLog ?? []) + [line]).suffix(20))
+            NSLog("CosmoU open: %@", line)
+            done?(ok)
         }
     }
 
@@ -211,7 +225,7 @@ final class Bridge {
         gamesAway = false
         gamesRound += 1
         let round = gamesRound
-        UIApplication.shared.open(u, options: [:]) { [weak self] opened in
+        open(u) { [weak self] opened in
             if !opened { self?.finishGames(self?.err("MeloCafe couldn’t be opened.")) }
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 180) { [weak self] in
@@ -298,14 +312,14 @@ final class Bridge {
         guard UIApplication.shared.canOpenURL(u) else {
             return done(err("MeloCafe isn’t installed yet. Open Settings → Cemu & Games to get it."))
         }
-        UIApplication.shared.open(u, options: [:]) { [weak self] opened in
+        open(u) { [weak self] opened in
             done(opened ? self?.ok() : self?.err("MeloCafe couldn’t be started."))
         }
     }
 
     private func launchApp(_ link: String, _ done: @escaping (Any?) -> Void) {
         guard let u = URL(string: link), u.scheme != nil else { return done(err("This app link isn’t valid.")) }
-        UIApplication.shared.open(u, options: [:]) { [weak self] opened in
+        open(u) { [weak self] opened in
             done(opened ? self?.ok() : self?.err("The app couldn’t be started. Is it still installed?"))
         }
     }

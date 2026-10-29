@@ -204,8 +204,23 @@ setTimeout(() => {
   });
   await wait(400);
   await shot('02-melocafe-sends-games');
-  const picked = await waitFor(() => window.__picked, 120000);
-  ok('games from MeloCafe', picked && picked.gamesDir === 'MeloCafe' && !picked.error, picked);
+  let picked = await waitFor(() => window.__picked, 120000);
+  if (!picked || !stubLinks()) {
+    // what happened: the links CosmoU opened, and what iOS knows about the stand-in
+    ok('first try to reach MeloCafe', false, {
+      picked,
+      opens: await E(() => JSON.parse(CosmoNative.sync('openLog', '[]'))),
+      stub: trySim('appinfo', U, STUB_ID).split('\n').filter(l => /Scheme|melocafe|Bundle|Path/i.test(l)).join(' ').slice(0, 800),
+    });
+    await back();
+    await E(() => {
+      window.__picked = null;
+      api.pickFolder().then(s => (window.__picked = s));
+      return true;
+    });
+    picked = await waitFor(() => window.__picked, 120000);
+  }
+  ok('games from MeloCafe', picked && picked.gamesDir === 'MeloCafe' && !picked.error, [picked, await E(() => JSON.parse(CosmoNative.sync('openLog', '[]')))]);
   const links1 = stubLinks();
   ok('MeloCafe was asked with its link', /melocafe:\/\/gameInfo\?scheme=cosmou/.test(links1), links1);
   const games = await E(async () => (await api.scan()).map(g => ({ name: g.name, path: g.path, tid: g.tid, icon: g.icon, color: g.color, format: g.format })));
