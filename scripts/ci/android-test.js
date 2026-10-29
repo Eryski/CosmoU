@@ -209,7 +209,9 @@ function tga() {
     'shell',
     'am start -W -n ' +
       PKG +
-      '/.MainActivity --ez cosmou_quiet ' +
+      '/.MainActivity ' +
+      (process.env.COSMOU_PLAIN ? '--es cosmou_plain plain ' : '') +
+      '--ez cosmou_quiet ' +
       (process.env.COSMOU_QUIET === 'true') +
       ' --es cosmou_test content://com.android.externalstorage.documents/document/primary%3ACosmoU-test%2FGames',
   );
@@ -248,6 +250,14 @@ function tga() {
       return { thrown: e.message.slice(0, 300) };
     }
   };
+  if (process.env.COSMOU_PLAIN) {
+    // only checks that a simple page survives on this emulator
+    ok('plain page', /plain/.test(await E(() => document.body.textContent)), await E(() => location.href));
+    await wait(20000);
+    ok('emulator still there after 20 s', /\d/.test(await sh('pidof ' + PKG)), '');
+    fs.writeFileSync(path.join(OUT, 'results.json'), JSON.stringify({ platform: 'android', arch: 'emulator', results }, null, 1));
+    process.exit(results.some(r => !r.pass) ? 1 : 0);
+  }
   const pg = await E(async () => ({
     href: location.href,
     title: document.title,
@@ -380,6 +390,7 @@ function tga() {
   await sh('input gamepad keyevent KEYCODE_BUTTON_B');
   await page.waitForTimeout(800);
   ok('controller B closes it', (await E(() => !document.querySelector('#dlg').open)) === true, '');
+  ok('state before the D-pad', true, await E(() => ({ mode, dialogs: [...document.querySelectorAll('dialog[open]')].map(d => d.id), presses: window.__cosmoPadCount, loop: pad.loop })));
   const before = await E(() => cur() && cur().name);
   await sh('input gamepad keyevent KEYCODE_DPAD_RIGHT');
   await page.waitForTimeout(800);

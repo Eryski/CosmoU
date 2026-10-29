@@ -284,14 +284,13 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: android 14
+          - name: android 14 plain page
             api: 34
             gpu: swiftshader_indirect
-            audio: ''
-          - name: android 14 quiet
+            plain: true
+          - name: android 14 swangle
             api: 34
-            gpu: swiftshader_indirect
-            quiet: true
+            gpu: swangle_indirect
           - name: android 11
             api: 30
             gpu: swiftshader_indirect
@@ -324,8 +323,8 @@ jobs:
           arch: x86_64
           disable-animations: true
           ram-size: 4096M
-          emulator-options: -no-window -gpu ${{ matrix.gpu }} ${{ matrix.audio == '' && ' ' || '-noaudio' }} -no-boot-anim -no-snapshot -camera-back none ${{ matrix.extra }}
-          script: COSMOU_QUIET=${{ matrix.quiet || 'false' }} bash scripts/ci/android-run.sh
+          emulator-options: -no-window -gpu ${{ matrix.gpu }} -noaudio -no-boot-anim -no-snapshot -camera-back none ${{ matrix.extra }}
+          script: COSMOU_QUIET=${{ matrix.quiet || 'false' }} COSMOU_PLAIN=${{ matrix.plain || '' }} bash scripts/ci/android-run.sh
 
       - name: Report the test
         if: always()

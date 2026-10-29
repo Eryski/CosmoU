@@ -99,7 +99,10 @@ public class MainActivity extends Activity {
         });
         setContentView(web);
         immersive();
-        if (saved == null) web.loadUrl(START);
+        // the automatic test can open a plain page instead, to tell problems of the device from problems of CosmoU's page
+        String plain = test != null ? getIntent().getStringExtra("cosmou_plain") : null;
+        if (plain != null) web.loadDataWithBaseURL("https://" + HOST + "/", "<html><body><h1>" + plain + "</h1></body></html>", "text/html", "utf-8", null);
+        else if (saved == null) web.loadUrl(START);
         else web.restoreState(saved);
     }
 
