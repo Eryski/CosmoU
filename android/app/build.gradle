@@ -12,8 +12,8 @@ while (parts.size() < 3) parts << 0
 def code = parts[0] * 10000 + parts[1] * 100 + parts[2]
 
 // the window of CosmoU (same files as on Windows, Linux and macOS) becomes the app's "www" assets
-def wwwDir = new File(layout.buildDirectory.get().asFile, 'generated/www')
-def resDir = new File(layout.buildDirectory.get().asFile, 'generated/res')
+def wwwDir = new File(layout.buildDirectory.get().asFile, 'cosmou/www')
+def resDir = new File(layout.buildDirectory.get().asFile, 'cosmou/res')
 tasks.register('copyWww', Copy) {
     into new File(wwwDir, 'www')
     from(rootProject.file('..')) {
