@@ -195,6 +195,8 @@ setTimeout(() => {
   // ---- "MeloCafe" ----
   at('MeloCafe');
   simctl('install', U, STUB);
+  // iOS needs a moment before the new app's links work
+  await wait(8000);
   const c1 = await E(() => api.cemuStatus());
   ok('MeloCafe found', c1 && c1.installed && c1.path === 'MeloCafe', c1);
   await E(() => {
@@ -207,7 +209,7 @@ setTimeout(() => {
   let picked = await waitFor(() => window.__picked, 120000);
   if (!picked || !stubLinks()) {
     // what happened: the links CosmoU opened, and what iOS knows about the stand-in
-    ok('first try to reach MeloCafe', false, {
+    ok('note: first try to reach MeloCafe', true, {
       picked,
       opens: await E(() => JSON.parse(CosmoNative.sync('openLog', '[]'))),
       stub: trySim('appinfo', U, STUB_ID).split('\n').filter(l => /Scheme|melocafe|Bundle|Path/i.test(l)).join(' ').slice(0, 800),

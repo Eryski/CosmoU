@@ -34,7 +34,7 @@ final class MainViewController: UIViewController, WKUIDelegate, WKNavigationDele
         cfg.allowsInlineMediaPlayback = true
         cfg.mediaTypesRequiringUserActionForPlayback = []
         cfg.preferences.javaScriptCanOpenWindowsAutomatically = false
-        fastDisplay = UIScreen.main.maximumFramesPerSecond > 60 && MainViewController.allow120Hz(cfg.preferences)
+        fastDisplay = MainViewController.allow120Hz(cfg.preferences)
         let uc = cfg.userContentController
         uc.add(WeakHandler(self), name: "cosmou")
         uc.addUserScript(WKUserScript(source: Bridge.pageScript(test: Test.on), injectionTime: .atDocumentStart,

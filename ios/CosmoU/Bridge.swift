@@ -179,12 +179,17 @@ final class Bridge {
 
     // other apps are opened here (the last ones are kept for the automatic test)
     private(set) var openLog: [String] = []
-    func open(_ u: URL, _ done: ((Bool) -> Void)? = nil) {
+    // (right after an app was installed iOS sometimes refuses its link once, so a refused link is tried again)
+    func open(_ u: URL, again: Bool = true, _ done: ((Bool) -> Void)? = nil) {
         let t0 = Date()
         UIApplication.shared.open(u, options: [:]) { [weak self] ok in
             let line = String(format: "%.1fs ", Date().timeIntervalSince(t0)) + String(u.absoluteString.prefix(70)) + (ok ? " → opened" : " → refused")
             self?.openLog = Array(((self?.openLog ?? []) + [line]).suffix(20))
             NSLog("CosmoU open: %@", line)
+            if !ok, again, UIApplication.shared.canOpenURL(u) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { self?.open(u, again: false, done) }
+                return
+            }
             done?(ok)
         }
     }
