@@ -12,6 +12,6 @@ const keep = [];
 lines.forEach((l, i) => {
   if (/error|What went wrong|FAILURE|failed|Exception|warning: \[|e: /i.test(l)) keep.push(...lines.slice(i, i + 4));
 });
-const out = (keep.length ? keep : lines.slice(-80)).filter((l, i, a) => a.indexOf(l) === i).slice(0, 150).join('\n');
+const out = (keep.length ? keep : lines.slice(-80)).filter((l, i, a) => a.indexOf(l) === i).slice(-150).join('\n');
 const esc = s => s.replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A');
 console.log('::error title=' + (process.argv[3] || 'build log') + '::' + esc(out.slice(-30000)));
