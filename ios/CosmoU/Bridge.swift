@@ -93,6 +93,8 @@ final class Bridge {
                 "idiom": d.userInterfaceIdiom == .pad ? "pad" : "phone",
                 "model": Bridge.model,
             ]
+            o["fps"] = UIScreen.main.maximumFramesPerSecond
+            o["fast"] = host?.fastDisplay ?? false
             if Test.on { o["test"] = true }
             if Test.quiet { o["quiet"] = true }
             return o

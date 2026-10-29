@@ -431,6 +431,19 @@ setTimeout(() => {
   ok('update check reaches GitHub', up && (up.ok || /GitHub/.test(up.error)), up);
   const vp = await E(() => [document.querySelector('meta[name=viewport]').content, innerWidth, innerHeight, CosmoNative.sync('viewSize', '[]')]);
   ok('page size', true, vp);
+  // iPhones with a Dynamic Island: only the island's side keeps its room, the other side is narrow
+  const room = await E(() => JSON.parse(CosmoNative.sync('viewSize', '[]')));
+  if (!IPAD) ok('the page is wider than the safe area (room only next to the Dynamic Island)', Array.isArray(room) && room[0] >= 780, room);
+  const fps = await E(
+    () =>
+      new Promise(res => {
+        let n = 0;
+        const t0 = performance.now();
+        const f = () => (++n < 60 ? requestAnimationFrame(f) : res(Math.round((60 * 1000) / (performance.now() - t0))));
+        requestAnimationFrame(f);
+      }),
+  );
+  ok('display', true, { fps, info: await E(() => ({ fps: api.ios.fps, fast: api.ios.fast })) });
 
   // ---- start again: everything is still there ----
   at('restart');

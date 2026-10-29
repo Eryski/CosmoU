@@ -88,6 +88,9 @@
 		<string>UIInterfaceOrientationLandscapeRight</string>
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 	</array>
+	<!-- ProMotion: animations up to 120 Hz on iPhone Pro and iPad Pro -->
+	<key>CADisableMinimumFrameDurationOnPhone</key>
+	<true/>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 </dict>

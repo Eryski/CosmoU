@@ -9,6 +9,14 @@ final class MainViewController: UIViewController, WKUIDelegate, WKNavigationDele
     let bridge = Bridge()
     private let files = SchemeHandler()
     private var pageReady = false
+    private var leftEdge: NSLayoutConstraint!
+    private var rightEdge: NSLayoutConstraint!
+    // the strips next to the Dynamic Island and the round corners continue the page's colors
+    private let leftStrip = UIImageView()
+    private let rightStrip = UIImageView()
+    private var stripTimer: Timer?
+    // ProMotion (120 Hz) for the page, when this iOS lets WebKit go past 60 frames per second
+    private(set) var fastDisplay = false
 
     override var prefersStatusBarHidden: Bool { true }
     override var prefersHomeIndicatorAutoHidden: Bool { true }
@@ -26,6 +34,7 @@ final class MainViewController: UIViewController, WKUIDelegate, WKNavigationDele
         cfg.allowsInlineMediaPlayback = true
         cfg.mediaTypesRequiringUserActionForPlayback = []
         cfg.preferences.javaScriptCanOpenWindowsAutomatically = false
+        fastDisplay = UIScreen.main.maximumFramesPerSecond > 60 && MainViewController.allow120Hz(cfg.preferences)
         let uc = cfg.userContentController
         uc.add(WeakHandler(self), name: "cosmou")
         uc.addUserScript(WKUserScript(source: Bridge.pageScript(test: Test.on), injectionTime: .atDocumentStart,
@@ -47,14 +56,31 @@ final class MainViewController: UIViewController, WKUIDelegate, WKNavigationDele
         if #available(iOS 16.4, *) { w.isInspectable = Test.on }
         w.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(w)
-        // next to the notch, not under it; top and bottom go to the edge (the home bar hides by itself)
+        for s in [leftStrip, rightStrip] {
+            s.translatesAutoresizingMaskIntoConstraints = false
+            s.contentMode = .scaleToFill
+            s.layer.magnificationFilter = .linear
+            view.insertSubview(s, belowSubview: w)
+        }
+        // next to the Dynamic Island, not under it (see updateEdges); top and bottom go to the edge (the home bar hides by itself)
+        leftEdge = w.leadingAnchor.constraint(equalTo: view.leadingAnchor)
+        rightEdge = view.trailingAnchor.constraint(equalTo: w.trailingAnchor)
         NSLayoutConstraint.activate([
-            w.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
-            w.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
+            leftEdge, rightEdge,
             w.topAnchor.constraint(equalTo: view.topAnchor),
             w.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            leftStrip.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            leftStrip.trailingAnchor.constraint(equalTo: w.leadingAnchor),
+            leftStrip.topAnchor.constraint(equalTo: view.topAnchor),
+            leftStrip.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            rightStrip.leadingAnchor.constraint(equalTo: w.trailingAnchor),
+            rightStrip.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            rightStrip.topAnchor.constraint(equalTo: view.topAnchor),
+            rightStrip.bottomAnchor.constraint(equalTo: view.bottomAnchor),
         ])
         web = w
+        updateEdges()
+        startStrips()
 
         Pads.shared.start { [weak self] js in self?.js(js) }
         load()
@@ -152,6 +178,7 @@ final class MainViewController: UIViewController, WKUIDelegate, WKNavigationDele
 
     func becameActive() {
         bridge.becameActive()
+        startStrips()
         // play time ends when you come back to CosmoU
         js("window.__cosmoEvent && __cosmoEvent('resumed', {}); dispatchEvent(new Event('focus'))")
         // after a long time in the background iOS may have emptied the page
@@ -163,7 +190,11 @@ final class MainViewController: UIViewController, WKUIDelegate, WKNavigationDele
         }
     }
 
-    func resignedActive() { bridge.resignedActive() }
+    func resignedActive() {
+        bridge.resignedActive()
+        stripTimer?.invalidate()
+        stripTimer = nil
+    }
 
     override func traitCollectionDidChange(_ previous: UITraitCollection?) {
         super.traitCollectionDidChange(previous)
@@ -174,12 +205,112 @@ final class MainViewController: UIViewController, WKUIDelegate, WKNavigationDele
 
     override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
         super.viewWillTransition(to: size, with: coordinator)
-        coordinator.animate(alongsideTransition: nil) { [weak self] _ in self?.sendViewSize() }
+        coordinator.animate(alongsideTransition: nil) { [weak self] _ in
+            self?.updateEdges()
+            self?.sendViewSize()
+        }
+    }
+
+    override func viewSafeAreaInsetsDidChange() {
+        super.viewSafeAreaInsetsDidChange()
+        updateEdges()
     }
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         sendViewSize()
+    }
+
+    // iPhones with a Dynamic Island (or notch): iOS keeps the same room free on both sides in landscape, but the
+    // island is only on one side. That side keeps its room; the other side only needs a little for the round corners.
+    // On an iPhone 17 Pro that gives the page about 40 points (5 %) more width.
+    private func updateEdges() {
+        guard leftEdge != nil else { return }
+        let ins = view.safeAreaInsets
+        var l = ins.left, r = ins.right
+        let side = max(l, r)
+        if UIDevice.current.userInterfaceIdiom == .phone, side > 30, abs(l - r) < 1 {
+            let corner = min(side, 20)
+            switch view.window?.windowScene?.interfaceOrientation ?? .landscapeRight {
+            case .landscapeRight: r = corner  // home bar on the right: the island is on the left
+            case .landscapeLeft: l = corner
+            default: break
+            }
+        }
+        if leftEdge.constant != l || rightEdge.constant != r {
+            leftEdge.constant = l
+            rightEdge.constant = r
+            view.layoutIfNeeded()
+            sampleStrips()
+        }
+    }
+
+    // ---------- the strips next to the page: a soft gradient from the page's own edge ----------
+    private func startStrips() {
+        guard stripTimer == nil else { return }
+        stripTimer = Timer.scheduledTimer(withTimeInterval: 0.7, repeats: true) { [weak self] _ in self?.sampleStrips() }
+    }
+
+    private func sampleStrips() {
+        guard let w = web, pageReady, w.bounds.height > 0, w.bounds.width > 24 else { return }
+        let h = w.bounds.height
+        sample(CGRect(x: 0, y: 0, width: 12, height: h), into: leftStrip)
+        sample(CGRect(x: w.bounds.width - 12, y: 0, width: 12, height: h), into: rightStrip)
+    }
+
+    private func sample(_ r: CGRect, into strip: UIImageView) {
+        guard strip.bounds.width >= 1 else { return }
+        let c = WKSnapshotConfiguration()
+        c.rect = r
+        c.snapshotWidth = 4
+        c.afterScreenUpdates = false
+        web.takeSnapshot(with: c) { img, _ in
+            guard let img = img, let g = MainViewController.gradient(img) else { return }
+            if let old = strip.image, old.pngData() == g.pngData() { return }
+            UIView.transition(with: strip, duration: 0.35, options: [.transitionCrossDissolve, .allowUserInteraction]) {
+                strip.image = g
+            }
+        }
+    }
+
+    // the snapshot of the page's edge, made into a 1 × 16 picture (each pixel the average of its part of the edge)
+    private static func gradient(_ img: UIImage) -> UIImage? {
+        guard let cg = img.cgImage else { return nil }
+        let n = 16
+        var px = [UInt8](repeating: 0, count: 4 * n)
+        let space = CGColorSpaceCreateDeviceRGB()
+        let info = CGImageAlphaInfo.noneSkipLast.rawValue
+        let drawn: Bool = px.withUnsafeMutableBytes { buf in
+            guard let ctx = CGContext(data: buf.baseAddress, width: 1, height: n, bitsPerComponent: 8, bytesPerRow: 4,
+                                      space: space, bitmapInfo: info) else { return false }
+            ctx.interpolationQuality = .high
+            ctx.draw(cg, in: CGRect(x: 0, y: 0, width: 1, height: n))
+            return true
+        }
+        guard drawn, let prov = CGDataProvider(data: Data(px) as CFData),
+              let out = CGImage(width: 1, height: n, bitsPerComponent: 8, bitsPerPixel: 32, bytesPerRow: 4, space: space,
+                                bitmapInfo: CGBitmapInfo(rawValue: info), provider: prov, decode: nil, shouldInterpolate: true,
+                                intent: .defaultIntent) else { return nil }
+        return UIImage(cgImage: out)
+    }
+
+    // WebKit draws pages with at most 60 frames per second unless its "Prefer Page Rendering Updates near 60fps"
+    // feature is off (Safari has it under Feature Flags). Turned off here, the page follows ProMotion up to 120 Hz.
+    private static func allow120Hz(_ p: WKPreferences) -> Bool {
+        let cls: AnyObject = WKPreferences.self
+        let listSel = NSSelectorFromString("_features"), setSel = NSSelectorFromString("_setEnabled:forFeature:")
+        guard cls.responds(to: listSel), p.responds(to: setSel),
+              let list = cls.perform(listSel)?.takeUnretainedValue() as? [NSObject] else { return false }
+        typealias SetFn = @convention(c) (AnyObject, Selector, Bool, AnyObject) -> Void
+        let set = unsafeBitCast(p.method(for: setSel), to: SetFn.self)
+        var done = false
+        for f in list where f.responds(to: NSSelectorFromString("key")) {
+            if let key = f.value(forKey: "key") as? String, key.contains("PreferPageRenderingUpdatesNear60FPS") {
+                set(p, setSel, false, f)
+                done = true
+            }
+        }
+        return done
     }
 
     private var lastSize = CGSize.zero
@@ -196,7 +327,10 @@ final class MainViewController: UIViewController, WKUIDelegate, WKNavigationDele
         guard n.count >= 3 else { return }
         let alpha = n.count >= 4 ? n[3] : 1
         if alpha < 0.5 { return }
-        view.backgroundColor = UIColor(red: n[0] / 255, green: n[1] / 255, blue: n[2] / 255, alpha: 1)
+        let c = UIColor(red: n[0] / 255, green: n[1] / 255, blue: n[2] / 255, alpha: 1)
+        view.backgroundColor = c
+        if leftStrip.image == nil { leftStrip.backgroundColor = c }
+        if rightStrip.image == nil { rightStrip.backgroundColor = c }
     }
 
     func presentTop(_ vc: UIViewController) {
