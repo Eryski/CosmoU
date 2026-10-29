@@ -31,6 +31,11 @@ async function gh(method, url, body) {
   const failed = res.filter(x => !x.pass).length;
   const lines = res.map(x => (x.pass ? 'PASS ' : 'FAIL ') + x.name + (x.detail ? '  ' + x.detail.slice(0, 900) : ''));
   if (r.crash) lines.push('CRASH ' + r.crash);
+  // what the test printed (when there is a log next to the results)
+  try {
+    const log = fs.readFileSync(path.join(dir, 'test.log'), 'utf8').trim().split('\n');
+    if (r.crash || res.some(x => !x.pass)) lines.push('--- test log ---', ...log.slice(-60));
+  } catch {}
   for (const e of r.errs || []) lines.push('LOG ' + e.slice(0, 400));
   console.log(lines.join('\n'));
   const shots = [];

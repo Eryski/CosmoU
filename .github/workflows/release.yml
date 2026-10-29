@@ -290,7 +290,7 @@ jobs:
           arch: x86_64
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
-          script: PW_PATH="$RUNNER_TEMP/pw/node_modules/playwright-core" node scripts/ci/android-test.js dist/CosmoU-Android-*.apk "$RUNNER_TEMP/cemu-stub.apk" "$RUNNER_TEMP/e2e"
+          script: bash scripts/ci/android-run.sh
 
       - name: Report the test
         if: always()
