@@ -262,6 +262,7 @@ jobs:
             cp android/app/build/outputs/apk/release/app-release.apk "dist/CosmoU-Android-$VERSION.apk"
             cp android/cemustub/build/outputs/apk/debug/cemustub-debug.apk "$RUNNER_TEMP/cemu-stub.apk"
             ls -la dist
+            unzip -l "dist/CosmoU-Android-$VERSION.apk" | grep -E "assets/www/(index.html|js/core.js|css/)" | head
             TOOLS=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
             "$TOOLS/apksigner" verify --print-certs "dist/CosmoU-Android-$VERSION.apk" | head -3
           } 2>&1 | tee "$RUNNER_TEMP/build.log"

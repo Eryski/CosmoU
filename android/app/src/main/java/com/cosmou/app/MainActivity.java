@@ -154,6 +154,7 @@ public class MainActivity extends Activity {
             r.setResponseHeaders(head);
             return r;
         } catch (Exception e) {
+            Log.w(TAG, "not found: " + path + " (" + e + ")");
             return notFound();
         }
     }

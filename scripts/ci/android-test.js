@@ -235,6 +235,15 @@ function tga() {
       return { thrown: e.message.slice(0, 300) };
     }
   };
+  const pg = await E(async () => ({
+    href: location.href,
+    title: document.title,
+    html: document.documentElement.outerHTML.length,
+    core: await fetch('/assets/www/js/core.js')
+      .then(r => r.status + ' ' + r.headers.get('content-type'))
+      .catch(e => String(e)),
+  }));
+  ok('page loaded', pg && /index\.html/.test(pg.href) && pg.html > 5000, pg);
   const info = await E(() => ({
     os: OS,
     android: IS_ANDROID,
