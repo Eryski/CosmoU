@@ -375,7 +375,7 @@ function tga() {
   ok(
     'controller Start opens Settings',
     (await E(() => document.querySelector('#dlg').open)) === true,
-    await E(() => navigator.getGamepads().length),
+    await E(() => [navigator.getGamepads().map(p => p.id), window.__cosmoPadCount || 0]),
   );
   await sh('input gamepad keyevent KEYCODE_BUTTON_B');
   await page.waitForTimeout(800);

@@ -730,8 +730,21 @@
     const real = [...realPads()].filter(Boolean);
     return vpadOn ? [vpad, ...real] : real;
   };
+  const downAt = {};
+  const setBtn = (b, on) => (vpad.buttons[b] = { pressed: on, touched: on, value: on ? 1 : 0 });
   window.__cosmoPad = (button, down, ax, ay) => {
-    if (button >= 0 && vpad.buttons[button]) vpad.buttons[button] = { pressed: !!down, touched: !!down, value: down ? 1 : 0 };
+    window.__cosmoPadCount = (window.__cosmoPadCount || 0) + 1;
+    if (button >= 0 && vpad.buttons[button]) {
+      // a very short press (a tap on a TV remote) stays down long enough for the next look at the controller
+      if (down) {
+        downAt[button] = performance.now();
+        setBtn(button, true);
+      } else {
+        const held = performance.now() - (downAt[button] || 0);
+        if (held >= 120) setBtn(button, false);
+        else setTimeout(() => setBtn(button, false), 120 - held);
+      }
+    }
     if (typeof ax === 'number') vpad.axes[0] = ax;
     if (typeof ay === 'number') vpad.axes[1] = ay;
     vpad.timestamp = performance.now();
