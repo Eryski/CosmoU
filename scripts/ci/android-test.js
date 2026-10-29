@@ -212,6 +212,8 @@ function tga() {
       '/.MainActivity --es cosmou_test content://com.android.externalstorage.documents/document/primary%3ACosmoU-test%2FGames',
   );
   await wait(3000);
+  const crash = await sh('logcat -d -b crash');
+  ok('CosmoU did not crash at start', !/com\.cosmou\.app/.test(crash) && /\d/.test(await sh('pidof ' + PKG)), crash.slice(-3000));
   ok(
     'test mode on',
     /test mode/.test(adb('logcat', '-d', '-s', 'CosmoU:I')),
@@ -225,7 +227,7 @@ function tga() {
     try {
       const pid = (await sh('pidof ' + PKG)).split(/\s+/)[0];
       const unix = await sh('cat /proc/net/unix');
-      const sock = unix.match(new RegExp('@(webview_devtools_remote_' + pid + ')\\b')) || unix.match(/@(webview_devtools_remote_\d+)/);
+      const sock = pid && unix.match(new RegExp('@(webview_devtools_remote_' + pid + ')\\b'));
       if (!sock) throw new Error('no WebView DevTools socket for pid ' + pid);
       adb('forward', 'tcp:9333', 'localabstract:' + sock[1]);
       page = await cdpPage(9333);
