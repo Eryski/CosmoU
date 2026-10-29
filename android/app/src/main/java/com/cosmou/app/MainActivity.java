@@ -71,8 +71,8 @@ public class MainActivity extends Activity {
         s.setTextZoom(100);
         s.setUserAgentString(s.getUserAgentString() + " CosmoU-Android");
         // CosmoU draws its own dark mode; Android must not darken the page on top of it
-        if (Build.VERSION.SDK_INT >= 33) s.setAlgorithmicDarkening(false);
-        else if (Build.VERSION.SDK_INT >= 29) noForceDark(s);
+        // (from Android 13 on that only happens with a dark app theme, and CosmoU's theme is light)
+        if (Build.VERSION.SDK_INT >= 29 && Build.VERSION.SDK_INT < 33) noForceDark(s);
 
         bridge = new Bridge(this, web);
         web.addJavascriptInterface(bridge, "CosmoNative");
