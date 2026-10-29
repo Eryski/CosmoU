@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="CosmoU" parent="android:Theme.Material.Light.NoActionBar.Fullscreen">
+        <item name="android:windowBackground">@android:color/white</item>
+        <item name="android:colorAccent">#16B3D9</item>
+        <!-- use the whole screen, also next to a camera cut-out -->
+        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
+        <!-- CosmoU has its own dark mode -->
+        <item name="android:forceDarkAllowed">false</item>
+    </style>
+</resources>

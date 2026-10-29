@@ -167,6 +167,9 @@ public class Bridge {
             }
             case "cemuInfo":
                 return cemuInfo();
+            case "night":
+                return (act.getResources().getConfiguration().uiMode & android.content.res.Configuration.UI_MODE_NIGHT_MASK)
+                        == android.content.res.Configuration.UI_MODE_NIGHT_YES;
             case "appInstalled":
                 return act.getPackageManager().getLaunchIntentForPackage(a.getString(0)) != null;
             case "appIcon":

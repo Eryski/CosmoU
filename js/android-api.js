@@ -499,6 +499,7 @@
     setTheme: async t => {
       const v = t === 'light' || t === 'dark' ? t : 'system';
       write({ ...read(), theme: v });
+      applyDark();
       return v;
     },
     setSetupDone: async v => {
@@ -759,6 +760,59 @@
       dispatchEvent(e);
     }
   };
+
+  // ---------- light and dark ----------
+  // The page switches its colors with "prefers-color-scheme: dark". The Android WebView doesn't follow the setting
+  // in CosmoU (and not always the phone's), so CosmoU decides: its CSS dark rules are switched on or off directly,
+  // and matchMedia answers the same way. "System" follows Android's dark mode (the app tells the page when it changes).
+  const DARK_Q = /prefers-color-scheme:\s*dark/;
+  let night = !!sync('night');
+  const darkListeners = new Set();
+  const darkNow = () => {
+    const t = read().theme;
+    return t === 'dark' || (t !== 'light' && night);
+  };
+  function darkRules(list, on) {
+    for (const r of list || []) {
+      if (r.media && (DARK_Q.test(r.media.mediaText) || r.__cosmoDark)) {
+        r.__cosmoDark = true;
+        r.media.mediaText = on ? 'all' : 'not all';
+      }
+      if (r.cssRules && !r.media) darkRules(r.cssRules, on);
+    }
+  }
+  function applyDark() {
+    const on = darkNow();
+    for (const sh of document.styleSheets) {
+      try {
+        darkRules(sh.cssRules, on);
+      } catch {}
+    }
+    darkMql.matches = on;
+    for (const cb of darkListeners) cb({ matches: on, media: '(prefers-color-scheme: dark)' });
+  }
+  const darkMql = {
+    matches: false,
+    media: '(prefers-color-scheme: dark)',
+    addEventListener: (ev, cb) => ev === 'change' && darkListeners.add(cb),
+    removeEventListener: (ev, cb) => darkListeners.delete(cb),
+    addListener: cb => darkListeners.add(cb),
+    removeListener: cb => darkListeners.delete(cb),
+    onchange: null,
+  };
+  const realMatchMedia = window.matchMedia.bind(window);
+  window.matchMedia = q => (DARK_Q.test(String(q)) ? darkMql : realMatchMedia(q));
+  darkMql.matches = darkNow();
+  // the style sheets are ready once the page is
+  if (document.readyState === 'loading') addEventListener('DOMContentLoaded', applyDark);
+  applyDark();
+  addEventListener('load', applyDark);
+  // theme files that are added later (own themes) get the same treatment
+  new MutationObserver(() => applyDark()).observe(document.head, { childList: true });
+  on('night', d => {
+    night = !!d;
+    applyDark();
+  });
 
   // ---------- screen size: lay the page out at least 1100 × 600 and let Android scale it to the screen ----------
   function fit() {

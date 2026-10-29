@@ -70,6 +70,9 @@ public class MainActivity extends Activity {
         s.setBuiltInZoomControls(false);
         s.setTextZoom(100);
         s.setUserAgentString(s.getUserAgentString() + " CosmoU-Android");
+        // CosmoU draws its own dark mode; Android must not darken the page on top of it
+        if (Build.VERSION.SDK_INT >= 33) s.setAlgorithmicDarkening(false);
+        else if (Build.VERSION.SDK_INT >= 29) noForceDark(s);
 
         bridge = new Bridge(this, web);
         web.addJavascriptInterface(bridge, "CosmoNative");
@@ -122,6 +125,19 @@ public class MainActivity extends Activity {
         if (plain != null) web.loadDataWithBaseURL("https://" + HOST + "/", "<html><body><h1>" + plain + "</h1></body></html>", "text/html", "utf-8", null);
         else if (saved == null) web.loadUrl(START);
         else web.restoreState(saved);
+    }
+
+    @SuppressWarnings("deprecation")
+    static void noForceDark(WebSettings s) {
+        s.setForceDark(WebSettings.FORCE_DARK_OFF);
+    }
+
+    // Android's dark mode switched on or off: "System" in CosmoU follows it
+    @Override
+    public void onConfigurationChanged(android.content.res.Configuration c) {
+        super.onConfigurationChanged(c);
+        boolean night = (c.uiMode & android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES;
+        js("window.__cosmoEvent && __cosmoEvent('night','" + night + "')");
     }
 
     @Override

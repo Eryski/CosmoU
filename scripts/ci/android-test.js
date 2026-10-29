@@ -378,6 +378,23 @@ function tga() {
   const apps = await E(async () => (await api.scan()).filter(g => g.kind === 'app').map(g => [g.name, g.cover.split('/').pop()]));
   ok('app in the library with its icon', Array.isArray(apps) && apps.length === 1 && /\.png$/.test(apps[0][1]), apps);
 
+  at('dark mode');
+  const bg = () => E(() => [getComputedStyle(document.body).backgroundColor, document.documentElement.classList.contains('dark')]);
+  const light0 = await bg();
+  await E(() => api.setTheme('dark'));
+  await page.waitForTimeout(800);
+  const dark1 = await bg();
+  ok('Dark in Settings makes CosmoU dark', dark1[1] && dark1[0] !== light0[0], [light0, dark1]);
+  await shot('05b-dark');
+  await E(() => api.setTheme('system'));
+  await sh('cmd uimode night yes');
+  await page.waitForTimeout(2500);
+  const sys = await bg();
+  ok('System follows Android dark mode', sys[1], sys);
+  await sh('cmd uimode night no');
+  await page.waitForTimeout(2500);
+  const sys2 = await bg();
+  ok('… and back to light', !sys2[1] && sys2[0] === light0[0], sys2);
   at('back and controller');
   await clearNotes();
   // ---- back button and controller ----
