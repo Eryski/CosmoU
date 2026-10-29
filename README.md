@@ -1,6 +1,6 @@
 # CosmoU
 
-A free Windows, Linux, macOS and Android launcher for the [Cemu](https://cemu.info) Wii U emulator with a Wii U-inspired home menu.
+A free Windows, Linux, macOS, Android and iPhone/iPad launcher for the [Cemu](https://cemu.info) Wii U emulator with a Wii U-inspired home menu.
 
 - Quick Menu (Q or the controller's Home button): last played games, quick switches and every window in one place
 - Favorites, sort & filter (A–Z, Z–A, recently played, most played; all, favorites, Wii U games, apps) and a game menu on right-click
@@ -78,6 +78,16 @@ On Android, CosmoU starts your games in **Cemu for Android**, a community versio
 - Controllers work in CosmoU (D-pad, A, B, Start, Home), the back button closes windows
 - Cemu's own settings, graphic packs, controllers and saves are set up inside Cemu for Android, so those parts of CosmoU are hidden there
 
+### iPhone & iPad
+Download `CosmoU-iOS-x.y.z.ipa` and install it with [SideStore](https://sidestore.io), [AltStore](https://altstore.io) or [PlumeImpactor](https://github.com/claration/Impactor/releases) and your Apple ID – the same way as MeloCafe. Works on iOS / iPadOS 15 and newer.
+
+On iPhone and iPad, CosmoU starts your games in **MeloCafe**, the Wii U emulator for iOS based on Cemu ([stossy11/MeloCafe](https://github.com/stossy11/MeloCafe)). Add your games in MeloCafe as usual, then press **Get games from MeloCafe** in CosmoU: MeloCafe opens for a moment and sends its list (with the game icons) back.
+
+- Play starts the game in MeloCafe; play time is counted until you come back to CosmoU
+- Themes with their music, buddies, the Plaza, favorites and other apps with a link (MeloNX, Delta, RetroArch …) work like on the PC
+- Controllers (Xbox, PlayStation, Switch Pro, MFi) work in CosmoU
+- MeloCafe's own settings, graphic packs and saves are set up inside MeloCafe
+
 ## Build from source
 ```
 npm install
@@ -86,19 +96,21 @@ npm run dist   # build installer + portable .exe into dist/ (on Windows)
 npm run dist:linux  # build AppImage, .deb and .tar.gz into dist/ (on Linux)
 npm run dist:mac    # build the universal .dmg into dist/ (on a Mac)
 gradle -p android :app:assembleRelease   # build the Android app (needs the Android SDK)
+bash ios/prepare.sh && (cd ios && xcodegen generate)   # then open ios/CosmoU.xcodeproj in Xcode (on a Mac)
 npm run preview  # single-file browser preview with demo games
 ```
 
 ## Making a release
-Set the version in `package.json` and push. Then on GitHub open **Releases → Draft a new release**, create a matching tag (for example `v0.8.1`) and press **Publish release**. GitHub Actions builds the two .exe files on Windows, the AppImage, .deb and .tar.gz on Linux and the .dmg on a Mac (and tests it there), and attaches all of them to the release. **Actions → Build release → Run workflow** makes a test build without a release (the files are on the run page).
+Set the version in `package.json` and push. Then on GitHub open **Releases → Draft a new release**, create a matching tag (for example `v0.8.1`) and press **Publish release**. GitHub Actions builds the two .exe files on Windows, the AppImage, .deb and .tar.gz on Linux, the .dmg on a Mac, the .apk for Android and the .ipa for iPhone and iPad (and tests them), and attaches all of them to the release. **Actions → Build release → Run workflow** makes a test build without a release (the files are on the run page).
 
 ## Project layout
 ```
 main.js        Electron main process: Cemu download, game scan, launching, settings.xml, graphic packs
 platform.js    Everything that differs between Windows and Linux (Cemu folders, finding Cemu, Steam, starting programs)
 build/linux/   Linux launcher script (scripts/after-pack.js puts it into the packages and signs the Mac app)
-android/       Android app: the same window in a WebView, plus a small bridge to Android (js/android-api.js)
-scripts/ci/    End-to-end tests that GitHub Actions runs after each build (real Mac, Linux PC, Android emulator)
+android/       Android app: the same window in a WebView, plus a small bridge to Android (js/mobile-api.js)
+ios/           iPhone and iPad app: the same window in a WKWebView, plus a small bridge to iOS and MeloCafe
+scripts/ci/    End-to-end tests that GitHub Actions runs after each build (real Mac, Linux PC, Android emulator, iOS Simulator)
 preload.js     Bridge between the window and main.js
 index.html     Window markup
 css/cosmou.css All styles (themes, Wii U Look, dialogs)

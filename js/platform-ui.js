@@ -1,7 +1,8 @@
-// CosmoU – texts and small differences for Linux and macOS (Windows is what the HTML says by default).
+// CosmoU – texts and small differences for Linux, macOS, Android and iOS (Windows is what the HTML says by default).
 (function () {
   if (IS_MAC) return macTexts();
   if (IS_ANDROID) return androidTexts();
+  if (IS_IOS) return iosTexts();
   if (!IS_LINUX) return;
   const set = (sel, text) => {
     const e = document.querySelector(sel);
@@ -63,7 +64,10 @@ function androidTexts() {
   if (fb) fb.textContent = 'Collects your Cemu and Android version so the report is useful';
   const ex = document.querySelector('[data-k~="emulator"]');
   if (ex) ex.dataset.k += ' android apk phone tablet';
-  // things that need the desktop version of Cemu
+  mobileHide();
+}
+// things that need the desktop version of Cemu
+function mobileHide() {
   for (const sel of [
     '[data-k~="dlc"]',
     '[data-k~="steam"]',
@@ -80,4 +84,53 @@ function androidTexts() {
     document.querySelectorAll(sel).forEach(e => e.classList.add('no-android'));
   const saves = document.querySelector('[data-k~="backup"][data-k~="saves"]');
   if (saves) (saves.closest('.grp').classList.add('no-android'), saves.closest('.grp').previousElementSibling.classList.add('no-android'));
+}
+
+// iPhone and iPad: CosmoU starts the games in MeloCafe (Cemu for iOS), and MeloCafe also keeps the games;
+// CosmoU asks it for the list (MeloCafe opens for a moment and sends it back)
+function iosTexts() {
+  const set = (sel, text) => {
+    const e = document.querySelector(sel);
+    if (e) e.textContent = text;
+  };
+  const device = /ipad/i.test(OS_NAME) ? 'iPad' : 'iPhone';
+  set('.wz-page[data-s="1"] h2', 'Get MeloCafe');
+  set(
+    '.wz-page[data-s="1"] p',
+    'CosmoU starts your games with MeloCafe, the Wii U emulator for iPhone and iPad (based on Cemu). Install it once, then CosmoU finds it by itself.',
+  );
+  set('#wzdl', 'Get MeloCafe');
+  set('[data-k~="emulator"] strong', 'MeloCafe');
+  set('.pane[data-c="general"] h3.sh', 'MeloCafe');
+  set('#wzpick', 'Check again');
+  set('#upC', 'Get MeloCafe');
+  set('#pickC', 'Check again');
+  set('.wz-page[data-s="2"] h2', 'Bring in your games');
+  set(
+    '.wz-page[data-s="2"] p',
+    'Your games live in MeloCafe. CosmoU asks MeloCafe for the list – MeloCafe opens for a moment and sends you right back.',
+  );
+  set('#wzfolder', 'Get games from MeloCafe');
+  set('#ebtn', 'Get games from MeloCafe');
+  set('[data-k~="folder"][data-k~="library"] strong', 'Games');
+  set('#pickG', 'Get from MeloCafe');
+  const apps = document.querySelector('[data-k~="apps"] small');
+  if (apps) apps.textContent = 'Add other apps on this ' + device + ' by their link, like MeloNX, Delta or RetroArch';
+  const look = document.querySelector('[data-k~="windows"] small');
+  if (look) look.textContent = 'Follow ' + OS_NAME + ', or always light or dark';
+  const fb = document.querySelector('[data-k~="feedback"] small');
+  if (fb) fb.textContent = 'Collects your MeloCafe and ' + OS_NAME + ' version so the report is useful';
+  const ex = document.querySelector('[data-k~="emulator"]');
+  if (ex) ex.dataset.k += ' ios ipados iphone ipad melocafe';
+  // CosmoU gets new games when you ask MeloCafe again, not by looking into a folder
+  const re = document.querySelector('[data-k~="rescan"]');
+  if (re) re.classList.add('no-android');
+  // the icons always come from MeloCafe (box art from GameTDB needs the game files), so there is nothing to set
+  const cov = document.querySelector('[data-k~="automatic"][data-k~="covers"]');
+  if (cov) {
+    cov.classList.add('no-android');
+    cov.closest('.grp').classList.add('no-android');
+    cov.closest('.grp').previousElementSibling.classList.add('no-android');
+  }
+  mobileHide();
 }

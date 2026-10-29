@@ -8584,6 +8584,28 @@ nav button {
 }
 
 /* Android: hide what only the desktop Cemu allows */
-.os-android .no-android {
+.os-android .no-android,
+.os-ios .no-android {
   display: none !important;
+}
+/* iPhone and iPad: no text zoom in landscape, no grey flash or menu on long taps, no double-tap zoom */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+.os-ios {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+.os-ios body {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.os-ios input,
+.os-ios textarea,
+.os-ios [contenteditable] {
+  -webkit-touch-callout: default;
+  -webkit-user-select: text;
+  user-select: text;
 }

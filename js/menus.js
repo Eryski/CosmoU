@@ -270,10 +270,10 @@ function gameMenu(g, at) {
         fn: () => toggleFav(g),
       },
       '-',
-      !app && !IS_ANDROID && { label: 'Graphic packs', icon: 'packs', hint: 'G', fn: pick(() => openPacks(g)) },
+      !app && !IS_MOBILE && { label: 'Graphic packs', icon: 'packs', hint: 'G', fn: pick(() => openPacks(g)) },
       app && { label: 'Edit app', icon: 'edit', fn: pick(() => openApp(g)) },
-      g.path && !IS_ANDROID && { label: 'Show in folder', icon: 'folder', fn: () => need() && api.showInFolder(g.path) },
-      !app && !IS_ANDROID && { label: 'Add to Steam', icon: 'steam', fn: pick(() => openSteam(g)) },
+      g.path && !IS_MOBILE && { label: 'Show in folder', icon: 'folder', fn: () => need() && api.showInFolder(g.path) },
+      !app && !IS_MOBILE && { label: 'Add to Steam', icon: 'steam', fn: pick(() => openSteam(g)) },
       {
         label: 'Copy name',
         icon: 'copy',
@@ -330,7 +330,7 @@ addEventListener('keydown', e => {
   } else if ((k === 'i' || k === 'I' || k === 'y' || k === 'Y') && g) {
     e.preventDefault();
     openDetail(g);
-  } else if ((k === 'g' || k === 'G') && g && g.kind !== 'app' && !IS_ANDROID) {
+  } else if ((k === 'g' || k === 'G') && g && g.kind !== 'app' && !IS_MOBILE) {
     e.preventDefault();
     openPacks(g);
   } else if (k === 's' || k === 'S') {
@@ -533,13 +533,14 @@ function emptySteps() {
   step(
     1,
     !!cfg.cemuPath,
-    'Get Cemu',
-    cfg.cemuPath ? 'Installed' : 'CosmoU downloads and sets it up for you',
-    'Download',
+    IS_IOS ? 'Get MeloCafe' : 'Get Cemu',
+    cfg.cemuPath ? 'Installed' : IS_IOS ? 'Cemu for iPhone and iPad – install it once' : 'CosmoU downloads and sets it up for you',
+    IS_IOS ? 'Get it' : 'Download',
     () => need() && installCemu(),
   );
-  step(2, !!cfg.gamesDir, 'Choose your games folder', cfg.gamesDir || 'WUA, WUD, WUX, RPX or folder games', 'Choose folder', pickFolder);
-  step(3, false, 'Play', 'Covers load on their own. Other emulators or PC games:', 'Add app', () => need() && openApp(null));
+  if (IS_IOS) step(2, !!cfg.gamesDir, 'Get your games', 'The games you added in MeloCafe', 'Get games', pickFolder);
+  else step(2, !!cfg.gamesDir, 'Choose your games folder', cfg.gamesDir || 'WUA, WUD, WUX, RPX or folder games', 'Choose folder', pickFolder);
+  step(3, false, 'Play', IS_IOS ? 'Icons come from MeloCafe. Other emulators:' : 'Covers load on their own. Other emulators or PC games:', 'Add app', () => need() && openApp(null));
 }
 // empty "Favorites" (or other filter): a button back to all games
 function emptyExtra(on) {

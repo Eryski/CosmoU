@@ -1,0 +1,51 @@
+# CosmoU for iPhone and iPad. The Xcode project is made from this file with XcodeGen:
+#   brew install xcodegen && bash ios/prepare.sh && (cd ios && xcodegen generate)
+# then open ios/CosmoU.xcodeproj in Xcode (or build it with xcodebuild, like .github/workflows/release.yml does).
+# MeloStub is a stand-in for MeloCafe that only the automatic test uses.
+name: CosmoU
+options:
+  bundleIdPrefix: com.cosmou
+  deploymentTarget:
+    iOS: "15.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "0.0.0"
+    CURRENT_PROJECT_VERSION: "1"
+    TARGETED_DEVICE_FAMILY: "1,2"
+    CODE_SIGN_STYLE: Manual
+    CODE_SIGN_IDENTITY: ""
+    CODE_SIGNING_REQUIRED: "NO"
+    CODE_SIGNING_ALLOWED: "NO"
+    DEVELOPMENT_TEAM: ""
+    ENABLE_BITCODE: "NO"
+    GENERATE_INFOPLIST_FILE: "NO"
+targets:
+  CosmoU:
+    type: application
+    platform: iOS
+    sources:
+      - path: CosmoU
+      # the CosmoU page (index.html, css, js, music), copied here by prepare.sh
+      - path: build/www
+        type: folder
+        buildPhase: resources
+    settings:
+      base:
+        PRODUCT_NAME: CosmoU
+        PRODUCT_BUNDLE_IDENTIFIER: com.cosmou.app
+        INFOPLIST_FILE: CosmoU/Info.plist
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+    scheme: {}
+  MeloStub:
+    type: application
+    platform: iOS
+    sources:
+      - path: MeloStub
+    settings:
+      base:
+        PRODUCT_NAME: MeloStub
+        PRODUCT_BUNDLE_IDENTIFIER: com.cosmou.melostub
+        INFOPLIST_FILE: MeloStub/Info.plist
+    scheme: {}

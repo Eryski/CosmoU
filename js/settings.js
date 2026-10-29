@@ -447,10 +447,10 @@ function renderPane(t) {
       box.append(r);
     };
     line(
-      'Cemu',
+      IS_IOS ? 'MeloCafe' : 'Cemu',
       cfg.cemuPath
-        ? (IS_ANDROID
-            ? 'Cemu for Android'
+        ? (IS_MOBILE
+            ? CEMU_FILE
             : cfg.cemuManaged
               ? 'Managed by CosmoU'
               : cfg.cemuFound
@@ -458,7 +458,7 @@ function renderPane(t) {
                 : 'Chosen manually') + (cfg.cemuVersion ? ' · ' + cfg.cemuVersion : '')
         : 'Not installed',
     );
-    if (!IS_ANDROID)
+    if (!IS_MOBILE)
       line(
         'Last launch',
         la
@@ -530,13 +530,15 @@ const SX = [
   ['data', 'Saves & Data', 'Save backups, play time and your settings file', '#e0a91e', ''],
   ['about', 'About', 'Version, updates, feedback and the community', '#8b959e', 'about'],
 ]
-  .filter(c => !IS_ANDROID || !['graphics', 'overlay'].includes(c[0]))
+  .filter(c => !IS_MOBILE || !['graphics', 'overlay'].includes(c[0]))
   .map(c =>
-    IS_ANDROID && c[0] === 'sound'
+    IS_IOS && c[0] === 'general'
+      ? [c[0], 'MeloCafe & Games', 'MeloCafe, your games, icons and your library', c[3], '']
+      : IS_MOBILE && c[0] === 'sound'
       ? [c[0], c[1], 'Menu music and UI sounds', c[3], '']
-      : IS_ANDROID && c[0] === 'controls'
+      : IS_MOBILE && c[0] === 'controls'
         ? [c[0], 'Controllers & TV', 'TV mode and every shortcut', c[3], '']
-        : IS_ANDROID && c[0] === 'data'
+        : IS_MOBILE && c[0] === 'data'
           ? [c[0], 'Play time & Data', 'Play time and your settings file', c[3], '']
           : c,
   );
@@ -638,13 +640,21 @@ function sxStatus() {
   box.replaceChildren(
     card(
       !!cfg.cemuPath,
-      cfg.cemuPath ? 'Cemu is ready' : 'Cemu is missing',
-      cfg.cemuPath ? cfg.cemuVersion || 'Installed' : 'Download it below',
+      (IS_IOS ? 'MeloCafe' : 'Cemu') + (cfg.cemuPath ? ' is ready' : ' is missing'),
+      cfg.cemuPath ? cfg.cemuVersion || 'Installed' : IS_IOS ? 'Get it below' : 'Download it below',
     ),
     card(
       n > 0,
       n ? `${n} ${n === 1 ? 'game' : 'games'}` : 'No games yet',
-      cfg.gamesDir ? (apps ? `+ ${apps} other apps` : 'In your games folder') : 'Choose a games folder',
+      cfg.gamesDir
+        ? apps
+          ? `+ ${apps} other apps`
+          : IS_IOS
+            ? 'From MeloCafe'
+            : 'In your games folder'
+        : IS_IOS
+          ? 'Get them from MeloCafe'
+          : 'Choose a games folder',
     ),
     card(true, sec ? fmtDur(sec) : 'No play time yet', 'Played with CosmoU'),
   );

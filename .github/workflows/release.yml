@@ -1,5 +1,5 @@
-# Builds CosmoU for Windows (installer + portable .exe), Linux (AppImage, .deb, .tar.gz), macOS (.dmg) and Android (.apk)
-# and attaches the files to a GitHub Release.
+# Builds CosmoU for Windows (installer + portable .exe), Linux (AppImage, .deb, .tar.gz), macOS (.dmg), Android (.apk)
+# and iPhone/iPad (.ipa for sideloading) and attaches the files to a GitHub Release.
 # How to use: on GitHub go to Releases → "Draft a new release", create a tag like v0.12.0
 # (it should match the version in package.json) and press "Publish release".
 # The builds start automatically and the files appear in the release after a few minutes.
@@ -17,7 +17,7 @@ on:
         required: false
         default: ''
       platforms:
-        description: Which builds to make (windows, linux, mac, android – empty = all)
+        description: Which builds to make (windows, linux, mac, android, ios – empty = all)
         required: false
         default: ''
 
@@ -355,3 +355,125 @@ jobs:
         with:
           tag_name: ${{ github.event_name == 'release' && github.event.release.tag_name || inputs.to_release }}
           files: dist/CosmoU-Android-*.apk
+
+  # iPhone and iPad: an .ipa for SideStore, AltStore or PlumeImpactor (they sign it with your own Apple ID, like MeloCafe)
+  ios:
+    if: github.event_name == 'release' || inputs.platforms == '' || contains(inputs.platforms, 'ios')
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Build the .ipa (and the apps for the Simulator test)
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: 1
+          HOMEBREW_NO_INSTALL_CLEANUP: 1
+        run: |
+          set -o pipefail
+          {
+            set -e
+            xcodebuild -version
+            brew install xcodegen ffmpeg >/dev/null
+            bash ios/prepare.sh
+            (cd ios && xcodegen generate)
+            VERSION=$(node -p "require('./package.json').version")
+            CODE=$(node -p "const [a,b,c]=require('./package.json').version.split('.').map(Number); a*10000+b*100+c")
+            DD="$RUNNER_TEMP/dd"
+            xcodebuild -quiet -project ios/CosmoU.xcodeproj -scheme CosmoU -configuration Release -sdk iphoneos \
+              -destination 'generic/platform=iOS' -derivedDataPath "$DD" \
+              MARKETING_VERSION=$VERSION CURRENT_PROJECT_VERSION=$CODE CODE_SIGNING_ALLOWED=NO build
+            APP="$DD/Build/Products/Release-iphoneos/CosmoU.app"
+            codesign --force --sign - --timestamp=none "$APP"
+            mkdir -p dist "$RUNNER_TEMP/ipa/Payload"
+            cp -R "$APP" "$RUNNER_TEMP/ipa/Payload/"
+            (cd "$RUNNER_TEMP/ipa" && zip -qry "$GITHUB_WORKSPACE/dist/CosmoU-iOS-$VERSION.ipa" Payload)
+            # the same app for the Simulator, and the MeloCafe stand-in for the test
+            for T in CosmoU MeloStub; do
+              xcodebuild -quiet -project ios/CosmoU.xcodeproj -scheme $T -configuration Release -sdk iphonesimulator \
+                -destination 'generic/platform=iOS Simulator' -derivedDataPath "$DD" \
+                MARKETING_VERSION=$VERSION CURRENT_PROJECT_VERSION=$CODE CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- build
+              ditto -c -k --keepParent "$DD/Build/Products/Release-iphonesimulator/$T.app" "dist/sim-$T.zip"
+            done
+            ls -la dist
+            unzip -l "dist/CosmoU-iOS-$VERSION.ipa" | grep -E "Payload/CosmoU.app/(CosmoU|Info.plist|www/index.html|www/js/core.js)$"
+            plutil -p "$APP/Info.plist" | grep -E "CFBundleShortVersionString|CFBundleIdentifier|MinimumOSVersion"
+          } 2>&1 | tee "$RUNNER_TEMP/build.log"
+
+      - name: Show what went wrong in the build
+        if: failure()
+        run: node scripts/ci/log-note.js "$RUNNER_TEMP/build.log" "iOS build"
+
+      - name: Keep the files on the run page
+        uses: actions/upload-artifact@v4
+        with:
+          name: cosmou-ios
+          path: dist/*
+
+  ios-test:
+    needs: ios
+    runs-on: macos-15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: iphone
+            device: '^iPhone \d+ Pro$'
+          - name: ipad
+            device: '^iPad Pro'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: cosmou-ios
+          path: dist
+
+      - name: Test CosmoU in the iOS Simulator
+        id: e2e
+        continue-on-error: true
+        timeout-minutes: 25
+        run: |
+          mkdir -p "$RUNNER_TEMP/apps" "$RUNNER_TEMP/e2e"
+          ditto -x -k dist/sim-CosmoU.zip "$RUNNER_TEMP/apps"
+          ditto -x -k dist/sim-MeloStub.zip "$RUNNER_TEMP/apps"
+          set -o pipefail
+          node scripts/ci/ios-test.js "$RUNNER_TEMP/apps/CosmoU.app" "$RUNNER_TEMP/apps/MeloStub.app" '${{ matrix.device }}' "$RUNNER_TEMP/e2e" 2>&1 | tee "$RUNNER_TEMP/e2e/test.log"
+
+      - name: Report the test
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          for f in "$RUNNER_TEMP"/e2e/*.png; do
+            [ -f "$f" ] || continue
+            sips -s format jpeg -s formatOptions 40 -Z 720 "$f" --out "${f%.png}.jpg" >/dev/null
+            [ $(wc -c < "${f%.png}.jpg") -gt 46000 ] && sips -s format jpeg -s formatOptions 25 -Z 560 "$f" --out "${f%.png}.jpg" >/dev/null
+          done
+          node scripts/ci/report.js "$RUNNER_TEMP/e2e" "${{ matrix.name }}"
+
+      - name: Stop if the test failed
+        if: steps.e2e.outcome == 'failure'
+        run: exit 1
+
+  ios-release:
+    needs: [ios, ios-test]
+    if: github.event_name == 'release' || inputs.to_release != ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: cosmou-ios
+          path: dist
+
+      - name: Attach files to the release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event_name == 'release' && github.event.release.tag_name || inputs.to_release }}
+          files: dist/CosmoU-iOS-*.ipa
