@@ -110,6 +110,16 @@ function tga() {
       (await sh('getprop ro.product.cpu.abi')),
   );
 
+  // right after the emulator starts, its storage may not be ready yet
+  at('wait for storage');
+  for (let i = 0; i < 60; i++) {
+    let r = '';
+    try {
+      r = await sh('mkdir -p /sdcard/CosmoU-test && touch /sdcard/CosmoU-test/.ok && echo ready');
+    } catch {}
+    if (/ready/.test(r)) break;
+    await wait(2000);
+  }
   at('push test games');
   // ---- test games ----
   const G = '/sdcard/CosmoU-test/Games';
