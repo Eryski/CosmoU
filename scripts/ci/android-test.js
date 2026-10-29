@@ -101,6 +101,15 @@ async function waitText(re, ms) {
         .join(' | '),
   );
 }
+// Android's one-time notes (for example "Viewing full screen … Got it") cover the screen: tap them away
+async function clearNotes() {
+  for (let i = 0; i < 2; i++) {
+    const n = uiNodes().find(n => /^got it$/i.test(n.text));
+    if (!n) return;
+    adb('shell', `input tap ${n.x} ${n.y}`);
+    await new Promise(r => setTimeout(r, 800));
+  }
+}
 async function tapText(re) {
   const n = uiNodes().find(n => re.test(n.text));
   if (!n) throw new Error('nothing to tap: ' + re);
@@ -283,6 +292,7 @@ function tga() {
   ok('no Cemu yet', !c0.installed, c0);
 
   at('folder picker');
+  await clearNotes();
   // ---- choose the games folder with Android's own folder picker ----
   await E(() => {
     window.__picked = null;
@@ -347,6 +357,7 @@ function tga() {
   await page.waitForTimeout(1500);
 
   at('apps');
+  await clearNotes();
   // ---- an Android app in the library ----
   await E(() => {
     window.__app = null;
@@ -368,6 +379,7 @@ function tga() {
   ok('app in the library with its icon', Array.isArray(apps) && apps.length === 1 && /\.png$/.test(apps[0][1]), apps);
 
   at('back and controller');
+  await clearNotes();
   // ---- back button and controller ----
   await E(() => openSettings('general'));
   await page.waitForTimeout(800);
