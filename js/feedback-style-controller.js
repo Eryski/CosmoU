@@ -195,8 +195,8 @@ function padTick(now) {
         for (const k of ['l', 'r', 'u', 'd']) if (fire[k]) homeStep(k);
         if (fire.lb || fire.rb) whTurn(fire.rb ? 1 : -1);
       } else {
-        if (fire.l || (mode !== 'covers' && fire.u)) step(-1);
-        if (fire.r || (mode !== 'covers' && fire.d)) step(1);
+        if (fire.l || (mode !== 'covers' && mode !== 'switch' && fire.u)) step(-1);
+        if (fire.r || (mode !== 'covers' && mode !== 'switch' && fire.d)) step(1);
       }
       if (fire.a) launch(cur());
       if (fire.y && cur()) openDetail(cur());

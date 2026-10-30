@@ -56,6 +56,7 @@
     <div class="page">
       <header>
         <div class="brand">CosmoU<small>Wii U Library</small></div>
+        <div class="vt sysw glass pill" id="sys" hidden></div>
         <label class="search glass pill"
           ><svg
             width="18"
@@ -118,6 +119,11 @@
             ><button class="glass pill play dark" id="cfmore">Details</button>
           </div>
         </div>
+      </section>
+      <section class="swh" id="sw" hidden>
+        <div class="sw-wrap"><div class="sw-row" id="swrow"></div></div>
+        <div class="sw-apps" id="swapps"></div>
+        <div class="sw-hint"><span><b>A</b>Start</span><span><b>+</b>Options</span></div>
       </section>
       <div class="sec" id="sec">
         <h4 id="st">Library</h4>
@@ -331,6 +337,10 @@
                   <div class="lbl"><strong>Steam</strong><small>Add CosmoU or single games to your Steam library</small></div>
                   <button class="btn" id="osteam">Add to Steam</button>
                 </div>
+              </div>
+              <div id="sysgrp">
+                <h3 class="sh">Other systems</h3>
+                <div class="grp" id="sysrows"></div>
               </div>
               <h3 class="sh">Covers</h3>
               <div class="grp">
@@ -1086,9 +1096,11 @@
     </div>
     <script src="js/mobile-api.js"></script>
     <script src="js/core.js"></script>
+    <script src="js/systems.js"></script>
     <script src="js/platform-ui.js"></script>
     <script src="js/wiiu-look.js"></script>
     <script src="js/covers.js"></script>
+    <script src="js/switch-home.js"></script>
     <script src="js/settings.js"></script>
     <script src="js/details.js"></script>
     <script src="js/feedback-style-controller.js"></script>

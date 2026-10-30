@@ -828,7 +828,7 @@ if (window.api && api.onAddonProgress) api.onAddonProgress(upProg);
 // the block in the game details
 async function upUi(g, fresh) {
   const box = $('#dup');
-  box.hidden = !g || g.kind === 'app';
+  box.hidden = !cemuGame(g);
   if (box.hidden) return;
   if (!fresh || !upInfo) {
     $('#dups').textContent = 'Checking…';
@@ -1107,7 +1107,7 @@ const _saveUi = saveUi;
 saveUi = function (g) {
   _saveUi(g);
   upUi(g);
-  $('#dsteam').hidden = !g || g.kind === 'app';
+  $('#dsteam').hidden = !cemuGame(g);
 };
 
 // ---------- started from a Steam entry: CosmoU.exe --play "<game>" ----------

@@ -20,7 +20,7 @@ async function launch(g) {
     r = await api.play(
       g.kind === 'app'
         ? { appId: g.appId, name: g.name }
-        : { path: g.path, tid: g.tid || '', key: g.tid || g.name, name: g.name },
+        : { path: g.path, tid: g.tid || '', key: g.tid || g.name, name: g.name, sys: sysOf(g) },
     );
   else toast('This is the preview. Launching only works in the desktop app.');
   if (window.api) {
@@ -51,6 +51,7 @@ async function load() {
     } catch {}
   } else games = demo;
   games.forEach(sample);
+  applySystem(true);
   render();
   $('#grid').classList.add('swap');
 }
@@ -108,9 +109,10 @@ document.querySelectorAll('#vt button').forEach(
         try {
           localStorage.setItem('cosmou.viewMode', mode);
         } catch {}
+        lsSys('viewMode', mode);
         syncMode();
         render();
-        const t = $(mode === 'grid' ? '#grid' : mode === 'wiiu' ? '#wu' : '#cf');
+        const t = $(mode === 'grid' ? '#grid' : mode === 'wiiu' ? '#wu' : mode === 'switch' ? '#sw' : '#cf');
         t.classList.remove('swap');
         void t.offsetWidth;
         t.classList.add('swap');
@@ -384,7 +386,8 @@ async function initCemu() {
   }
   if (!cfg.setupDone) cfg = await api.setSetupDone(true);
   const st = await api.cemuStatus();
-  if (!st.installed) installCemu();
+  // someone with only Switch games doesn't need Cemu
+  if (!st.installed && sysAvail().includes('wiiu')) installCemu();
 }
 if (window.api)
   api.onCemuProgress(d => {

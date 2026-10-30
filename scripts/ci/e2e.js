@@ -153,7 +153,23 @@ name = 30FPS (ideal for 240/120/60/30Hz displays)
   );
   fs.mkdirSync(path.join(STEAM, 'userdata', '123456', 'config'), { recursive: true });
   write(path.join(HOME, 'CosmoU-test', 'Apps', 'hello.sh'), '#!/bin/sh\necho hi > "$HOME/CosmoU-test/app-started.txt"\n');
-  write(path.join(USERDATA, 'settings.json'), JSON.stringify({ gamesDir: GAMES, setupDone: true, onlineCovers: false }));
+  // Switch: games (with an update and a DLC that are no games of their own) and a stand-in emulator named like Eden
+  const SW = path.join(HOME, 'CosmoU-test', 'Switch');
+  write(path.join(SW, 'Super Mario Odyssey [0100000000010000][v0].nsp'), 'NSP');
+  write(path.join(SW, 'Super Mario Odyssey [0100000000010800][v65536].nsp'), 'NSP update');
+  write(path.join(SW, 'Super Mario Odyssey Costume [0100000000011001].nsp'), 'NSP dlc');
+  write(path.join(SW, 'Dread', 'Metroid Dread.xci'), 'XCI');
+  write(path.join(SW, 'readme.txt'), 'notes');
+  write(path.join(HOME, 'CosmoU-test', 'Emu', 'eden.sh'), '#!/bin/sh\nprintf "%s\\n" "$@" > "$HOME/CosmoU-test/switch-started.txt"\n');
+  write(
+    path.join(USERDATA, 'settings.json'),
+    JSON.stringify({
+      gamesDir: GAMES,
+      setupDone: true,
+      onlineCovers: false,
+      systems: { switch: { emuPath: path.join(HOME, 'CosmoU-test', 'Emu', 'eden.sh'), emuName: 'eden', gamesDir: SW } },
+    }),
+  );
 }
 
 const wait = ms => new Promise(r => setTimeout(r, ms));
@@ -376,6 +392,66 @@ async function waitFor(fn, ms) {
       .replace(/[\x00-\x08]/g, '|');
   } catch {}
   ok('Steam shortcuts written', sa && sa.ok && /CosmoU/.test(vdf), { sa, vdf: vdf.slice(0, 500) });
+
+  // ---- Switch: its own emulator, its games, its own look ----
+  const sw = await E(async () => (await api.scan()).filter(g => g.sys === 'switch').map(g => [g.name, g.tid, g.format]));
+  ok(
+    'Switch games found (updates and DLC are not games)',
+    Array.isArray(sw) && sw.length === 2 && sw.some(g => g[0] === 'Super Mario Odyssey' && /Update/.test(g[2])) && sw.some(g => g[0] === 'Metroid Dread'),
+    sw,
+  );
+  await E(() => load());
+  const sys = await E(() => sysAvail());
+  ok('two systems: Wii U and Switch', JSON.stringify(sys) === '["wiiu","switch"]', sys);
+  await E(() => {
+    document.querySelectorAll('dialog[open]').forEach(d => d.close());
+    setSystem('switch');
+  });
+  await w.waitForTimeout(2000);
+  const look = await E(() => ({
+    sys: curSys,
+    mode,
+    theme: style,
+    tiles: document.querySelectorAll('#swrow .sw-t').length,
+    wiiuLook: !$('#wu').hidden,
+    shown: list().map(g => g.name),
+    brand: $('.brand small').textContent,
+  }));
+  ok(
+    'Switch look: Switch Home, Switch theme, only Switch games',
+    look.sys === 'switch' &&
+      look.mode === 'switch' &&
+      look.theme === 'switch' &&
+      look.tiles === Math.min(12, look.shown.length) + 1 &&
+      !look.wiiuLook &&
+      look.shown.includes('Metroid Dread') &&
+      !look.shown.some(n => /Zelda|Splatoon/.test(n)),
+    look,
+  );
+  await shot('11-switch-home');
+  const sp = await E(async () => {
+    const g = list().find(x => x.sys === 'switch' && /Odyssey/.test(x.name));
+    return api.play({ path: g.path, name: g.name, sys: 'switch' });
+  });
+  const started = path.join(HOME, 'CosmoU-test', 'switch-started.txt');
+  await waitFor(() => fs.existsSync(started), 10000);
+  let swArgs = '';
+  try {
+    swArgs = fs.readFileSync(started, 'utf8');
+  } catch {}
+  ok('a Switch game starts in its emulator (Eden: -f -g <game>)', sp && sp.ok && /^-f\n-g\n.*Odyssey \[0100000000010000\]/.test(swArgs), [sp, swArgs]);
+  await E(() => openDetail(list().find(x => x.sys === 'switch')));
+  await w.waitForTimeout(800);
+  const det = await E(() => ({ kind: $('#df').textContent, packs: $('#dgp').hidden, saves: $('#dsv').hidden }));
+  ok('Switch details: no Cemu tools', det.kind === 'Switch game' && det.packs && det.saves, det);
+  await shot('12-switch-details');
+  await E(() => {
+    $('#det').close();
+    setSystem('wiiu');
+  });
+  await w.waitForTimeout(1500);
+  const back = await E(() => ({ sys: curSys, mode, n: list().filter(g => g.kind !== 'app').length }));
+  ok('back to Wii U', back.sys === 'wiiu' && back.mode !== 'switch' && back.n >= 2, back);
 
   // Cemu's own log helps when something went wrong
   try {

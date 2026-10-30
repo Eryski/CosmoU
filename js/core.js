@@ -77,7 +77,7 @@ try {
 let mode = 'covers';
 try {
   const vm = localStorage.getItem('cosmou.viewMode');
-  if (vm === 'grid' || vm === 'wiiu') mode = vm;
+  if (vm === 'grid' || vm === 'wiiu' || vm === 'switch') mode = vm;
 } catch {}
 const hue = s => {
   let h = 0;
@@ -200,6 +200,8 @@ const secOf = name =>
 function list() {
   const q = $('#q').value.trim().toLowerCase();
   let l = games.filter(g => g.name.toLowerCase().includes(q) || (g.tid && String(g.tid).toLowerCase().includes(q)));
+  // only the games of the system on screen (other apps show everywhere)
+  if (typeof curSys === 'string') l = l.filter(g => g.kind === 'app' || sysOf(g) === curSys);
   if (view === 'recent') l = l.filter(g => plays[g.name]);
   if (showFilter === 'fav') l = l.filter(g => favs.has(g.name));
   else if (showFilter === 'wiiu') l = l.filter(g => g.kind !== 'app');
@@ -243,10 +245,12 @@ function render() {
   $('#sec').hidden = mode !== 'grid';
   $('#cf').hidden = mode !== 'covers' || em;
   $('#wu').hidden = mode !== 'wiiu' || em;
+  $('#sw').hidden = mode !== 'switch' || em;
   document.body.classList.toggle('wiiu', mode === 'wiiu' && !em);
   document.body.dataset.mode = mode;
   document.body.classList.toggle('wuhome', mode === 'wiiu' && !em && wuView === 'home');
   if (mode === 'covers') buildCovers(l);
+  if (mode === 'switch' && !em) buildSwitch(l);
   if (mode === 'wiiu' && !em && wuView === 'home') {
     stopMii();
     buildHome(l);
@@ -275,7 +279,9 @@ function render() {
           ? 'Games you launch will show up here.'
           : IS_IOS
             ? 'Get your games from MeloCafe and they appear here.'
-            : 'Choose the folder with your Wii U games and they appear here.';
+            : typeof curSys === 'string' && curSys !== 'wiiu'
+              ? 'Choose your ' + SYS[curSys].name + ' games folder in Settings → Cemu & Games → Other systems.'
+              : 'Choose the folder with your Wii U games and they appear here.';
     $('#ebtn').hidden = !!q || view === 'recent' || !!filtered;
     if (typeof emptyExtra === 'function') emptyExtra(!q && filtered);
   }

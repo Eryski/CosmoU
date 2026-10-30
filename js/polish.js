@@ -34,6 +34,22 @@ function blip(kind) {
       o.start(t + at);
       o.stop(t + at + dur + 0.02);
     };
+    // Switch: short, dry clicks instead of the Wii U's soft chimes
+    if (typeof curSys === 'string' && curSys === 'switch') {
+      if (kind === 'move') tone(2350, 0, 0.022, 'square', 0.32);
+      else if (kind === 'page') {
+        tone(1800, 0, 0.025, 'square', 0.3);
+        tone(2400, 0.045, 0.025, 'square', 0.28);
+      } else if (kind === 'open') {
+        tone(1500, 0, 0.03, 'square', 0.3);
+        tone(1000, 0.035, 0.08, 'sine', 0.5);
+      } else if (kind === 'start') {
+        tone(880, 0, 0.05, 'square', 0.25);
+        tone(1320, 0.06, 0.05, 'square', 0.25);
+        tone(1760, 0.12, 0.22, 'sine', 0.5);
+      } else if (kind === 'back') tone(900, 0, 0.03, 'square', 0.28);
+      return;
+    }
     if (kind === 'move') tone(1320, 0, 0.06, 'triangle', 0.6);
     else if (kind === 'page') {
       tone(660, 0, 0.09, 'triangle', 0.5);

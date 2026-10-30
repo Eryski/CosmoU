@@ -11,7 +11,7 @@ function svButtons(backup, restore) {
 async function saveUi(g) {
   svGame = g;
   const box = $('#dsv');
-  box.hidden = !g || g.kind === 'app';
+  box.hidden = !cemuGame(g);
   if (box.hidden) return;
   if (!window.api || !api.savesInfo) {
     $('#dsvs').textContent = 'Save backups work in the desktop app.';

@@ -11,11 +11,12 @@ function openDetail(g) {
   $('#dpt').textContent = typeof playLine === 'function' ? playLine(g.name) : '';
   $('#dgps').textContent = '';
   $('#daor').hidden = true;
-  for (const id of ['#dqs', '#dgp', '#dao', '#dgps']) $(id).hidden = app;
+  // graphic packs and the Cemu tools are for Wii U games only
+  for (const id of ['#dqs', '#dgp', '#dao', '#dgps']) $(id).hidden = !cemuGame(g);
   $('#dedit').hidden = !app;
   $('#det').showModal();
   render();
-  if (!app) gpSummary(g);
+  if (cemuGame(g)) gpSummary(g);
   if (typeof saveUi === 'function') saveUi(g);
 }
 // --- 3D Wii U case: box art fills the front, square icons get a white case with a blue band ---
@@ -88,6 +89,7 @@ function box3d(el, g) {
     '<div class="bx-c"><i class="bx-b"></i><i class="bx-r"></i><i class="bx-t"></i><i class="bx-u"></i><i class="bx-s"><span></span></i><i class="bx-f"></i></div>';
   el.querySelector('.bx-s span').textContent = g.name;
   el.classList.remove('full', 'disc');
+  el.classList.toggle('swcase', typeof sysOf === 'function' && sysOf(g) === 'switch');
   el.style.removeProperty('--full');
   if (g.disc && el.id === 'dc') {
     const d = document.createElement('i');

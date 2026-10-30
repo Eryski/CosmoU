@@ -325,7 +325,7 @@ ipcMain.handle('settings', () => read());
 ipcMain.handle('scan', () => {
   const l = scan(read().gamesDir);
   if (read().onlineCovers !== false) queueBoxArt(l);
-  return withApps(l);
+  return withApps(withSystems(l));
 });
 ipcMain.handle('setOnlineCovers', (_, v) => {
   const s = { ...read(), onlineCovers: !!v };
@@ -518,6 +518,7 @@ ipcMain.handle('playLog', () => {
 });
 function playGame(arg) {
   if (arg && typeof arg === 'object' && arg.appId) return launchApp(arg.appId);
+  if (arg && typeof arg === 'object' && arg.sys && arg.sys !== 'wiiu') return launchSystemGame(arg.sys, arg.path);
   const gamePath = typeof arg === 'string' ? arg : arg && arg.path;
   const s = read();
   if (!s.cemuPath || !fs.existsSync(s.cemuPath))
@@ -1829,6 +1830,128 @@ function launchApp(id) {
   shell.openPath(a.path);
   return { ok: true, note: 'app' };
 }
+// ---------- Other systems: CosmoU takes on the look of the console you play ----------
+// Wii U is Cemu (everything above). Every other system has one emulator and one games folder (Settings → Systems);
+// its games get their own look in the window (js/systems.js). CosmoU only starts the emulator: it never downloads
+// emulators, keys or firmware.
+const SYSTEMS = {
+  switch: {
+    name: 'Switch',
+    ext: ['.nsp', '.xci', '.nro'],
+    // yuzu and its successors (Eden, Citron, Sudachi …) want -f -g <game>; Ryujinx and others just the game
+    args: (emu, game) => (/eden|citron|sudachi|suyu|torzu|yuzu/i.test(path.basename(emu)) ? ['-f', '-g', game] : [game]),
+  },
+};
+const sysOk = s => typeof s === 'string' && Object.prototype.hasOwnProperty.call(SYSTEMS, s);
+// Switch files carry their title id: [0100ABCD12340000] is the game, …800 its update, other endings are DLC
+function scanSystem(sys, dir) {
+  const def = SYSTEMS[sys],
+    out = [],
+    updates = new Set();
+  if (!dir || !fs.existsSync(dir)) return out;
+  const walk = (d, depth) => {
+    let list = [];
+    try {
+      list = fs.readdirSync(d, { withFileTypes: true });
+    } catch {
+      return;
+    }
+    for (const e of list) {
+      const p = path.join(d, e.name);
+      if (e.isDirectory() && depth < 3 && !e.name.startsWith('.')) walk(p, depth + 1);
+      else if (e.isFile() && def.ext.includes(path.extname(e.name).toLowerCase())) {
+        const base = path.parse(e.name).name,
+          tid = ((base.match(/\[(0100[0-9a-f]{12})\]/i) || [])[1] || '').toLowerCase();
+        if (tid && tid.slice(-3) === '800') {
+          updates.add(tid.slice(0, 13));
+          continue;
+        }
+        if ((tid && tid.slice(-3) !== '000') || (!tid && /\b(update|upd|dlc)\b/i.test(base))) continue;
+        const name =
+          base
+            .replace(/\[[^\]]*\]|\([^)]*\)/g, ' ')
+            .replace(/[_.]/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim() || base;
+        out.push({ name, path: p, sys, tid, format: def.name + ' · ' + path.extname(e.name).slice(1).toUpperCase() });
+      }
+    }
+  };
+  walk(dir, 0);
+  for (const g of out) if (g.tid && updates.has(g.tid.slice(0, 13))) g.format += ' · Update';
+  return out;
+}
+function withSystems(list) {
+  const systems = read().systems || {},
+    names = new Set(list.map(g => g.name));
+  for (const sys of Object.keys(SYSTEMS)) {
+    const c = systems[sys];
+    if (!c || !c.gamesDir) continue;
+    for (const g of scanSystem(sys, c.gamesDir)) {
+      // the same title on two consoles: the second one says which console it is
+      let n = g.name;
+      if (names.has(n)) n += ' (' + SYSTEMS[sys].name + ')';
+      for (let k = 2; names.has(n); k++) n = g.name + ' (' + SYSTEMS[sys].name + ' ' + k + ')';
+      names.add(n);
+      g.name = n;
+      const manual = manualCover(n);
+      g.cover = manual || '';
+      list.push(g);
+    }
+  }
+  return list;
+}
+function launchSystemGame(sys, game) {
+  const c = sysOk(sys) && (read().systems || {})[sys];
+  const name = sysOk(sys) ? SYSTEMS[sys].name : 'this system';
+  if (!c || !c.emuPath || !fs.existsSync(c.emuPath))
+    return { ok: false, error: 'No ' + name + ' emulator chosen yet. Choose it in Settings → Systems.' };
+  if (typeof game !== 'string' || !fs.existsSync(game)) return { ok: false, error: 'The game file no longer exists.' };
+  const args = c.args ? splitArgs(c.args).map(a => a.replace('{game}', game)) : SYSTEMS[sys].args(c.emuPath, game);
+  const cmd = P.appCommand(c.emuPath, args);
+  if (!cmd) return { ok: false, error: 'The ' + name + ' emulator can’t be started. Choose it again in Settings → Systems.' };
+  const child = spawn(cmd[0], cmd[1], { detached: true, stdio: 'ignore', cwd: path.dirname(c.emuPath), env: P.childEnv(c.emuPath) });
+  child.on('error', () => {});
+  child.unref();
+  return { ok: true, note: 'system', child };
+}
+const sysSave = (sys, patch) => {
+  const s = read(),
+    systems = { ...(s.systems || {}) };
+  systems[sys] = { ...(systems[sys] || {}), ...patch };
+  write({ ...s, systems });
+  return read();
+};
+ipcMain.handle('systemPickEmu', async (_, sys) => {
+  if (!sysOk(sys)) return read();
+  const name = SYSTEMS[sys].name;
+  const r = await dialog.showOpenDialog(
+    P.IS_WIN
+      ? { title: 'Choose your ' + name + ' emulator', filters: [{ name: 'Programs', extensions: ['exe'] }], properties: ['openFile'] }
+      : P.IS_MAC
+        ? { title: 'Choose your ' + name + ' emulator', filters: [{ name: 'Apps', extensions: ['app'] }], properties: ['openFile'], defaultPath: '/Applications' }
+        : { title: 'Choose your ' + name + ' emulator (AppImage or program)', properties: ['openFile'], defaultPath: os.homedir() },
+  );
+  if (r.canceled) return read();
+  const f = r.filePaths[0];
+  if (!P.appCommand(f, [])) return { ...read(), error: 'This file can’t be started as a program.' };
+  return sysSave(sys, { emuPath: f, emuName: path.parse(f).name });
+});
+ipcMain.handle('systemPickFolder', async (_, sys) => {
+  if (!sysOk(sys)) return read();
+  const r = await dialog.showOpenDialog({ title: 'Choose your ' + SYSTEMS[sys].name + ' games folder', properties: ['openDirectory'] });
+  if (r.canceled) return read();
+  return sysSave(sys, { gamesDir: r.filePaths[0] });
+});
+ipcMain.handle('systemRemove', (_, sys) => {
+  if (!sysOk(sys)) return read();
+  const s = read(),
+    systems = { ...(s.systems || {}) };
+  delete systems[sys];
+  write({ ...s, systems });
+  return read();
+});
+
 ipcMain.handle('appPick', async () => {
   const r = await dialog.showOpenDialog(
     P.IS_WIN

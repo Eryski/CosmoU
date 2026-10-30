@@ -270,10 +270,10 @@ function gameMenu(g, at) {
         fn: () => toggleFav(g),
       },
       '-',
-      !app && !IS_MOBILE && { label: 'Graphic packs', icon: 'packs', hint: 'G', fn: pick(() => openPacks(g)) },
+      cemuGame(g) && !IS_MOBILE && { label: 'Graphic packs', icon: 'packs', hint: 'G', fn: pick(() => openPacks(g)) },
       app && { label: 'Edit app', icon: 'edit', fn: pick(() => openApp(g)) },
       g.path && !IS_MOBILE && { label: 'Show in folder', icon: 'folder', fn: () => need() && api.showInFolder(g.path) },
-      !app && !IS_MOBILE && { label: 'Add to Steam', icon: 'steam', fn: pick(() => openSteam(g)) },
+      cemuGame(g) && !IS_MOBILE && { label: 'Add to Steam', icon: 'steam', fn: pick(() => openSteam(g)) },
       {
         label: 'Copy name',
         icon: 'copy',
@@ -330,7 +330,7 @@ addEventListener('keydown', e => {
   } else if ((k === 'i' || k === 'I' || k === 'y' || k === 'Y') && g) {
     e.preventDefault();
     openDetail(g);
-  } else if ((k === 'g' || k === 'G') && g && g.kind !== 'app' && !IS_MOBILE) {
+  } else if ((k === 'g' || k === 'G') && cemuGame(g) && !IS_MOBILE) {
     e.preventDefault();
     openPacks(g);
   } else if (k === 's' || k === 'S') {
@@ -345,7 +345,7 @@ addEventListener('keydown', e => {
     e.preventDefault();
     openSettings();
   } else if (k === '1' || k === '2' || k === '3') {
-    const b = document.querySelector(`#vt button[data-m="${['covers', 'grid', 'wiiu'][+k - 1]}"]`);
+    const b = document.querySelectorAll('#vt button')[+k - 1];
     if (b && !$('header').hidden) {
       e.preventDefault();
       b.click();
@@ -473,8 +473,8 @@ const _render = render;
 render = function () {
   _render();
   const b = document.querySelector('.brand small'),
-    n = games.filter(g => g.kind !== 'app').length;
-  if (b) b.textContent = 'Wii U Library' + (n ? ' · ' + n + (n === 1 ? ' game' : ' games') : '');
+    n = games.filter(g => g.kind !== 'app' && sysOf(g) === curSys).length;
+  if (b) b.textContent = SYS[curSys].name + ' Library' + (n ? ' · ' + n + (n === 1 ? ' game' : ' games') : '');
   const g = cur();
   if (g && mode === 'grid') {
     coverMeta(g, -1, 0, $('#hmeta'));

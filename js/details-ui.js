@@ -73,7 +73,7 @@ const _openDetail = openDetail;
 openDetail = function (g) {
   _openDetail(g);
   detFavUi(g);
-  $('#df').textContent = g.kind === 'app' ? 'Other app' : 'Wii U game';
+  $('#df').textContent = g.kind === 'app' ? 'Other app' : SYS[sysOf(g)].name + ' game';
   detChips(g);
   detStats(g);
   $('#dpath').textContent = g.path ? String(g.path).replace(/^.*[\\/](?=[^\\/]+[\\/][^\\/]+$)/, '…\\') : 'Open the game files';
