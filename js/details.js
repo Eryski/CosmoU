@@ -89,7 +89,10 @@ function box3d(el, g) {
     '<div class="bx-c"><i class="bx-b"></i><i class="bx-r"></i><i class="bx-t"></i><i class="bx-u"></i><i class="bx-s"><span></span></i><i class="bx-f"></i></div>';
   el.querySelector('.bx-s span').textContent = g.name;
   el.classList.remove('full', 'disc');
-  el.classList.toggle('swcase', typeof sysOf === 'function' && sysOf(g) === 'switch');
+  // other consoles: their own case colors (Switch red, Wii white, GameCube dark, DS grey, cartridges grey)
+  const pr = typeof sysOf === 'function' && sysOf(g) !== 'wiiu' && g.kind !== 'app' ? SYS[sysOf(g)] : null;
+  if (pr) el.dataset.case = pr.case || 'cart';
+  else delete el.dataset.case;
   el.style.removeProperty('--full');
   if (g.disc && el.id === 'dc') {
     const d = document.createElement('i');

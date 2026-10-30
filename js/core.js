@@ -77,7 +77,7 @@ try {
 let mode = 'covers';
 try {
   const vm = localStorage.getItem('cosmou.viewMode');
-  if (vm === 'grid' || vm === 'wiiu' || vm === 'switch') mode = vm;
+  if (vm === 'grid' || vm === 'wiiu' || vm === 'chome') mode = vm;
 } catch {}
 const hue = s => {
   let h = 0;
@@ -245,12 +245,12 @@ function render() {
   $('#sec').hidden = mode !== 'grid';
   $('#cf').hidden = mode !== 'covers' || em;
   $('#wu').hidden = mode !== 'wiiu' || em;
-  $('#sw').hidden = mode !== 'switch' || em;
+  $('#sw').hidden = mode !== 'chome' || em;
   document.body.classList.toggle('wiiu', mode === 'wiiu' && !em);
   document.body.dataset.mode = mode;
   document.body.classList.toggle('wuhome', mode === 'wiiu' && !em && wuView === 'home');
   if (mode === 'covers') buildCovers(l);
-  if (mode === 'switch' && !em) buildSwitch(l);
+  if (mode === 'chome' && !em) buildCHome(l);
   if (mode === 'wiiu' && !em && wuView === 'home') {
     stopMii();
     buildHome(l);

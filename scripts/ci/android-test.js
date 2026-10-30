@@ -215,6 +215,9 @@ function tga() {
   );
   push(Buffer.from('WUA test file'), `${G}/Mario Kart 8.wua`);
   push(Buffer.from('notes'), `${G}/readme.txt`);
+  // a Nintendo 64 game (another console in the same folder)
+  await sh(`mkdir -p "${G}/N64"`);
+  push(Buffer.from('N64 test file'), `${G}/N64/Super Mario 64 (USA).z64`);
 
   at('install');
   // ---- install ----
@@ -385,6 +388,66 @@ function tga() {
   ok('app added', saved && saved.ok, saved);
   const apps = await E(async () => (await api.scan()).filter(g => g.kind === 'app').map(g => [g.name, g.cover.split('/').pop()]));
   ok('app in the library with its icon', Array.isArray(apps) && apps.length === 1 && /\.png$/.test(apps[0][1]), apps);
+
+  at('other consoles');
+  // ---- Nintendo 64: its games folder with Android's folder picker, the stand-in as its emulator app ----
+  await clearNotes();
+  await E(() => {
+    window.__n64 = null;
+    api.systemPickFolder('n64').then(s => (window.__n64 = s));
+  });
+  try {
+    await waitText(/use this folder/i, 20000);
+    await tapText(/use this folder/i);
+    await waitText(/^allow$/i, 10000);
+    await tapText(/^allow$/i);
+  } catch (e) {
+    ok('N64 folder picker', false, e.message.slice(0, 300));
+  }
+  await page.waitForTimeout(2000);
+  const n64f = await E(() => window.__n64 && window.__n64.systems && window.__n64.systems.n64);
+  ok('N64 games folder chosen', n64f && /^content:/.test(n64f.gamesDir), n64f);
+  await E(() => {
+    window.__emu = null;
+    api.systemPickEmu('n64').then(s => (window.__emu = s));
+  });
+  try {
+    await waitText(/^Cemu \(test\)$/, 10000);
+    await tapText(/^Cemu \(test\)$/);
+  } catch (e) {
+    ok('emulator app picker', false, e.message.slice(0, 300));
+  }
+  await page.waitForTimeout(1200);
+  const emu = await E(() => window.__emu && window.__emu.systems.n64);
+  ok('N64 emulator app chosen', emu && emu.pkg === 'info.cemu.cemu', emu);
+  const n64 = await E(async () => (await api.scan()).filter(g => g.sys === 'n64').map(g => [g.name, g.format, !!g.fpath]));
+  ok('N64 game found', Array.isArray(n64) && n64.length === 1 && n64[0][0] === 'Super Mario 64', n64);
+  await E(() => load().then(() => setSystem('n64')));
+  await page.waitForTimeout(2500);
+  const lk = await E(() => ({ sys: curSys, mode, lay: $('#sw').dataset.lay, theme: style }));
+  ok('N64: cartridge shelf and N64 theme', lk && lk.sys === 'n64' && lk.mode === 'chome' && lk.lay === 'shelf' && lk.theme === 'n64', lk);
+  await shot('05c-n64');
+  await sh('logcat -c');
+  const pn = await E(async () => {
+    const g = list().find(x => x.sys === 'n64');
+    return api.play({ path: g.path, name: g.name, sys: 'n64' });
+  });
+  await wait(3000);
+  const ln = await sh('logcat -d -s CemuStub:I');
+  ok('the N64 game opens in its emulator app', pn && pn.ok && /data=content:\/\/.*Super%20Mario%2064/.test(ln) && /game readable=true/.test(ln), [pn, ln.slice(-500)]);
+  await sh(`am start -W -n ${PKG}/.MainActivity`);
+  await page.waitForTimeout(1500);
+  // its box art from the internet (libretro)
+  await E(() => api.setOnlineCovers(true));
+  let art = null;
+  for (let i = 0; i < 20 && !(art && art[0]); i++) {
+    await E(() => api.scan());
+    await page.waitForTimeout(2000);
+    art = await E(async () => (await api.scan()).filter(g => g.sys === 'n64').map(g => (g.cover || '').split('/').pop()));
+  }
+  ok('N64 box art', Array.isArray(art) && /cover\.png$/.test(art[0] || ''), art);
+  await E(() => load().then(() => setSystem('wiiu')));
+  await page.waitForTimeout(1500);
 
   at('dark mode');
   const bg = () => E(() => [getComputedStyle(document.body).backgroundColor, document.documentElement.classList.contains('dark')]);

@@ -309,6 +309,12 @@ public class Bridge {
                 return themeInstall(a.getString(0), a.getString(1), a.optString(2, ""));
             case "themeExport":
                 return themeExport(id, a.getString(0), a.getString(1));
+            case "scanFiles":
+                return scanFiles(a.getString(0), a.getString(1));
+            case "launchEmu":
+                return launchEmu(a.getJSONObject(0));
+            case "forgetFolder":
+                return forgetFolder(a.getString(0));
         }
         return err("Unknown request: " + name);
     }
@@ -376,14 +382,8 @@ public class Bridge {
             Uri tree = data.getData();
             if (tree == null) return cancel();
             ContentResolver cr = act.getContentResolver();
+            // every console has its own games folder, so CosmoU keeps the permission of each one
             cr.takePersistableUriPermission(tree, Intent.FLAG_GRANT_READ_URI_PERMISSION);
-            // only the newest folder keeps its permission (Android allows a limited number)
-            for (android.content.UriPermission up : cr.getPersistedUriPermissions())
-                if (!up.getUri().equals(tree))
-                    try {
-                        cr.releasePersistableUriPermission(up.getUri(), Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                    } catch (Exception ignored) {
-                    }
             JSONObject o = new JSONObject();
             o.put("uri", tree.toString());
             Uri doc = DocumentsContract.buildDocumentUriUsingTree(tree, DocumentsContract.getTreeDocumentId(tree));
@@ -552,7 +552,7 @@ public class Bridge {
             JSONObject o = new JSONObject();
             o.put("status", st);
             o.put("ok", st == 200);
-            if (st == 200) o.put("text", new String(readAll(c.getInputStream(), 4 * 1048576), StandardCharsets.UTF_8));
+            if (st == 200) o.put("text", new String(readAll(c.getInputStream(), 16 * 1048576), StandardCharsets.UTF_8));
             return o;
         } catch (UnknownHostException e) {
             return err("No internet connection.");
@@ -832,5 +832,135 @@ public class Bridge {
         File[] kids = f.listFiles();
         if (kids != null) for (File k : kids) deleteTree(k);
         return f.delete() || !f.exists();
+    }
+
+    // ---------- the other consoles: their games folder and their emulator app ----------
+    // every file with one of the console's endings, in the folder and up to three folders deep
+    Object scanFiles(String treeStr, String exts) {
+        Uri tree = Uri.parse(treeStr);
+        java.util.Set<String> want = new java.util.HashSet<>();
+        for (String e : exts.split(",")) if (!e.isEmpty()) want.add("." + e.toLowerCase(Locale.ROOT));
+        JSONArray out = new JSONArray();
+        try {
+            walk(tree, DocumentsContract.getTreeDocumentId(tree), want, out, 0);
+        } catch (SecurityException e) {
+            return err("CosmoU can’t read this games folder anymore. Choose it again in Settings → Cemu & Games.");
+        } catch (Exception e) {
+            return err("The games folder can’t be read: " + e.getMessage());
+        }
+        JSONObject r = ok();
+        try {
+            r.put("files", out);
+        } catch (Exception ignored) {
+        }
+        return r;
+    }
+
+    void walk(Uri tree, String docId, java.util.Set<String> want, JSONArray out, int depth) throws Exception {
+        for (Doc d : children(tree, docId)) {
+            if (d.name == null || d.name.startsWith(".")) continue;
+            if (d.dir()) {
+                if (depth < 3) walk(tree, d.id, want, out, depth + 1);
+                continue;
+            }
+            int dot = d.name.lastIndexOf('.');
+            if (dot < 0 || !want.contains(d.name.substring(dot).toLowerCase(Locale.ROOT))) continue;
+            JSONObject o = new JSONObject();
+            o.put("name", d.name);
+            o.put("uri", d.uri.toString());
+            o.put("path", pathOf(d.id));
+            o.put("size", d.size);
+            out.put(o);
+        }
+    }
+
+    // a file in the phone's own storage as a path (RetroArch and a few others want a path, not a link)
+    static String pathOf(String docId) {
+        if (docId != null && docId.startsWith("primary:")) return "/storage/emulated/0/" + docId.substring(8);
+        if (docId != null && docId.matches("[0-9A-F]{4}-[0-9A-F]{4}:.*")) {
+            int c = docId.indexOf(':');
+            return "/storage/" + docId.substring(0, c) + "/" + docId.substring(c + 1);
+        }
+        return "";
+    }
+
+    Object forgetFolder(String treeStr) {
+        try {
+            act.getContentResolver().releasePersistableUriPermission(Uri.parse(treeStr), Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        } catch (Exception ignored) {
+        }
+        return ok();
+    }
+
+    // start a game in the console's emulator app; each app wants the game its own way (js/systems-data.js → ANDROID)
+    Object launchEmu(JSONObject g) throws Exception {
+        String pkg = g.getString("pkg"), how = g.optString("how", "view"), act1 = g.optString("activity", "");
+        String uriStr = g.getString("uri"), path = g.optString("path", "");
+        Uri u = Uri.parse(uriStr);
+        PackageManager pm = act.getPackageManager();
+        if (pm.getLaunchIntentForPackage(pkg) == null) return err("The emulator app isn’t installed anymore. Choose it again in Settings → Cemu & Games.");
+        List<Intent> tries = new ArrayList<>();
+        switch (how) {
+            case "dolphin": {
+                Intent i = new Intent(Intent.ACTION_MAIN);
+                i.addCategory("android.intent.category.LEANBACK_LAUNCHER");
+                i.setClassName(pkg, act1);
+                i.putExtra("AutoStartFile", uriStr);
+                tries.add(i);
+                break;
+            }
+            case "yuzu": {
+                Intent i = new Intent("android.nfc.action.TECH_DISCOVERED");
+                i.setClassName(pkg, act1);
+                i.setData(u);
+                tries.add(i);
+                break;
+            }
+            case "retroarch": {
+                if (path.isEmpty()) return err("RetroArch needs games in the phone’s own storage (not on a memory card or in the cloud).");
+                Intent i = new Intent(Intent.ACTION_MAIN);
+                i.setClassName(pkg, act1);
+                i.putExtra("ROM", path);
+                i.putExtra("LIBRETRO", "/data/data/" + pkg + "/cores/" + g.optString("core", "") + "_libretro_android.so");
+                i.putExtra("CONFIGFILE", "/storage/emulated/0/Android/data/" + pkg + "/files/retroarch.cfg");
+                i.putExtra("IME", android.provider.Settings.Secure.getString(act.getContentResolver(), android.provider.Settings.Secure.DEFAULT_INPUT_METHOD));
+                i.putExtra("DATADIR", "/data/data/" + pkg);
+                tries.add(i);
+                break;
+            }
+            case "extra": {
+                Intent i = pm.getLaunchIntentForPackage(pkg);
+                i.putExtra(g.optString("extra", "uri"), uriStr);
+                tries.add(i);
+                break;
+            }
+            case "extra-path": {
+                Intent i = pm.getLaunchIntentForPackage(pkg);
+                i.putExtra(g.optString("extra", "path"), path);
+                tries.add(i);
+                break;
+            }
+        }
+        // most emulators open a game they are given like a file manager would
+        String type = act.getContentResolver().getType(u);
+        Intent v1 = new Intent(Intent.ACTION_VIEW);
+        v1.setDataAndType(u, type == null ? "application/octet-stream" : type);
+        v1.setPackage(pkg);
+        tries.add(v1);
+        Intent v2 = new Intent(Intent.ACTION_VIEW, u);
+        v2.setPackage(pkg);
+        tries.add(v2);
+        for (Intent i : tries) {
+            i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            i.setClipData(ClipData.newRawUri("game", u));
+            try {
+                act.startActivity(i);
+                Log.i(TAG, "started " + pkg + " (" + how + ")");
+                return ok();
+            } catch (ActivityNotFoundException | SecurityException e) {
+                Log.w(TAG, "launch " + pkg + " " + how + ": " + e);
+            }
+        }
+        return err("This emulator app can’t be given a game by other apps. Start the game in the emulator itself.");
     }
 }

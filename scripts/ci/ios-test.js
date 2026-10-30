@@ -296,6 +296,36 @@ setTimeout(() => {
   const jit = await waitFor(() => window.__jit, 60000);
   ok('… and answers ok', jit && jit.ok === true, jit);
 
+  // ---- Switch: the games come from MeloNX (the stand-in answers its links too) ----
+  at('switch');
+  const sl = await E(() => api.systemList);
+  ok('iPhone and iPad offer Switch', JSON.stringify(sl) === '["switch"]', sl);
+  await E(() => {
+    window.__sw = null;
+    api.systemPickFolder('switch').then(s => (window.__sw = s));
+    return true;
+  });
+  const swr = await waitFor(() => window.__sw, 120000);
+  ok('Switch games from MeloNX', swr && swr.systems && swr.systems.switch && swr.systems.switch.list && !swr.error, swr);
+  ok('MeloNX was asked with its link', await gotLink('melonx://gameInfo?scheme=cosmou', 10000), stubLinks().split('\n').slice(-2).join(' '));
+  const sg = await E(async () => (await api.scan()).filter(g => g.sys === 'switch').map(g => [g.name, g.path, g.tid]));
+  ok('two Switch games', Array.isArray(sg) && sg.length === 2 && sg.some(g => g[1] === 'melonx:0100000000010000'), sg);
+  await E(() => load().then(() => setSystem('switch')));
+  await wait(2500);
+  const swl = await E(() => ({ sys: curSys, mode, lay: $('#sw').dataset.lay, tiles: document.querySelectorAll('#swrow .sw-t').length, theme: style }));
+  ok('Switch Home on iPhone and iPad', swl && swl.sys === 'switch' && swl.mode === 'chome' && swl.lay === 'row' && swl.tiles === 3, swl);
+  await shot('04b-switch-home');
+  await E(() => {
+    const g = list().find(x => x.sys === 'switch' && /Odyssey/.test(x.name));
+    window.__sp = null;
+    api.play({ path: g.path, name: g.name, sys: 'switch' }).then(r => (window.__sp = r));
+    return true;
+  });
+  ok('MeloNX starts the Switch game', await gotLink('melonx://game?id=0100000000010000'), stubLinks().split('\n').slice(-2).join(' '));
+  await back();
+  await E(() => setSystem('wiiu'));
+  await wait(1500);
+
   // ---- light and dark ----
   at('dark mode');
   const bg = async () => {
@@ -454,7 +484,7 @@ setTimeout(() => {
   await waitFor(() => (window.api && document.readyState === 'complete' ? 1 : null), 60000);
   await wait(1500);
   const again = await E(async () => [(await api.scan()).length, (await api.getSettings()).gamesDir, $('#wiz').hidden]);
-  ok('after a restart the library is still there', Array.isArray(again) && again[0] === 4 && again[1] === 'MeloCafe' && again[2], again);
+  ok('after a restart the library is still there', Array.isArray(again) && again[0] === 6 && again[1] === 'MeloCafe' && again[2], again);
   const errs = (await E(() => window.__errs)) || [];
   ok('no errors in the page', Array.isArray(errs) && !errs.length, errs);
   await shot('09-end');

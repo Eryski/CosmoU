@@ -89,7 +89,7 @@ function coverMeta(g, idx, n, box = $('#cfm')) {
   if (n > 1 && idx >= 0) box.append(chip(idx + 1 + ' of ' + n, 'dim'));
 }
 function step(d) {
-  if (mode === 'switch') return swStep(d);
+  if (mode === 'chome') return chNav(d > 0 ? 'r' : 'l');
   const l = list(),
     i = l.findIndex(x => x.name === sel),
     n = Math.max(0, Math.min(l.length - 1, i + d));

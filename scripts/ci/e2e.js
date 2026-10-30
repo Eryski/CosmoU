@@ -161,13 +161,23 @@ name = 30FPS (ideal for 240/120/60/30Hz displays)
   write(path.join(SW, 'Dread', 'Metroid Dread.xci'), 'XCI');
   write(path.join(SW, 'readme.txt'), 'notes');
   write(path.join(HOME, 'CosmoU-test', 'Emu', 'eden.sh'), '#!/bin/sh\nprintf "%s\\n" "$@" > "$HOME/CosmoU-test/switch-started.txt"\n');
+  // Nintendo 64 (any emulator: the game file) and Wii (Dolphin: -b -e <game>)
+  write(path.join(HOME, 'CosmoU-test', 'N64', 'Super Mario 64 (USA).z64'), 'N64');
+  write(path.join(HOME, 'CosmoU-test', 'N64', 'Mario Kart 64.z64'), 'N64');
+  write(path.join(HOME, 'CosmoU-test', 'Wii', 'Super Mario Galaxy (USA).rvz'), 'RVZ');
+  write(path.join(HOME, 'CosmoU-test', 'Emu', 'mupen.sh'), '#!/bin/sh\nprintf "%s\\n" "$@" > "$HOME/CosmoU-test/n64-started.txt"\n');
+  write(path.join(HOME, 'CosmoU-test', 'Emu', 'dolphin.sh'), '#!/bin/sh\nprintf "%s\\n" "$@" > "$HOME/CosmoU-test/wii-started.txt"\n');
   write(
     path.join(USERDATA, 'settings.json'),
     JSON.stringify({
       gamesDir: GAMES,
       setupDone: true,
       onlineCovers: false,
-      systems: { switch: { emuPath: path.join(HOME, 'CosmoU-test', 'Emu', 'eden.sh'), emuName: 'eden', gamesDir: SW } },
+      systems: {
+        switch: { emuPath: path.join(HOME, 'CosmoU-test', 'Emu', 'eden.sh'), emuName: 'eden', gamesDir: SW },
+        n64: { emuPath: path.join(HOME, 'CosmoU-test', 'Emu', 'mupen.sh'), emuName: 'mupen', gamesDir: path.join(HOME, 'CosmoU-test', 'N64') },
+        wii: { emuPath: path.join(HOME, 'CosmoU-test', 'Emu', 'dolphin.sh'), emuName: 'dolphin', gamesDir: path.join(HOME, 'CosmoU-test', 'Wii') },
+      },
     }),
   );
 }
@@ -402,7 +412,7 @@ async function waitFor(fn, ms) {
   );
   await E(() => load());
   const sys = await E(() => sysAvail());
-  ok('two systems: Wii U and Switch', JSON.stringify(sys) === '["wiiu","switch"]', sys);
+  ok('four consoles: Wii U, Switch, Wii and N64', JSON.stringify(sys) === '["wiiu","switch","wii","n64"]', sys);
   await E(() => {
     document.querySelectorAll('dialog[open]').forEach(d => d.close());
     setSystem('switch');
@@ -420,7 +430,7 @@ async function waitFor(fn, ms) {
   ok(
     'Switch look: Switch Home, Switch theme, only Switch games',
     look.sys === 'switch' &&
-      look.mode === 'switch' &&
+      look.mode === 'chome' &&
       look.theme === 'switch' &&
       look.tiles === Math.min(12, look.shown.length) + 1 &&
       !look.wiiuLook &&
@@ -451,7 +461,57 @@ async function waitFor(fn, ms) {
   });
   await w.waitForTimeout(1500);
   const back = await E(() => ({ sys: curSys, mode, n: list().filter(g => g.kind !== 'app').length }));
-  ok('back to Wii U', back.sys === 'wiiu' && back.mode !== 'switch' && back.n >= 2, back);
+  ok('back to Wii U', back.sys === 'wiiu' && back.mode !== 'chome' && back.n >= 2, back);
+
+  // ---- every console its own look: Wii channels, N64 cartridges; games start in their emulator ----
+  for (const [k, lay, cls, emuOut, want] of [
+    ['wii', 'channels', '.wch', 'wii-started.txt', /^-b\n-e\n.*Super Mario Galaxy \(USA\)\.rvz/],
+    ['n64', 'shelf', '.cart', 'n64-started.txt', /^.*Super Mario 64 \(USA\)\.z64\n$/],
+  ]) {
+    await E(s => setSystem(s), k);
+    await w.waitForTimeout(1800);
+    const lk = await E(() => ({ sys: curSys, mode, theme: style, lay: $('#sw').dataset.lay, n: document.querySelectorAll('#swrow > *').length }));
+    ok(k + ': its own home screen and theme', lk.sys === k && lk.mode === 'chome' && lk.lay === lay && lk.theme === SYS[k].theme, lk);
+    // controller-style moves: right, then down to the round buttons and back up
+    await E(() => {
+      chNav('r');
+      chNav('d');
+      chNav('d');
+      chNav('d');
+    });
+    const z = await E(() => chZone);
+    await E(() => chB());
+    ok(k + ': down reaches the round buttons, B comes back', z === 'apps' && (await E(() => chZone)) === 'games', z);
+    await shot('13-' + k);
+    const g = await E(s => list().find(x => x.sys === s && /Super Mario/.test(x.name)), k);
+    const started = path.join(HOME, 'CosmoU-test', emuOut);
+    const r = g ? await E(x => api.play({ path: x.path, name: x.name, sys: x.sys }), g) : null;
+    await waitFor(() => fs.existsSync(started), 10000);
+    let a = '';
+    try {
+      a = fs.readFileSync(started, 'utf8');
+    } catch {}
+    ok(k + ': the game starts in its emulator', r && r.ok && want.test(a), [r, a]);
+  }
+  // covers from the internet: Nintendo's eShop for Switch, libretro's box art for the N64
+  await E(() => api.setOnlineCovers(true));
+  await E(() => api.scan());
+  let arts = null;
+  await waitFor(async () => {
+    arts = await E(async () => (await api.scan()).filter(g => g.sys && g.sys !== 'wiiu').map(g => [g.sys, g.name, (g.cover || '').split('/').pop()]));
+    return Array.isArray(arts) && arts.some(x => x[0] === 'n64' && /Super Mario 64/.test(x[1]) && x[2]) && arts.some(x => x[0] === 'switch' && /Odyssey/.test(x[1]) && x[2]);
+  }, 60000);
+  ok('covers: Switch from the eShop, N64 from libretro', Array.isArray(arts) && arts.some(x => x[0] === 'n64' && /Super Mario 64/.test(x[1]) && x[2]) && arts.some(x => x[0] === 'switch' && /Odyssey/.test(x[1]) && x[2]), arts);
+  await E(() => load());
+  await w.waitForTimeout(1500);
+  await E(() => setSystem('n64'));
+  await w.waitForTimeout(1500);
+  await shot('14-n64-covers');
+  await E(() => setSystem('switch'));
+  await w.waitForTimeout(1500);
+  await shot('15-switch-covers');
+  await E(() => setSystem('wiiu'));
+  await w.waitForTimeout(800);
 
   // Cemu's own log helps when something went wrong
   try {

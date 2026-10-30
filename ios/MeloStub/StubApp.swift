@@ -63,6 +63,11 @@ final class StubScene: UIResponder, UIWindowSceneDelegate {
         ("0005000010176A00", "Splatoon", UIColor(red: 0.95, green: 0.5, blue: 0.1, alpha: 1)),
     ]
 
+    private static let switchGames: [(String, String, UIColor)] = [
+        ("0100000000010000", "Super Mario Odyssey", UIColor(red: 0.85, green: 0.15, blue: 0.2, alpha: 1)),
+        ("0100152000022000", "Mario Kart 8 Deluxe", UIColor(red: 0.95, green: 0.6, blue: 0.1, alpha: 1)),
+    ]
+
     private static func icon(_ title: String, _ color: UIColor) -> Data {
         let r = UIGraphicsImageRenderer(size: CGSize(width: 128, height: 128), format: {
             let f = UIGraphicsImageRendererFormat()
@@ -89,6 +94,13 @@ final class StubScene: UIResponder, UIWindowSceneDelegate {
                 ["id": NSNumber(value: UInt64(g.0, radix: 16)!), "title": g.1, "path": "/var/mobile/roms/" + g.1,
                  "icon": StubScene.icon(g.1, g.2).base64EncodedString()]
             }
+            // MeloNX answers the same way, with its own names: titleName, titleId (hex), iconData
+            if url.scheme == "melonx" {
+                list = StubScene.switchGames.map { g in
+                    ["id": UUID().uuidString, "titleName": g.1, "titleId": g.0, "developer": "Nintendo", "version": "1.0.0",
+                     "iconData": StubScene.icon(g.1, g.2).base64EncodedString()]
+                }
+            }
             // like MeloCafe: the first game also carries MeloCafe's own bundle id (for starting it with JIT)
             list[0]["bundleId"] = Bundle.main.bundleIdentifier ?? ""
             let data = (try? JSONSerialization.data(withJSONObject: list)) ?? Data()
@@ -100,7 +112,8 @@ final class StubScene: UIResponder, UIWindowSceneDelegate {
             }
         case "game":
             let id = q("id") ?? q("name") ?? "?"
-            let name = StubScene.games.first { String(UInt64($0.0, radix: 16)!) == id }?.1 ?? id
+            let name = StubScene.games.first { String(UInt64($0.0, radix: 16)!) == id }?.1
+                ?? StubScene.switchGames.first { $0.0 == id }?.1 ?? id
             label.text = "MeloCafe (test stand-in)\nstarting \(name)"
         default:
             label.text = "MeloCafe (test stand-in)\nopened: " + url.absoluteString

@@ -6,6 +6,8 @@
 //   melocafe://gameInfo?scheme=cosmou   MeloCafe opens and sends back cosmou://melocafe?games=<base64url JSON>
 //                                       (title id, title and icon of every game it has)
 //   melocafe://game?id=<title id>       starts that game
+// MeloNX (the Switch emulator for iOS, by the same developer) answers the same two links as melonx://…;
+// its list has titleName, titleId (hex) and iconData instead.
 // For full speed MeloCafe needs JIT, which StikDebug gives it: stikjit://enable-jit?bundle-id=<MeloCafe's bundle id>
 // starts MeloCafe with JIT; games CosmoU starts after that run in that MeloCafe.
 import UIKit
@@ -201,7 +203,7 @@ final class Bridge {
             DispatchQueue.main.async { self?.host?.done(id, r) }
         }
         switch name {
-        case "pickFolder": getGames(done)
+        case "pickFolder": getGames(str(a, 0) == "melonx" ? "melonx" : "melocafe", done)
         case "fetchFile": fetchFile(str(a, 0), str(a, 1), str(a, 2), done)
         case "fetchText": fetchText(str(a, 0), done)
         case "launchCemu": launchGame(str(a, 0), done)
@@ -222,10 +224,11 @@ final class Bridge {
     private var gamesAway = false
     private var gamesRound = 0
 
-    private func getGames(_ done: @escaping (Any?) -> Void) {
-        let u = URL(string: "melocafe://gameInfo?scheme=cosmou")!
+    private func getGames(_ scheme: String, _ done: @escaping (Any?) -> Void) {
+        let app = scheme == "melonx" ? "MeloNX" : "MeloCafe"
+        let u = URL(string: scheme + "://gameInfo?scheme=cosmou")!
         guard UIApplication.shared.canOpenURL(u) else {
-            return done(err("MeloCafe isn’t installed yet. Get it first (Settings → Cemu & Games)."))
+            return done(err(app + " isn’t installed yet. Get it first (Settings → Cemu & Games)."))
         }
         gamesWaiting.append(done)
         if gamesWaiting.count > 1 { return }
@@ -233,11 +236,11 @@ final class Bridge {
         gamesRound += 1
         let round = gamesRound
         open(u) { [weak self] opened in
-            if !opened { self?.finishGames(self?.err("MeloCafe couldn’t be opened.")) }
+            if !opened { self?.finishGames(self?.err(app + " couldn’t be opened.")) }
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 180) { [weak self] in
             guard let self = self, self.gamesRound == round, !self.gamesWaiting.isEmpty else { return }
-            self.finishGames(self.err("MeloCafe didn’t answer. Open MeloCafe once, then try again."))
+            self.finishGames(self.err(app + " didn’t answer. Open " + app + " once, then try again."))
         }
     }
 
@@ -252,7 +255,7 @@ final class Bridge {
         DispatchQueue.main.asyncAfter(deadline: .now() + 4) { [weak self] in
             guard let self = self, self.gamesRound == round, !self.gamesWaiting.isEmpty,
                   UIApplication.shared.applicationState == .active else { return }
-            self.finishGames(self.err("MeloCafe didn’t send its games. Update MeloCafe (version 1.0 or newer) and try again."))
+            self.finishGames(self.err("The emulator didn’t send its games. Update it and try again."))
         }
     }
 
@@ -267,9 +270,10 @@ final class Bridge {
         let q = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.first { $0.name == "games" }?.value ?? ""
         var b = q.replacingOccurrences(of: "-", with: "+").replacingOccurrences(of: "_", with: "/")
         while b.count % 4 != 0 { b += "=" }
+        let from = url.host == "melonx" ? "melonx" : "melocafe"
         guard let data = Data(base64Encoded: b),
               let list = (try? JSONSerialization.jsonObject(with: data)) as? [[String: Any]] else {
-            return finishGames(err("MeloCafe sent something CosmoU can’t read."))
+            return finishGames(err("The emulator sent something CosmoU can’t read."))
         }
         let fm = FileManager.default
         let icons = root.appendingPathComponent("public/covers-auto", isDirectory: true)
@@ -278,19 +282,26 @@ final class Bridge {
         var bundle = ""
         for g in list {
             if let b = g["bundleId"] as? String, !b.isEmpty { bundle = b }
-            guard let idNum = g["id"] as? NSNumber else { continue }
-            let id = idNum.uint64Value
-            if id == 0 { continue }
-            let tid = String(format: "%016llx", id)
-            var e: [String: Any] = ["id": String(id), "tid": tid, "title": g["title"] as? String ?? ""]
-            if let s = g["icon"] as? String, let d = Data(base64Encoded: s), let img = UIImage(data: d) {
+            // MeloCafe: id (a number) and title · MeloNX: titleId (hex) and titleName
+            var tid = "", launch = ""
+            if from == "melonx" {
+                guard let t = g["titleId"] as? String, let v = UInt64(t, radix: 16), v != 0 else { continue }
+                tid = String(format: "%016llx", v)
+                launch = t
+            } else {
+                guard let idNum = g["id"] as? NSNumber, idNum.uint64Value != 0 else { continue }
+                tid = String(format: "%016llx", idNum.uint64Value)
+                launch = String(idNum.uint64Value)
+            }
+            var e: [String: Any] = ["id": launch, "tid": tid, "title": (g["title"] as? String) ?? (g["titleName"] as? String) ?? ""]
+            if let s = (g["icon"] as? String) ?? (g["iconData"] as? String), let d = Data(base64Encoded: s), let img = UIImage(data: d) {
                 if let png = img.pngData() { try? png.write(to: icons.appendingPathComponent(tid + "-icon.png"), options: .atomic) }
                 if let c = Bridge.averageColor(img) { e["color"] = c }
             }
             out.append(e)
         }
         if let d = try? JSONSerialization.data(withJSONObject: out, options: [.prettyPrinted]) {
-            try? d.write(to: root.appendingPathComponent("melocafe-games.json"), options: .atomic)
+            try? d.write(to: root.appendingPathComponent(from + "-games.json"), options: .atomic)
         }
         if gamesWaiting.isEmpty { host?.event("covers-updated") }
         finishGames(ok(["count": out.count, "bundle": bundle]))
@@ -312,15 +323,19 @@ final class Bridge {
 
     // ---------- starting games and apps ----------
     private func launchGame(_ path: String, _ done: @escaping (Any?) -> Void) {
-        let id = path.hasPrefix("melocafe:") ? String(path.dropFirst(9)) : ""
-        guard !id.isEmpty, id.allSatisfy(\.isNumber), let u = URL(string: "melocafe://game?id=" + id) else {
-            return done(err("This game isn’t from MeloCafe. Get your games from MeloCafe again."))
+        // melocafe:<title id as a number> (Wii U) or melonx:<title id in hex> (Switch)
+        let parts = path.split(separator: ":", maxSplits: 1).map(String.init)
+        guard parts.count == 2, ["melocafe", "melonx"].contains(parts[0]), !parts[1].isEmpty,
+              parts[1].allSatisfy({ $0.isHexDigit }),
+              let u = URL(string: parts[0] + "://game?id=" + parts[1]) else {
+            return done(err("CosmoU doesn’t know where this game is. Get your games again."))
         }
+        let app = parts[0] == "melonx" ? "MeloNX" : "MeloCafe"
         guard UIApplication.shared.canOpenURL(u) else {
-            return done(err("MeloCafe isn’t installed yet. Open Settings → Cemu & Games to get it."))
+            return done(err(app + " isn’t installed yet. Open Settings → Cemu & Games to get it."))
         }
         open(u) { [weak self] opened in
-            done(opened ? self?.ok() : self?.err("MeloCafe couldn’t be started."))
+            done(opened ? self?.ok() : self?.err(app + " couldn’t be started."))
         }
     }
 

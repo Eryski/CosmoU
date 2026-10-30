@@ -1831,24 +1831,19 @@ function launchApp(id) {
   return { ok: true, note: 'app' };
 }
 // ---------- Other systems: CosmoU takes on the look of the console you play ----------
-// Wii U is Cemu (everything above). Every other system has one emulator and one games folder (Settings → Systems);
-// its games get their own look in the window (js/systems.js). CosmoU only starts the emulator: it never downloads
-// emulators, keys or firmware.
-const SYSTEMS = {
-  switch: {
-    name: 'Switch',
-    ext: ['.nsp', '.xci', '.nro'],
-    // yuzu and its successors (Eden, Citron, Sudachi …) want -f -g <game>; Ryujinx and others just the game
-    args: (emu, game) => (/eden|citron|sudachi|suyu|torzu|yuzu/i.test(path.basename(emu)) ? ['-f', '-g', game] : [game]),
-  },
-};
-const sysOk = s => typeof s === 'string' && Object.prototype.hasOwnProperty.call(SYSTEMS, s);
+// Wii U is Cemu (everything above). Every other console (js/systems-data.js) has one emulator and one games folder
+// (Settings → Cemu & Games → Other systems); its games get that console's look in the window (js/systems.js).
+// CosmoU only starts the emulator people chose: it never downloads emulators, keys, firmware or games.
+const SD = require('./js/systems-data.js');
+const SYSTEMS = SD.SYSTEMS;
+const sysOk = s => typeof s === 'string' && s !== 'wiiu' && Object.prototype.hasOwnProperty.call(SYSTEMS, s);
 // Switch files carry their title id: [0100ABCD12340000] is the game, …800 its update, other endings are DLC
 function scanSystem(sys, dir) {
   const def = SYSTEMS[sys],
     out = [],
     updates = new Set();
   if (!dir || !fs.existsSync(dir)) return out;
+  const exts = def.ext.map(e => '.' + e);
   const walk = (d, depth) => {
     let list = [];
     try {
@@ -1859,21 +1854,23 @@ function scanSystem(sys, dir) {
     for (const e of list) {
       const p = path.join(d, e.name);
       if (e.isDirectory() && depth < 3 && !e.name.startsWith('.')) walk(p, depth + 1);
-      else if (e.isFile() && def.ext.includes(path.extname(e.name).toLowerCase())) {
+      else if (e.isFile() && exts.includes(path.extname(e.name).toLowerCase())) {
         const base = path.parse(e.name).name,
-          tid = ((base.match(/\[(0100[0-9a-f]{12})\]/i) || [])[1] || '').toLowerCase();
+          tid = sys === 'switch' ? ((base.match(/\[(0100[0-9a-f]{12})\]/i) || [])[1] || '').toLowerCase() : '';
         if (tid && tid.slice(-3) === '800') {
           updates.add(tid.slice(0, 13));
           continue;
         }
-        if ((tid && tid.slice(-3) !== '000') || (!tid && /\b(update|upd|dlc)\b/i.test(base))) continue;
-        const name =
-          base
-            .replace(/\[[^\]]*\]|\([^)]*\)/g, ' ')
-            .replace(/[_.]/g, ' ')
-            .replace(/\s+/g, ' ')
-            .trim() || base;
-        out.push({ name, path: p, sys, tid, format: def.name + ' · ' + path.extname(e.name).slice(1).toUpperCase() });
+        if ((tid && tid.slice(-3) !== '000') || /\b(update|upd|dlc)\b/i.test(base)) continue;
+        const ext = path.extname(e.name).slice(1).toLowerCase();
+        out.push({
+          name: SD.titleOf(e.name) || base,
+          file: e.name,
+          path: p,
+          sys,
+          tid,
+          format: (ext === 'gbc' ? 'Game Boy Color' : def.short) + ' · ' + ext.toUpperCase(),
+        });
       }
     }
   };
@@ -1881,35 +1878,176 @@ function scanSystem(sys, dir) {
   for (const g of out) if (g.tid && updates.has(g.tid.slice(0, 13))) g.format += ' · Update';
   return out;
 }
+// where a game's picture is kept (covers-auto/<system>-<name>.png|jpg) and when CosmoU last looked for one
+const sysArtKey = g => g.sys + '-' + (g.tid || safeName(SD.norm(g.file || g.name)).slice(0, 80));
+const sysArt = g => ['.png', '.jpg'].map(x => path.join(autoDir(), sysArtKey(g) + '-cover' + x)).find(f => fs.existsSync(f));
 function withSystems(list) {
   const systems = read().systems || {},
-    names = new Set(list.map(g => g.name));
-  for (const sys of Object.keys(SYSTEMS)) {
-    const c = systems[sys];
+    names = new Set(list.map(g => g.name)),
+    found = [];
+  for (const sys of SD.ORDER) {
+    const c = sysOk(sys) && systems[sys];
     if (!c || !c.gamesDir) continue;
     for (const g of scanSystem(sys, c.gamesDir)) {
       // the same title on two consoles: the second one says which console it is
       let n = g.name;
-      if (names.has(n)) n += ' (' + SYSTEMS[sys].name + ')';
-      for (let k = 2; names.has(n); k++) n = g.name + ' (' + SYSTEMS[sys].name + ' ' + k + ')';
+      if (names.has(n)) n += ' (' + SYSTEMS[sys].short + ')';
+      for (let k = 2; names.has(n); k++) n = g.name + ' (' + SYSTEMS[sys].short + ' ' + k + ')';
       names.add(n);
       g.name = n;
-      const manual = manualCover(n);
-      g.cover = manual || '';
+      const art = sysArt(g);
+      g.cover = manualCover(n) || (art ? pathToFileURL(art).href : '');
+      found.push(g);
       list.push(g);
     }
   }
+  if (read().onlineCovers !== false) queueSysArt(found);
   return list;
+}
+
+// ---------- covers for the other consoles ----------
+const sysJobs = [],
+  sysBusy = new Set(),
+  thumbLists = {};
+let sysRunning = false;
+const sysMiss = g => path.join(autoDir(), sysArtKey(g) + '-art.miss');
+function queueSysArt(list) {
+  fs.mkdirSync(autoDir(), { recursive: true });
+  for (const g of list) {
+    const k = sysArtKey(g);
+    if (sysBusy.has(k) || sysArt(g) || manualCover(g.name)) continue;
+    try {
+      if (Date.now() - Number(fs.readFileSync(sysMiss(g), 'utf8')) < 7 * 864e5) continue;
+    } catch {}
+    sysBusy.add(k);
+    sysJobs.push(g);
+  }
+  if (!sysRunning) runSysArt();
+}
+function getText(url, max = 12 * 1048576, hops = 0) {
+  return new Promise(resolve => {
+    const req = https.get(url, { headers: { 'User-Agent': 'CosmoU', Accept: '*/*' } }, res => {
+      if ([301, 302, 303, 307, 308].includes(res.statusCode) && res.headers.location && hops < 4) {
+        res.resume();
+        return resolve(getText(new URL(res.headers.location, url).href, max, hops + 1));
+      }
+      if (res.statusCode !== 200) {
+        res.resume();
+        return resolve(null);
+      }
+      let body = '',
+        size = 0;
+      res.setEncoding('utf8');
+      res.on('data', c => {
+        size += c.length;
+        if (size > max) req.destroy();
+        else body += c;
+      });
+      res.on('end', () => resolve(body));
+      res.on('error', () => resolve(null));
+    });
+    req.setTimeout(20000, () => req.destroy());
+    req.on('error', () => resolve(null));
+  });
+}
+// the list of pictures of one console on the libretro server (kept for two weeks)
+async function thumbFiles(folder) {
+  if (thumbLists[folder]) return thumbLists[folder];
+  const f = path.join(autoDir(), 'thumbs-' + safeName(folder) + '.json');
+  try {
+    const c = JSON.parse(fs.readFileSync(f, 'utf8'));
+    if (Date.now() - c.at < 14 * 864e5 && Array.isArray(c.files)) return (thumbLists[folder] = c.files);
+  } catch {}
+  const html = await getText(SD.listUrl(folder));
+  if (!html) return [];
+  const files = SD.thumbList(html);
+  try {
+    fs.writeFileSync(f, JSON.stringify({ at: Date.now(), files }));
+  } catch {}
+  return (thumbLists[folder] = files);
+}
+async function findSysArt(g) {
+  const def = SYSTEMS[g.sys];
+  if (def.eshop) {
+    for (const tid of g.tid ? [g.tid, ''] : ['']) {
+      const j = await getText(SD.eshopUrl(SD.titleOf(g.file || g.name), tid));
+      const u = j && SD.eshopPick(j, SD.titleOf(g.file || g.name), tid);
+      if (u) return u;
+    }
+    return '';
+  }
+  for (const folder of def.thumbs || []) {
+    const files = await thumbFiles(folder);
+    const hit = SD.bestThumb(files, g.file || g.name);
+    if (hit) return SD.thumbUrl(folder, hit);
+  }
+  return '';
+}
+async function runSysArt() {
+  sysRunning = true;
+  while (sysJobs.length) {
+    const g = sysJobs.shift(),
+      k = sysArtKey(g);
+    try {
+      const url = await findSysArt(g);
+      const dest = path.join(autoDir(), k + '-cover' + (/\.png(\?|$)/i.test(url) ? '.png' : '.jpg'));
+      if (url && (await fetchImage(url, dest))) {
+        if (mainWin && !mainWin.isDestroyed()) mainWin.webContents.send('covers-updated');
+      } else fs.writeFileSync(sysMiss(g), String(Date.now()));
+    } catch {}
+    sysBusy.delete(k);
+    await new Promise(r => setTimeout(r, 250));
+  }
+  sysRunning = false;
+}
+
+// ---------- starting the emulator of another console ----------
+// RetroArch needs a core for the console: the first one of CORES that is installed
+function retroCore(emu, sys) {
+  const ext = P.IS_WIN ? '.dll' : P.IS_MAC ? '.dylib' : '.so';
+  const home = os.homedir();
+  const dirs = P.IS_WIN
+    ? [path.join(path.dirname(emu), 'cores'), path.join(process.env.APPDATA || '', 'RetroArch', 'cores')]
+    : P.IS_MAC
+      ? [path.join(home, 'Library', 'Application Support', 'RetroArch', 'cores'), path.join(emu, 'Contents', 'Resources', 'cores')]
+      : [
+          path.join(home, '.config', 'retroarch', 'cores'),
+          path.join(home, '.var', 'app', 'org.libretro.RetroArch', 'config', 'retroarch', 'cores'),
+          '/usr/lib/libretro',
+          '/usr/lib/x86_64-linux-gnu/libretro',
+          '/usr/lib64/libretro',
+          '/usr/local/lib/libretro',
+          path.join(path.dirname(emu), 'cores'),
+        ];
+  for (const core of SD.CORES[sys] || [])
+    for (const d of dirs) {
+      const f = path.join(d, core + '_libretro' + ext);
+      if (fs.existsSync(f)) return f;
+    }
+  return '';
 }
 function launchSystemGame(sys, game) {
   const c = sysOk(sys) && (read().systems || {})[sys];
-  const name = sysOk(sys) ? SYSTEMS[sys].name : 'this system';
+  const name = sysOk(sys) ? SYSTEMS[sys].name : 'this console';
   if (!c || !c.emuPath || !fs.existsSync(c.emuPath))
-    return { ok: false, error: 'No ' + name + ' emulator chosen yet. Choose it in Settings → Systems.' };
+    return { ok: false, error: 'No ' + name + ' emulator chosen yet. Choose it in Settings → Cemu & Games → Other systems.' };
   if (typeof game !== 'string' || !fs.existsSync(game)) return { ok: false, error: 'The game file no longer exists.' };
-  const args = c.args ? splitArgs(c.args).map(a => a.replace('{game}', game)) : SYSTEMS[sys].args(c.emuPath, game);
+  const base = path.basename(c.emuPath);
+  const rule = SD.DESKTOP.find(r => r.re.test(base));
+  let args = [game];
+  if (c.args) args = splitArgs(c.args).map(a => a.replace('{game}', game));
+  else if (rule && rule.retroarch) {
+    const core = retroCore(c.emuPath, sys);
+    if (!core)
+      return {
+        ok: false,
+        error:
+          'RetroArch has no ' + name + ' core yet. Download one in RetroArch (Load Core → Download a Core), for example ' + SD.CORES[sys][0] + '.',
+      };
+    args = ['-L', core, game];
+  } else if (rule) args = rule.args(game);
   const cmd = P.appCommand(c.emuPath, args);
-  if (!cmd) return { ok: false, error: 'The ' + name + ' emulator can’t be started. Choose it again in Settings → Systems.' };
+  if (!cmd) return { ok: false, error: 'The ' + name + ' emulator can’t be started. Choose it again in Settings → Cemu & Games.' };
   const child = spawn(cmd[0], cmd[1], { detached: true, stdio: 'ignore', cwd: path.dirname(c.emuPath), env: P.childEnv(c.emuPath) });
   child.on('error', () => {});
   child.unref();
@@ -2824,3 +2962,4 @@ const playArg = (() => {
 })();
 ipcMain.on('launchArg', e => (e.returnValue = playArg));
 ipcMain.on('appVersion', e => (e.returnValue = app.getVersion()));
+ipcMain.on('systemList', e => (e.returnValue = SD.ORDER.filter(k => k !== 'wiiu')));

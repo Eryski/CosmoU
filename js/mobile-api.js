@@ -120,9 +120,9 @@
       maker: tag(x, 'company_code').slice(-2),
     };
   }
-  // iPhone and iPad: the games are inside MeloCafe; CosmoU keeps the list MeloCafe sent last time
-  function scanMeloCafe() {
-    const list = readJson('melocafe-games.json', null);
+  // iPhone and iPad: the games are inside MeloCafe (Wii U) and MeloNX (Switch); CosmoU keeps the list they sent last time
+  function scanMeloCafe(from = 'melocafe', sys = 'wiiu') {
+    const list = readJson(from + '-games.json', null);
     if (!Array.isArray(list)) return [];
     const have = new Set(sync('list', 'public/covers-auto') || []),
       manual = sync('list', 'public/covers') || [];
@@ -130,7 +130,7 @@
       seen = {};
     for (const e of list) {
       const tid = String(e.tid || '').toLowerCase();
-      if (!/^[0-9a-f]{16}$/.test(tid) || !/^\d+$/.test(String(e.id))) continue;
+      if (!/^[0-9a-f]{16}$/.test(tid) || !/^[0-9a-fA-F]+$/.test(String(e.id))) continue;
       // updates and DLC are not games of their own
       if (/^0005000[ec]/.test(tid)) continue;
       let name = clean(String(e.title || '').replace(/\s+/g, ' ')) || tid;
@@ -140,11 +140,12 @@
       const icon = have.has(tid + '-icon.png') ? pubUrl('covers-auto/' + tid + '-icon.png') : '';
       out.push({
         name,
-        path: 'melocafe:' + e.id,
+        path: from + ':' + e.id,
         tid,
         low: tid.slice(8),
         color: e.color || '',
-        format: 'Wii U · MeloCafe',
+        format: sys === 'wiiu' ? 'Wii U · MeloCafe' : 'Switch · MeloNX',
+        sys: sys === 'wiiu' ? undefined : sys,
         cover: (mc && pubUrl('covers/' + mc)) || icon,
         full: '',
         disc: '',
@@ -156,12 +157,12 @@
   }
   async function scan() {
     const s = read();
-    if (IOS) return withApps(s.gamesDir ? scanMeloCafe() : []);
-    if (!s.gamesDir) return withApps([]);
+    if (IOS) return withApps(await withSystems(s.gamesDir ? scanMeloCafe() : []));
+    if (!s.gamesDir) return withApps(await withSystems([]));
     const r = await call('scanTree', s.gamesDir);
     if (!r || !r.ok) {
       lastScanError = (r && r.error) || 'The games folder can’t be read.';
-      return withApps([]);
+      return withApps(await withSystems([]));
     }
     lastScanError = '';
     const out = [],
@@ -221,9 +222,167 @@
     }
     out.sort((a, b) => a.name.localeCompare(b.name));
     if (read().onlineCovers !== false) queueBoxArt(out);
-    return withApps(out);
+    return withApps(await withSystems(out));
   }
   let lastScanError = '';
+
+  // ---------- the other consoles (js/systems-data.js) ----------
+  // Android: an emulator app and a games folder per console · iPhone and iPad: Switch games come from MeloNX
+  const SD = window.SYSDATA;
+  const SYS_LIST = IOS ? ['switch'] : SD.ORDER.filter(k => k !== 'wiiu');
+  const sysCfg = () => read().systems || {};
+  function sysWrite(k, patch) {
+    const s = read(),
+      sy = { ...(s.systems || {}) };
+    if (patch === null) delete sy[k];
+    else sy[k] = { ...(sy[k] || {}), ...patch };
+    write({ ...s, systems: sy });
+    delete sysFiles[k];
+    return settings();
+  }
+  // the files of a games folder are read again at most every two minutes (covers arriving don't trigger a new search)
+  const sysFiles = {};
+  async function filesOf(k, dir) {
+    const c = sysFiles[k];
+    if (c && c.dir === dir && Date.now() - c.at < 120e3) return c.files;
+    const r = await call('scanFiles', dir, SD.SYSTEMS[k].ext.join(','));
+    if (!r || !r.ok) {
+      lastScanError = (r && r.error) || 'A games folder can’t be read.';
+      return [];
+    }
+    sysFiles[k] = { dir, at: Date.now(), files: r.files };
+    return r.files;
+  }
+  const sysKey = g => g.sys + '-' + (g.tid || safeName(SD.norm(g.file || g.name)).slice(0, 80));
+  async function withSystems(list) {
+    const cfgs = sysCfg(),
+      names = new Set(list.map(g => g.name)),
+      found = [];
+    const have = new Set(sync('list', 'public/covers-auto') || []),
+      manual = sync('list', 'public/covers') || [];
+    for (const k of SYS_LIST) {
+      const c = cfgs[k];
+      if (!c) continue;
+      let games = [];
+      if (IOS) games = c.list ? scanMeloCafe('melonx', 'switch') : [];
+      else if (c.gamesDir) {
+        const updates = new Set();
+        for (const f of await filesOf(k, c.gamesDir)) {
+          const base = f.name.replace(/\.[^.]+$/, ''),
+            ext = f.name.split('.').pop().toLowerCase();
+          const tid = k === 'switch' ? ((base.match(/\[(0100[0-9a-f]{12})\]/i) || [])[1] || '').toLowerCase() : '';
+          if (tid && tid.slice(-3) === '800') {
+            updates.add(tid.slice(0, 13));
+            continue;
+          }
+          if ((tid && tid.slice(-3) !== '000') || /\b(update|upd|dlc)\b/i.test(base)) continue;
+          games.push({
+            name: SD.titleOf(f.name) || base,
+            file: f.name,
+            path: f.uri,
+            fpath: f.path || '',
+            sys: k,
+            tid,
+            format: (ext === 'gbc' ? 'Game Boy Color' : SD.SYSTEMS[k].short) + ' · ' + ext.toUpperCase(),
+          });
+        }
+        for (const g of games) if (g.tid && updates.has(g.tid.slice(0, 13))) g.format += ' · Update';
+      }
+      for (const g of games) {
+        let n = g.name;
+        if (names.has(n)) n += ' (' + SD.SYSTEMS[k].short + ')';
+        for (let i = 2; names.has(n); i++) n = g.name + ' (' + SD.SYSTEMS[k].short + ' ' + i + ')';
+        names.add(n);
+        g.name = n;
+        const key = sysKey(g),
+          mc = manual.find(f => f.replace(/\.(png|jpe?g|webp)$/i, '') === safeName(n)),
+          art = ['-cover.png', '-cover.jpg'].map(x => key + x).find(f => have.has(f));
+        g.cover = (mc && pubUrl('covers/' + mc)) || (art && pubUrl('covers-auto/' + art)) || g.cover || '';
+        found.push(g);
+        list.push(g);
+      }
+    }
+    if (read().onlineCovers !== false) queueSysArt(found, have);
+    return list;
+  }
+  // covers: libretro's box art (by name) for the retro and disc consoles, Nintendo's eShop for Switch
+  const sysJobs = [],
+    sysBusy = new Set(),
+    thumbs = {};
+  let sysRunning = false;
+  function queueSysArt(list, have) {
+    for (const g of list) {
+      const k = sysKey(g);
+      if (sysBusy.has(k) || (g.cover && !/\/covers-auto\/[^/]*-icon\.png$/.test(g.cover))) continue;
+      const miss = Number(sync('read', 'public/covers-auto/' + k + '-art.miss') || 0);
+      if (miss && Date.now() - miss < 7 * 864e5) continue;
+      sysBusy.add(k);
+      sysJobs.push(g);
+    }
+    if (!sysRunning) runSysArt();
+  }
+  async function thumbList(folder) {
+    if (thumbs[folder]) return thumbs[folder];
+    const f = 'public/covers-auto/thumbs-' + safeName(folder) + '.json';
+    const c = readJson(f, null);
+    if (c && Date.now() - c.at < 14 * 864e5 && Array.isArray(c.files)) return (thumbs[folder] = c.files);
+    const r = await call('fetchText', SD.listUrl(folder));
+    if (!r || !r.ok) return [];
+    const files = SD.thumbList(r.text);
+    sync('write', f, JSON.stringify({ at: Date.now(), files }));
+    return (thumbs[folder] = files);
+  }
+  async function findArt(g) {
+    const d = SD.SYSTEMS[g.sys],
+      title = SD.titleOf(g.file || g.name);
+    if (d.eshop) {
+      for (const tid of g.tid ? [g.tid, ''] : ['']) {
+        const r = await call('fetchText', SD.eshopUrl(title, tid));
+        const u = r && r.ok && SD.eshopPick(r.text, title, tid);
+        if (u) return u;
+      }
+      return '';
+    }
+    for (const folder of d.thumbs || []) {
+      const hit = SD.bestThumb(await thumbList(folder), g.file || g.name);
+      if (hit) return SD.thumbUrl(folder, hit);
+    }
+    return '';
+  }
+  async function runSysArt() {
+    sysRunning = true;
+    while (sysJobs.length) {
+      const g = sysJobs.shift(),
+        k = sysKey(g);
+      const url = await findArt(g).catch(() => '');
+      const x = url && (await call('fetchFile', url, 'public/covers-auto/' + k + '-cover' + (/\.png(\?|$)/i.test(url) ? '.png' : '.jpg'), 'image/'));
+      if (x && x.ok) emit('covers-updated');
+      else if (!(x && x.offline)) sync('write', 'public/covers-auto/' + k + '-art.miss', String(Date.now()));
+      sysBusy.delete(k);
+      await new Promise(r => setTimeout(r, 300));
+    }
+    sysRunning = false;
+  }
+  async function playSystem(g) {
+    const c = sysCfg()[g.sys] || {},
+      name = SD.SYSTEMS[g.sys].name;
+    if (IOS) {
+      const r = await call('launchCemu', g.path);
+      return r && r.ok ? { ok: true, note: 'system' } : { ok: false, error: (r && r.error) || 'MeloNX couldn’t be started.' };
+    }
+    if (!c.pkg) return { ok: false, error: 'No ' + name + ' emulator app chosen yet. Choose it in Settings → Cemu & Games → Other systems.' };
+    const rule = SD.ANDROID.find(r => r.re.test(c.pkg)) || { how: 'view' };
+    const r = await call('launchEmu', {
+      pkg: c.pkg,
+      uri: g.path,
+      path: g.fpath || '',
+      how: rule.how,
+      activity: rule.activity || '',
+      extra: rule.extra || '',
+      core: (SD.CORES[g.sys] || [])[0] || '',
+    });
+    return r && r.ok ? { ok: true, note: 'system' } : { ok: false, error: (r && r.error) || 'The emulator couldn’t be started.' };
+  }
 
   // online case art from GameTDB, like the desktop app (one at a time, misses remembered for 7 days)
   const boxJobs = [],
@@ -338,6 +497,12 @@
       return r && r.ok ? { ok: true, note: 'app' } : { ok: false, error: (r && r.error) || 'The app couldn’t be started.' };
     }
     const g = typeof arg === 'string' ? { path: arg } : arg || {};
+    if (g.sys && g.sys !== 'wiiu') {
+      const game = lastGames.find(x => x.path === g.path) || g;
+      const r = await playSystem({ ...game, sys: g.sys });
+      if (r.ok && g.name) startSession(g.name);
+      return r;
+    }
     const c = sync('cemuInfo') || {};
     if (!c.installed) return { ok: false, error: EMU + ' isn’t installed yet. Open Settings → Cemu & Games to get it.' };
     const game = lastGames.find(x => x.path === g.path) || {};
@@ -534,6 +699,42 @@
       return { ok: false, cancelled: true };
     },
     cemuCancel: async () => {},
+    // the other consoles
+    systemList: SYS_LIST,
+    systemPickFolder: async k => {
+      if (!SYS_LIST.includes(k)) return settings();
+      if (IOS) {
+        const r = await call('pickFolder', 'melonx');
+        if (r && r.ok) return sysWrite(k, { list: true, appName: 'MeloNX', bundle: r.bundle || (sysCfg()[k] || {}).bundle || '' });
+        if (r && r.cancel) return settings();
+        return { ...settings(), error: (r && r.error) || 'MeloNX didn’t send its games.' };
+      }
+      const r = await call('pickFolder');
+      return r && r.uri ? sysWrite(k, { gamesDir: r.uri, dirName: r.name || '' }) : settings();
+    },
+    systemPickEmu: async k => {
+      if (!SYS_LIST.includes(k) || IOS) return settings();
+      const r = await call('pickApp');
+      return r && r.pkg ? sysWrite(k, { pkg: r.pkg, appName: r.name || r.pkg }) : settings();
+    },
+    systemRemove: async k => {
+      const c = sysCfg()[k];
+      if (c && c.gamesDir && !IOS) await call('forgetFolder', c.gamesDir);
+      return sysWrite(k, null);
+    },
+    systemJit: IOS
+      ? async k => {
+          const b = (sysCfg()[k] || {}).bundle;
+          const c = sync('cemuInfo') || {};
+          if (!c.stikdebug) {
+            sync('openUrl', STIKDEBUG);
+            return { ...settings(), error: 'StikDebug gives MeloNX JIT. Install it from the page that opened, then try again.' };
+          }
+          if (!b) return { ...settings(), error: 'Get your games from MeloNX first.' };
+          sync('startJit', b);
+          return settings();
+        }
+      : undefined,
     // iPhone and iPad: start MeloCafe with JIT through StikDebug (full speed)
     jitStart: async () => {
       if (!IOS) return { ok: false };

@@ -195,10 +195,17 @@ function padTick(now) {
         for (const k of ['l', 'r', 'u', 'd']) if (fire[k]) homeStep(k);
         if (fire.lb || fire.rb) whTurn(fire.rb ? 1 : -1);
       } else {
-        if (fire.l || (mode !== 'covers' && mode !== 'switch' && fire.u)) step(-1);
-        if (fire.r || (mode !== 'covers' && mode !== 'switch' && fire.d)) step(1);
+        if (mode === 'chome') {
+          for (const k of ['l', 'r', 'u', 'd']) if (fire[k]) chNav(k);
+        } else {
+          if (fire.l || (mode !== 'covers' && fire.u)) step(-1);
+          if (fire.r || (mode !== 'covers' && fire.d)) step(1);
+        }
       }
-      if (fire.a) launch(cur());
+      if (fire.a) mode === 'chome' ? chA() : launch(cur());
+      if (fire.b && mode === 'chome') chB();
+      // L and R change the console (when there is more than one)
+      if ((fire.lb || fire.rb) && !isHome() && typeof sysNext === 'function') sysNext(fire.rb ? 1 : -1);
       if (fire.y && cur()) openDetail(cur());
       if (fire.x && cur() && typeof gameMenu === 'function') gameMenu(cur(), null);
       if (fire.st) openSettings();

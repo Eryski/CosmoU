@@ -173,7 +173,7 @@ final class MainViewController: UIViewController, WKUIDelegate, WKNavigationDele
 
     // ---------- the app ----------
     func handleURL(_ url: URL) {
-        if url.scheme == "cosmou", url.host == "melocafe" { bridge.gamesArrived(url) }
+        if url.scheme == "cosmou", url.host == "melocafe" || url.host == "melonx" { bridge.gamesArrived(url) }
     }
 
     func becameActive() {

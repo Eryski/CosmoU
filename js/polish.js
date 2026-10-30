@@ -34,20 +34,18 @@ function blip(kind) {
       o.start(t + at);
       o.stop(t + at + dur + 0.02);
     };
-    // Switch: short, dry clicks instead of the Wii U's soft chimes
-    if (typeof curSys === 'string' && curSys === 'switch') {
-      if (kind === 'move') tone(2350, 0, 0.022, 'square', 0.32);
-      else if (kind === 'page') {
-        tone(1800, 0, 0.025, 'square', 0.3);
-        tone(2400, 0.045, 0.025, 'square', 0.28);
-      } else if (kind === 'open') {
-        tone(1500, 0, 0.03, 'square', 0.3);
-        tone(1000, 0.035, 0.08, 'sine', 0.5);
-      } else if (kind === 'start') {
-        tone(880, 0, 0.05, 'square', 0.25);
-        tone(1320, 0.06, 0.05, 'square', 0.25);
-        tone(1760, 0.12, 0.22, 'sine', 0.5);
-      } else if (kind === 'back') tone(900, 0, 0.03, 'square', 0.28);
+    // every console sounds like itself: Switch dry clicks, GameCube deep and round, DS and 3DS bright plucks,
+    // the cartridge consoles chiptune blips; Wii U and Wii keep the soft chimes below
+    const fam = typeof curSys === 'string' && typeof SYS === 'object' && SYS[curSys] && SYS[curSys].sound;
+    const FAM = {
+      click: { w: 'square', g: 0.3, move: [2350], page: [1800, 2400], open: [1500, 1000], start: [880, 1320, 1760], back: [900], d: 0.025 },
+      deep: { w: 'sine', g: 0.8, move: [392], page: [330, 494], open: [262, 392], start: [196, 294, 392, 587], back: [247], d: 0.12 },
+      pluck: { w: 'triangle', g: 0.55, move: [1568], page: [1175, 1568], open: [1319, 1976], start: [1047, 1319, 1568, 2093], back: [988], d: 0.05 },
+      chip: { w: 'square', g: 0.22, move: [988], page: [784, 1175], open: [1047, 1568], start: [523, 659, 784, 1047], back: [587], d: 0.06 },
+    }[fam];
+    if (FAM) {
+      const notes = FAM[kind] || FAM.move;
+      notes.forEach((f, k) => tone(f, k * (kind === 'start' ? 0.08 : 0.045), FAM.d * (k === notes.length - 1 && kind === 'start' ? 4 : 1), FAM.w, FAM.g));
       return;
     }
     if (kind === 'move') tone(1320, 0, 0.06, 'triangle', 0.6);

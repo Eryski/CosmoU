@@ -112,7 +112,7 @@ document.querySelectorAll('#vt button').forEach(
         lsSys('viewMode', mode);
         syncMode();
         render();
-        const t = $(mode === 'grid' ? '#grid' : mode === 'wiiu' ? '#wu' : mode === 'switch' ? '#sw' : '#cf');
+        const t = $(mode === 'grid' ? '#grid' : mode === 'wiiu' ? '#wu' : mode === 'chome' ? '#sw' : '#cf');
         t.classList.remove('swap');
         void t.offsetWidth;
         t.classList.add('swap');
@@ -151,6 +151,18 @@ addEventListener('keydown', e => {
     e.target.tagName === 'INPUT'
   )
     return;
+  // the home screens of the other consoles: arrows move (down to the round buttons), Enter starts, Escape comes back
+  if (mode === 'chome') {
+    const d = { ArrowRight: 'r', ArrowLeft: 'l', ArrowUp: 'u', ArrowDown: 'd' }[e.key];
+    if (d) {
+      e.preventDefault();
+      chNav(d);
+    } else if (e.key === 'Enter' && (e.target === document.body || e.target.closest('#sw'))) {
+      e.preventDefault();
+      chA();
+    } else if (e.key === 'Escape') chB();
+    return;
+  }
   const hk = isHome() && { ArrowRight: 'r', ArrowLeft: 'l', ArrowUp: 'u', ArrowDown: 'd' }[e.key];
   if (hk) homeStep(hk);
   else if (isHome() && (e.key === 'PageDown' || e.key === 'PageUp')) whTurn(e.key === 'PageDown' ? 1 : -1);
