@@ -566,7 +566,7 @@ public class Bridge {
         c.setConnectTimeout(10000);
         c.setReadTimeout(20000);
         c.setInstanceFollowRedirects(true);
-        c.setRequestProperty("User-Agent", "CosmoU-Android");
+        c.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android) CosmoU-Android");
         c.setRequestProperty("Accept", "application/vnd.github+json, image/*, */*");
         return c;
     }

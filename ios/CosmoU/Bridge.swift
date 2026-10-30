@@ -426,7 +426,7 @@ final class Bridge {
             if Bridge.offline(e) { return done(["ok": false, "error": "No internet connection."]) }
             let st = (resp as? HTTPURLResponse)?.statusCode ?? 0
             var o: [String: Any] = ["ok": st == 200, "status": st]
-            if st == 200, let d = data, d.count <= 4 * 1048576 { o["text"] = String(decoding: d, as: UTF8.self) }
+            if st == 200, let d = data, d.count <= 16 * 1048576 { o["text"] = String(decoding: d, as: UTF8.self) }
             done(o)
         }.resume()
     }

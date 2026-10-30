@@ -206,10 +206,16 @@ function scan(dir) {
 const boxBusy = new Set(),
   boxJobs = [];
 let boxRunning = false;
-function fetchImage(url, dest) {
+function fetchImage(url, dest, hops = 0) {
   return new Promise(resolve => {
-    const req = https.get(url, { headers: { 'User-Agent': 'CosmoU' } }, res => {
+    // some image servers (Nintendo's) only answer browsers, and some move pictures to another address
+    const req = https.get(url, { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) CosmoU', Accept: 'image/*' } }, res => {
+      if ([301, 302, 303, 307, 308].includes(res.statusCode) && res.headers.location && hops < 4) {
+        res.resume();
+        return resolve(fetchImage(new URL(res.headers.location, url).href, dest, hops + 1));
+      }
       if (res.statusCode !== 200 || !/^image\//.test(res.headers['content-type'] || '')) {
+        if (process.env.COSMOU_DEBUG) console.error('cover failed', url, res.statusCode, res.headers['content-type']);
         res.resume();
         return resolve(false);
       }
@@ -1926,7 +1932,7 @@ function queueSysArt(list) {
 }
 function getText(url, max = 12 * 1048576, hops = 0) {
   return new Promise(resolve => {
-    const req = https.get(url, { headers: { 'User-Agent': 'CosmoU', Accept: '*/*' } }, res => {
+    const req = https.get(url, { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) CosmoU', Accept: '*/*' } }, res => {
       if ([301, 302, 303, 307, 308].includes(res.statusCode) && res.headers.location && hops < 4) {
         res.resume();
         return resolve(getText(new URL(res.headers.location, url).href, max, hops + 1));
@@ -1990,6 +1996,7 @@ async function runSysArt() {
       k = sysArtKey(g);
     try {
       const url = await findSysArt(g);
+      if (process.env.COSMOU_DEBUG) console.error('cover for', g.sys, g.name, '→', url || 'none');
       const dest = path.join(autoDir(), k + '-cover' + (/\.png(\?|$)/i.test(url) ? '.png' : '.jpg'));
       if (url && (await fetchImage(url, dest))) {
         if (mainWin && !mainWin.isDestroyed()) mainWin.webContents.send('covers-updated');

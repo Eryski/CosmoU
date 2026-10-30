@@ -222,7 +222,11 @@
       (t && docs.find(x => String(x.application_id_s || '').toUpperCase() === t)) ||
       docs.find(x => norm(x.title) === w) ||
       (t ? null : docs.find(x => norm(x.title).startsWith(w) || w.startsWith(norm(x.title))));
-    return d ? d.image_url_sq_s || d.image_url || '' : '';
+    let u = d ? d.image_url_sq_s || d.image_url || '' : '';
+    // Nintendo often writes its picture addresses without "https:"
+    if (u.startsWith('//')) u = 'https:' + u;
+    else if (u && !/^https?:/.test(u)) u = 'https://' + u.replace(/^\/+/, '');
+    return u;
   }
 
   const api = { SYSTEMS, ORDER, DESKTOP, CORES, ANDROID, norm, titleOf, thumbList, bestThumb, thumbUrl, listUrl, eshopUrl, eshopPick };

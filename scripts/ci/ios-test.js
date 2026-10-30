@@ -101,7 +101,17 @@ setTimeout(() => {
   trySim('uninstall', U, STUB_ID);
   simctl('install', U, APP);
   ok('CosmoU installed', true, trySim('appinfo', U, ID).split('\n').filter(l => /CFBundleShortVersionString|CFBundleIdentifier/.test(l)).join(' '));
-  const launch = () => simctl('launch', '--terminate-running-process', U, ID, '-cosmouTest', 'YES', '-cosmouQuiet', 'YES');
+  // a slow simulator sometimes hangs on the first start: try again once
+  const launch = () => {
+    const args = ['launch', '--terminate-running-process', U, ID, '-cosmouTest', 'YES', '-cosmouQuiet', 'YES'];
+    try {
+      return cp.execFileSync('xcrun', ['simctl', ...args], { encoding: 'utf8', timeout: 150000 }).trim();
+    } catch (e) {
+      console.log('launch again: ' + String(e.message).slice(0, 120));
+      trySim('terminate', U, ID);
+      return simctl(...args);
+    }
+  };
   const data = simctl('get_app_container', U, ID, 'data');
   const ROOT = path.join(data, 'Library', 'Application Support', 'CosmoU'),
     T = path.join(ROOT, 'test');

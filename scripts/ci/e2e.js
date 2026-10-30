@@ -199,7 +199,7 @@ async function waitFor(fn, ms) {
   const app = await _electron.launch({
     executablePath: EXE,
     args: [...(MAC ? [] : ['--no-sandbox']), ...(process.env.E2E_APP ? [process.env.E2E_APP] : [])],
-    env: { ...process.env, ELECTRON_ENABLE_LOGGING: '1' },
+    env: { ...process.env, ELECTRON_ENABLE_LOGGING: '1', COSMOU_DEBUG: '1' },
     timeout: 60000,
   });
   app.process().stderr.on('data', d => log.push(String(d)));
@@ -501,6 +501,7 @@ async function waitFor(fn, ms) {
     arts = await E(async () => (await api.scan()).filter(g => g.sys && g.sys !== 'wiiu').map(g => [g.sys, g.name, (g.cover || '').split('/').pop()]));
     return Array.isArray(arts) && arts.some(x => x[0] === 'n64' && /Super Mario 64/.test(x[1]) && x[2]) && arts.some(x => x[0] === 'switch' && /Odyssey/.test(x[1]) && x[2]);
   }, 60000);
+  if (!(Array.isArray(arts) && arts.some(x => x[0] === 'switch' && x[2]))) ok('cover log', true, log.join('').split('\n').filter(l => /cover/.test(l)).slice(-12).join('\n'));
   ok('covers: Switch from the eShop, N64 from libretro', Array.isArray(arts) && arts.some(x => x[0] === 'n64' && /Super Mario 64/.test(x[1]) && x[2]) && arts.some(x => x[0] === 'switch' && /Odyssey/.test(x[1]) && x[2]), arts);
   await E(() => load());
   await w.waitForTimeout(1500);
