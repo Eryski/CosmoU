@@ -25,7 +25,7 @@ const lsSys = (k, v) => {
 // folder is set, when it has games, or when there is nothing else
 function sysAvail() {
   const sy = (cfg && cfg.systems) || {};
-  const others = SYSDATA.ORDER.filter(k => k !== 'wiiu' && sy[k] && (sy[k].gamesDir || sy[k].emuPath || sy[k].pkg));
+  const others = SYSDATA.ORDER.filter(k => k !== 'wiiu' && sy[k] && (sy[k].gamesDir || sy[k].emuPath || sy[k].pkg || sy[k].list));
   const wiiu =
     !others.length || !!(cfg.cemuPath || cfg.gamesDir) || games.some(g => sysOf(g) === 'wiiu' && g.kind !== 'app' && g.format !== 'Demo');
   return [...(wiiu ? ['wiiu'] : []), ...others];

@@ -470,8 +470,8 @@ async function waitFor(fn, ms) {
   ]) {
     await E(s => setSystem(s), k);
     await w.waitForTimeout(1800);
-    const lk = await E(() => ({ sys: curSys, mode, theme: style, lay: $('#sw').dataset.lay, n: document.querySelectorAll('#swrow > *').length }));
-    ok(k + ': its own home screen and theme', lk.sys === k && lk.mode === 'chome' && lk.lay === lay && lk.theme === SYS[k].theme, lk);
+    const lk = await E(() => ({ sys: curSys, mode, theme: style, want: SYS[curSys].theme, lay: $('#sw').dataset.lay, n: document.querySelectorAll('#swrow > *').length }));
+    ok(k + ': its own home screen and theme', lk.sys === k && lk.mode === 'chome' && lk.lay === lay && lk.theme === lk.want, lk);
     // controller-style moves: right, then down to the round buttons and back up
     await E(() => {
       chNav('r');

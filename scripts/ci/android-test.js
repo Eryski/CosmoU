@@ -375,15 +375,16 @@ function tga() {
     api.appPick().then(a => (window.__app = a));
   });
   try {
-    await waitText(/^Clock$/, 10000);
+    // an app near the top of the list (Clock on older Androids, Calendar on newer ones)
+    await waitText(/^(Clock|Calendar)$/, 10000);
     await shot('05-app-picker');
-    await tapText(/^Clock$/);
+    await tapText(/^(Clock|Calendar)$/);
   } catch (e) {
     ok('app picker', false, e.message.slice(0, 200));
   }
   await page.waitForTimeout(1200);
   const picked2 = await E(() => window.__app);
-  ok('app picked', picked2 && /^android-app:[\w.]*clock/.test(picked2.path), picked2);
+  ok('app picked', picked2 && /^android-app:[\w.]*(clock|calendar)/.test(picked2.path), picked2);
   const saved = picked2 && (await E(a => api.appSave({ path: a.path, name: 'Test app' }), picked2));
   ok('app added', saved && saved.ok, saved);
   const apps = await E(async () => (await api.scan()).filter(g => g.kind === 'app').map(g => [g.name, g.cover.split('/').pop()]));
