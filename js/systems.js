@@ -143,7 +143,7 @@ function sysFill() {
     applySystem();
     render();
   };
-  const used = sysList().filter(k => sy[k] && (sy[k].emuPath || sy[k].gamesDir || sy[k].pkg));
+  const used = sysList().filter(k => sy[k] && (sy[k].emuPath || sy[k].gamesDir || sy[k].pkg || sy[k].list));
   for (const k of used) {
     const c = sy[k],
       n = games.filter(g => sysOf(g) === k).length;
