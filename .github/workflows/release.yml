@@ -26,6 +26,21 @@ permissions:
   checks: write
 
 jobs:
+  # a manual start with a new tag in "to_release" creates that release first, with .github/release-notes.md as its text
+  release-page:
+    if: github.event_name == 'workflow_dispatch' && inputs.to_release != ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create the release if it isn't there yet
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.to_release }}
+        run: |
+          if gh release view "$TAG" >/dev/null 2>&1; then echo "release $TAG is already there"; exit 0; fi
+          VERSION=$(node -p "require('./package.json').version")
+          gh release create "$TAG" --target "$GITHUB_SHA" --title "CosmoU $VERSION" --notes-file .github/release-notes.md
+
   windows:
     if: github.event_name == 'release' || inputs.platforms == '' || contains(inputs.platforms, 'windows')
     runs-on: windows-latest
