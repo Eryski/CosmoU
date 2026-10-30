@@ -207,10 +207,11 @@
   const listUrl = folder => THUMBS + encodeURIComponent(folder) + '/Named_Boxarts/';
   // Nintendo's eShop search (Europe): square pictures, and every Switch game has its title id there
   const eshopUrl = (title, tid) =>
-    'https://searching.nintendo-europe.com/en/select?rows=8&wt=json&fl=title,application_id_s,image_url_sq_s,image_url,system_names_txt&q=' +
+    'https://searching.nintendo-europe.com/en/select?rows=8&wt=json&fl=title,application_id_s,image_url_sq_s,image_url&q=' +
     encodeURIComponent(title || '*') +
     '&fq=' +
-    encodeURIComponent('type:GAME AND system_names_txt:"Nintendo Switch"' + (tid ? ' AND application_id_s:' + tid.toUpperCase() : ''));
+    // HAC = games for the (first) Switch; Nintendo keeps the title ids in small letters
+    encodeURIComponent('type:GAME AND playable_on_txt:HAC' + (tid ? ' AND application_id_s:' + String(tid).toLowerCase() : ''));
   function eshopPick(json, title, tid) {
     let docs = [];
     try {
