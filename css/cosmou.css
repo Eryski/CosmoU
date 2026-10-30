@@ -8945,7 +8945,8 @@ body:has(.sysw:not([hidden])) .search .qk {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: clamp(10px, 1.6vw, 18px);
-  max-width: min(840px, 100%);
+  /* three rows of channels fit above the round buttons, also on a phone */
+  max-width: min(840px, 100%, calc((100vh - 330px) * 2.2));
   margin: 0 auto;
 }
 .wch {
@@ -8964,6 +8965,7 @@ body:has(.sysw:not([hidden])) .search .qk {
 .wch .art {
   position: absolute;
   inset: 6px;
+  aspect-ratio: auto;
   border-radius: 13px;
   overflow: hidden;
   display: grid;
@@ -9135,7 +9137,7 @@ html.dark .wch.ch-empty {
 .ch-top {
   display: grid;
   grid-template-columns: 46% 1fr;
-  grid-template-rows: auto 1fr;
+  grid-template-rows: auto minmax(0, 1fr);
   gap: 10px 16px;
   align-items: center;
 }
@@ -9147,6 +9149,11 @@ html.dark .wch.ch-empty {
 }
 .top-art {
   aspect-ratio: 1;
+  /* as big as the top screen allows, never taller */
+  height: 100%;
+  max-width: 100%;
+  min-height: 0;
+  justify-self: center;
   border-radius: 10px;
   background-size: cover;
   background-position: center;
@@ -9372,7 +9379,30 @@ html.dark .wch.ch-empty {
   --cc: #a9abb0;
   --cc2: #8e9095;
   border-radius: 4px 4px 8px 8px;
+  background: none;
+  box-shadow: none;
+}
+/* the Game Boy cartridge with its cut corner (drawn behind the label, so the name below and the glow stay visible) */
+.swh[data-cart='gb'] .cart::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background:
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.12) 0 2px, transparent 2px 7px) top/100% 16% no-repeat,
+    linear-gradient(var(--cc), var(--cc2));
   clip-path: polygon(0 0, 86% 0, 100% 12%, 100% 100%, 0 100%);
+  filter: drop-shadow(0 10px 10px rgba(0, 0, 0, 0.4));
+}
+.swh[data-cart='gb'] .cart.on {
+  box-shadow: none;
+}
+.swh[data-cart='gb'] .cart.on::before {
+  background:
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.12) 0 2px, transparent 2px 7px) top/100% 16% no-repeat,
+    linear-gradient(var(--cc), var(--cc2)) padding-box,
+    var(--cyan, #00c3e3) border-box;
+  border: 3px solid transparent;
 }
 .swh[data-cart='gb'] .cart .art {
   top: 22%;

@@ -159,6 +159,12 @@ function chScroll() {
     row.style.transform = `translateX(${wrap.clientWidth / 2 - (i + 0.5) * w + parseFloat(getComputedStyle(row).columnGap || 0) / 2}px)`;
     return;
   }
+  // a short shelf of cartridges stands in the middle
+  const pad = parseFloat(getComputedStyle(wrap).paddingLeft || 0) * 2;
+  if (p.home === 'shelf' && row.scrollWidth <= wrap.clientWidth - pad) {
+    row.style.transform = `translateX(${(wrap.clientWidth - pad - row.lastElementChild.getBoundingClientRect().right + row.firstElementChild.getBoundingClientRect().left) / 2}px)`;
+    return;
+  }
   const vis = Math.max(1, Math.floor((wrap.clientWidth - 40) / w));
   if (i < chFirst) chFirst = i;
   if (i >= chFirst + vis) chFirst = i - vis + 1;
