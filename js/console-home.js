@@ -59,6 +59,12 @@ function buildCHome(l) {
     row = $('#swrow'),
     top = $('#chtop'),
     dots = $('#chdots');
+  // another console: start again on its games, the first round button chosen
+  if (box.dataset.sys !== curSys) {
+    chZone = 'games';
+    chApp = 0;
+    chFirst = 0;
+  }
   box.dataset.lay = p.home;
   box.dataset.sys = curSys;
   box.dataset.variant = p.variant || '';
