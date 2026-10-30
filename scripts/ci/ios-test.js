@@ -323,7 +323,8 @@ setTimeout(() => {
   await E(() => load().then(() => setSystem('switch')));
   await wait(2500);
   const swl = await E(() => ({ sys: curSys, mode, lay: $('#sw').dataset.lay, tiles: document.querySelectorAll('#swrow .sw-t').length, theme: style }));
-  ok('Switch Home on iPhone and iPad', swl && swl.sys === 'switch' && swl.mode === 'chome' && swl.lay === 'row' && swl.tiles === 3, swl);
+  // (apps added earlier in this test are shown with every console, so there can be more than the two games and “All games”)
+  ok('Switch Home on iPhone and iPad', swl && swl.sys === 'switch' && swl.mode === 'chome' && swl.lay === 'row' && swl.tiles >= 3, swl);
   await shot('04b-switch-home');
   await E(() => {
     const g = list().find(x => x.sys === 'switch' && /Odyssey/.test(x.name));
@@ -354,8 +355,13 @@ setTimeout(() => {
   const sys = await bg();
   ok('System follows the iPhone’s dark mode', sys[1] === true, sys);
   trySim('ui', U, 'appearance', 'light');
-  await wait(2500);
-  const sys2 = await bg();
+  // a busy simulator can take a while to tell the app
+  let sys2 = null;
+  for (let i = 0; i < 8; i++) {
+    await wait(2500);
+    sys2 = await bg();
+    if (sys2 && sys2[1] === false) break;
+  }
   ok('… and back to light', sys2[1] === false && sys2[0] === light0[0], sys2);
 
   // ---- music (theme songs come as .m4a; playing them needs byte ranges from the app) ----
