@@ -151,7 +151,7 @@ function fixtures() {
     let arts = null;
     await waitFor(async () => {
       arts = await E(async () => (await api.scan()).filter(g => g.sys).map(g => [g.sys, (g.cover || '').split('/').pop()]));
-      return Array.isArray(arts) && arts.filter(x => x[1]).length >= CONSOLES.length - 1;
+      return Array.isArray(arts) && arts.filter(x => x[1]).length >= CONSOLES.length;
     }, 150000);
     const have = Array.isArray(arts) ? arts.filter(x => x[1]).map(x => x[0]) : [];
     ok('covers: Switch from the eShop', have.includes('switch'), arts);

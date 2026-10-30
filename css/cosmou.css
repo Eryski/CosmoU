@@ -8893,6 +8893,16 @@ body:has(.sysw:not([hidden])) .search {
 body:has(.sysw:not([hidden])) .search .qk {
   display: none;
 }
+/* with the console switcher, long view names ("GameCube Menu") must not push the menu button into a second row */
+@media (max-width: 1240px) {
+  body:has(.sysw:not([hidden])) .search {
+    flex-basis: 150px;
+  }
+  body:has(.sysw:not([hidden])) #vt button {
+    padding-left: 11px;
+    padding-right: 11px;
+  }
+}
 
 /* ---------- console home screens: shared ---------- */
 .swh .ch-top[hidden],
