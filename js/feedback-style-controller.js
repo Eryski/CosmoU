@@ -205,6 +205,7 @@ function padTick(now) {
       }
       if (fire.a) mode === 'chome' ? chA() : launch(cur());
       if (fire.b && mode === 'chome') chB();
+      else if (fire.b && typeof chBackFromAll === 'function') chBackFromAll();
       // L and R change the console (when there is more than one)
       if ((fire.lb || fire.rb) && !isHome() && typeof sysNext === 'function') sysNext(fire.rb ? 1 : -1);
       if (fire.y && cur()) openDetail(cur());

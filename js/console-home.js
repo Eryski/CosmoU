@@ -10,7 +10,9 @@
 let chOrder = [],
   chFirst = 0,
   chZone = 'games',
-  chApp = 0;
+  chApp = 0,
+  // Switch: the "All games" icon after the last twelve games is chosen
+  chAll = false;
 const CH_APPS = [
   ['recent', 'Recently played', '#e8485b', 'M12 7v5l3 2M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18Z', () => document.querySelector('nav button[data-v="recent"]').click()],
   ['themes', 'Themes', '#f0a020', 'M12 3a9 9 0 0 0 0 18c1.2 0 2-.8 2-1.8 0-.5-.2-.9-.5-1.2-.3-.3-.5-.7-.5-1.2 0-1 .8-1.8 1.8-1.8H17a4 4 0 0 0 4-4c0-4.4-4-8-9-8ZM7.5 12.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3Zm3-4a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3Zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3Z', () => openSettings('look')],
@@ -64,6 +66,7 @@ function buildCHome(l) {
     chZone = 'games';
     chApp = 0;
     chFirst = 0;
+    chAll = false;
   }
   box.dataset.lay = p.home;
   box.dataset.sys = curSys;
@@ -71,6 +74,7 @@ function buildCHome(l) {
   box.dataset.cart = p.cart || '';
   let order = chomeOrder(l);
   if (p.home === 'row') order = order.slice(0, 12);
+  else chAll = false;
   if (!order.some(x => x.name === sel) && order[0]) sel = order[0].name;
   chOrder = order;
   const i = Math.max(0, order.findIndex(x => x.name === sel));
@@ -84,10 +88,11 @@ function buildCHome(l) {
     order.forEach((x, k) => row.append(chTile(x, k, 'sw-t')));
     // the last icon opens every game (the Grid)
     const all = document.createElement('button');
-    all.className = 'sw-t sw-all';
+    all.className = 'sw-t sw-all' + (chAll ? ' on' : '');
     all.innerHTML =
-      '<div class="art"><svg viewBox="0 0 24 24"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"/></svg></div><em>All games</em>';
-    all.onclick = () => document.querySelector('#vt button[data-m="grid"]').click();
+      '<div class="art"><svg viewBox="0 0 24 24"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"/></svg><small></small></div><em>All games</em>';
+    all.querySelector('small').textContent = l.length;
+    all.onclick = chOpenAll;
     row.append(all);
   } else if (per) {
     // pages: twelve per page, empty places stay as empty channels / frames
@@ -177,8 +182,9 @@ function chSel(name) {
     b = chOrder.findIndex(x => x.name === name),
     row = $('#swrow');
   sel = name;
+  chAll = false;
   if (mode !== 'chome' || b < 0 || !row.childElementCount || (per && Math.floor(Math.max(0, a) / per) !== Math.floor(b / per))) return render();
-  for (const t of row.children) t.classList.toggle('on', t.dataset.g === name);
+  for (const t of row.children) t.classList.toggle('on', !!t.dataset.g && t.dataset.g === name);
   if (chProfile().home === 'dual') chTop(chOrder[b]);
   chScroll();
 }
@@ -187,7 +193,7 @@ function chScroll() {
     row = $('#swrow'),
     wrap = $('#chwrap');
   if (chPer() || !row.firstElementChild) return;
-  const i = Math.max(0, chOrder.findIndex(x => x.name === sel));
+  const i = chAll ? chOrder.length : Math.max(0, chOrder.findIndex(x => x.name === sel));
   const t0 = row.firstElementChild,
     w = t0.offsetWidth + parseFloat(getComputedStyle(row).columnGap || 0) || 1;
   if (p.home === 'discs' || p.home === 'dual') {
@@ -223,6 +229,24 @@ function chNav(dir) {
     chZoneUi();
     return;
   }
+  // Switch: right of the last of the twelve games is "All games" (A opens every game)
+  if (chProfile().home === 'row') {
+    const last = chOrder.length - 1,
+      at = chOrder.findIndex(x => x.name === sel);
+    if (chAll && dir === 'l') {
+      if (chOrder[last]) chSel(chOrder[last].name);
+      blip('move');
+      return;
+    }
+    if (chAll && dir === 'r') return;
+    if (!chAll && dir === 'r' && at === last) {
+      chAll = true;
+      for (const t of $('#swrow').children) t.classList.toggle('on', t.classList.contains('sw-all'));
+      blip('move');
+      chScroll();
+      return;
+    }
+  }
   const n = chOrder.length,
     cols = chCols(),
     per = chPer(),
@@ -255,7 +279,23 @@ function chA() {
   if (chZone === 'apps') {
     const b = [...document.querySelectorAll('#swapps .sw-a:not([hidden])')][chApp];
     if (b) b.click();
-  } else launch(cur());
+  } else if (chAll) chOpenAll();
+  else launch(cur());
+}
+// every game of this console: the Grid (B there, or the view button, comes back)
+let chFromAll = false;
+function chOpenAll() {
+  blip('open');
+  chAll = false;
+  document.querySelector('#vt button[data-m="grid"]').click();
+  chFromAll = true;
+}
+function chBackFromAll() {
+  if (!chFromAll || mode !== 'grid' || curSys === 'wiiu') return (chFromAll = false);
+  chFromAll = false;
+  blip('back');
+  document.querySelector('#vt button[data-m="chome"]').click();
+  return true;
 }
 // B / Escape: from the round buttons back to the games
 function chB() {
@@ -266,3 +306,7 @@ function chB() {
   return true;
 }
 addEventListener('resize', () => mode === 'chome' && chScroll());
+// the Grid opened from the Switch's "All games": Escape goes back to the Switch Home
+addEventListener('keydown', e => {
+  if (e.key === 'Escape' && mode === 'grid' && e.target.tagName !== 'INPUT' && !document.querySelector('dialog[open]')) chBackFromAll();
+});
