@@ -66,7 +66,7 @@ jobs:
           printf '%s' 'using System;using System.IO;class P{static void Main(string[] a){File.WriteAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"started.txt"),string.Join("\n",a));}}' > "$RUNNER_TEMP/fake/emu.cs"
           "/c/Windows/Microsoft.NET/Framework64/v4.0.30319/csc.exe" -nologo -out:"$(cygpath -w "$RUNNER_TEMP/fake/emu.exe")" "$(cygpath -w "$RUNNER_TEMP/fake/emu.cs")"
           npm install --prefix "$RUNNER_TEMP/pw" playwright-core@1.48.2
-          PW_PATH="$RUNNER_TEMP/pw/node_modules/playwright-core" node scripts/ci/win-test.js "$GITHUB_WORKSPACE\dist\win-unpacked\CosmoU.exe" "$RUNNER_TEMP\wintest" "$RUNNER_TEMP\fake\emu.exe" 2>&1 | tee "$RUNNER_TEMP/wintest.log"
+          PORTABLE_EXE="$(cygpath -w "$(ls dist/CosmoU-Windows-Portable-*.exe | head -1)")" PW_PATH="$RUNNER_TEMP/pw/node_modules/playwright-core" node scripts/ci/win-test.js "$GITHUB_WORKSPACE\dist\win-unpacked\CosmoU.exe" "$RUNNER_TEMP\wintest" "$RUNNER_TEMP\fake\emu.exe" 2>&1 | tee "$RUNNER_TEMP/wintest.log"
           cp "$RUNNER_TEMP/wintest.log" "$RUNNER_TEMP/wintest/test.log" || true
 
       - name: Report the test

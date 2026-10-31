@@ -7,6 +7,47 @@ const https = require('https'),
   crypto = require('crypto'),
   AdmZip = require('adm-zip');
 const P = require('./platform');
+
+// ---------- portable mode ----------
+// The Windows portable .exe keeps everything (settings, covers, music, themes, saves, a downloaded Cemu) in a
+// "CosmoU-data" folder next to itself instead of %APPDATA%\CosmoU. Any other CosmoU does the same when that folder
+// already exists next to the program (or next to the AppImage). This has to happen before Electron uses the folder.
+const PORTABLE_DIR = (() => {
+  const runDir = process.env.PORTABLE_EXECUTABLE_DIR || (process.env.APPIMAGE ? path.dirname(process.env.APPIMAGE) : '') || (app.isPackaged ? path.dirname(process.execPath) : '');
+  if (!runDir) return '';
+  const d = path.join(runDir, 'CosmoU-data');
+  if (!process.env.PORTABLE_EXECUTABLE_DIR && !fs.existsSync(d)) return '';
+  try {
+    fs.mkdirSync(d, { recursive: true });
+    // the folder must be writable (not on a read-only stick or in a protected folder)
+    const t = path.join(d, '.write-test');
+    fs.writeFileSync(t, '');
+    fs.rmSync(t, { force: true });
+    return d;
+  } catch {
+    return '';
+  }
+})();
+if (PORTABLE_DIR) {
+  const old = app.getPath('userData');
+  // the first portable start takes over what an earlier CosmoU kept in %APPDATA% (it stays there as a backup)
+  try {
+    if (!fs.existsSync(path.join(PORTABLE_DIR, 'settings.json')) && fs.existsSync(path.join(old, 'settings.json')) && path.resolve(old) !== path.resolve(PORTABLE_DIR)) {
+      const skip = new Set(['Cache', 'Code Cache', 'GPUCache', 'DawnCache', 'DawnGraphiteCache', 'DawnWebGPUCache', 'Crashpad', 'blob_storage', 'Session Storage', 'Shared Dictionary', 'logs']);
+      for (const f of fs.readdirSync(old)) if (!skip.has(f)) fs.cpSync(path.join(old, f), path.join(PORTABLE_DIR, f), { recursive: true, force: false, errorOnExist: false });
+      // paths that pointed into the old folder (a Cemu CosmoU downloaded, for example) now point into the new one
+      const sf = path.join(PORTABLE_DIR, 'settings.json');
+      const esc = x => JSON.stringify(x).slice(1, -1);
+      const txt = fs.readFileSync(sf, 'utf8');
+      fs.writeFileSync(sf, txt.split(esc(old + path.sep)).join(esc(PORTABLE_DIR + path.sep)));
+    }
+  } catch {}
+  app.setPath('userData', PORTABLE_DIR);
+  app.setPath('sessionData', PORTABLE_DIR);
+  try {
+    app.setPath('crashDumps', path.join(PORTABLE_DIR, 'Crashpad'));
+  } catch {}
+}
 let mainWin = null,
   activeReq = null,
   cancelled = false;
@@ -968,6 +1009,12 @@ ipcMain.handle('cemuInstall', async () => {
     } else {
       new AdmZip(tmp).extractAllTo(cemuDir(), true); // overwrite only, never delete (keeps Cemu settings and saves)
       exe = findExe(cemuDir());
+      // portable CosmoU: Cemu keeps its settings and saves next to itself too (its "portable" folder) –
+      // unless this computer already has Cemu settings in %APPDATA%\Cemu, which would then seem lost
+      if (exe && PORTABLE_DIR && !fs.existsSync(path.join(process.env.APPDATA || path.join(os.homedir(), 'AppData', 'Roaming'), 'Cemu', 'settings.xml')))
+        try {
+          fs.mkdirSync(path.join(path.dirname(exe), 'portable'), { recursive: true });
+        } catch {}
     }
     if (!exe) throw new Error('Cemu was not found in the download.');
     write({ ...read(), cemuPath: exe, cemuManaged: true, cemuVersion: rel.tag_name || '', cemuFound: false });

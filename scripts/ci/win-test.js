@@ -4,7 +4,8 @@
 const { _electron } = require(process.env.PW_PATH || 'playwright-core');
 const fs = require('fs'),
   path = require('path'),
-  os = require('os');
+  os = require('os'),
+  cp = require('child_process');
 
 const EXE = process.argv[2],
   OUT = path.resolve(process.argv[3] || 'win-out'),
@@ -63,11 +64,61 @@ function fixtures() {
   write(path.join(USERDATA, 'settings.json'), JSON.stringify({ gamesDir: '', setupDone: true, onlineCovers: false, systems }));
 }
 
+// the portable .exe keeps everything in "CosmoU-data" next to itself, and takes over an earlier %APPDATA%\CosmoU once
+async function portableTest() {
+  const exe = process.env.PORTABLE_EXE;
+  if (!exe) return;
+  const run = async (dir, until) => {
+    fs.rmSync(dir, { recursive: true, force: true });
+    fs.mkdirSync(dir, { recursive: true });
+    const copy = path.join(dir, path.basename(exe));
+    fs.copyFileSync(exe, copy);
+    const child = cp.spawn(copy, [], { cwd: dir, stdio: 'ignore', detached: false });
+    let got = null;
+    await waitFor(() => (got = until()), 60000);
+    await wait(3000);
+    try {
+      cp.execFileSync('taskkill', ['/F', '/T', '/PID', String(child.pid)], { stdio: 'ignore' });
+    } catch {}
+    try {
+      cp.execFileSync('taskkill', ['/F', '/IM', 'CosmoU.exe'], { stdio: 'ignore' });
+    } catch {}
+    await wait(3000);
+    return got;
+  };
+  const A = path.join(T + '-portable', 'Stick A'),
+    B = path.join(T + '-portable', 'Stick B');
+  fs.rmSync(USERDATA, { recursive: true, force: true });
+  const a = await run(A, () => fs.existsSync(path.join(A, 'CosmoU-data')) && fs.readdirSync(path.join(A, 'CosmoU-data')).length > 2 && fs.readdirSync(path.join(A, 'CosmoU-data')));
+  ok('portable: everything in CosmoU-data next to the .exe', Array.isArray(a) && a.length > 2, a);
+  ok('portable: nothing in %APPDATA%\\CosmoU', !fs.existsSync(USERDATA), fs.existsSync(USERDATA) ? fs.readdirSync(USERDATA) : 'not there');
+  // an earlier CosmoU in %APPDATA%: its settings move along, paths into the old folder are corrected
+  write(path.join(USERDATA, 'settings.json'), JSON.stringify({ gamesDir: 'C:\\Old\\Games', cemuPath: path.join(USERDATA, 'cemu', 'Cemu.exe') }, null, 2));
+  write(path.join(USERDATA, 'covers', 'Old Game.png'), 'png');
+  const sf = path.join(B, 'CosmoU-data', 'settings.json');
+  const b = await run(B, () => {
+    try {
+      // read once CosmoU is running (Chromium has written its own files), not while the settings are being copied
+      if (!fs.existsSync(path.join(B, 'CosmoU-data', 'Local State'))) return null;
+      return JSON.parse(fs.readFileSync(sf, 'utf8'));
+    } catch {
+      return null;
+    }
+  });
+  ok(
+    'portable: takes over the settings from %APPDATA% once',
+    b && b.gamesDir === 'C:\\Old\\Games' && b.cemuPath === path.join(B, 'CosmoU-data', 'cemu', 'Cemu.exe') && fs.existsSync(path.join(B, 'CosmoU-data', 'covers', 'Old Game.png')),
+    b,
+  );
+  fs.rmSync(USERDATA, { recursive: true, force: true });
+}
+
 (async () => {
   fs.mkdirSync(OUT, { recursive: true });
   const log = [];
   let app;
   try {
+    await portableTest();
     fixtures();
     app = await _electron.launch({ executablePath: EXE, env: { ...process.env, COSMOU_DEBUG: '1' }, timeout: 90000 });
     app.process().stderr.on('data', d => log.push(String(d)));
