@@ -93,6 +93,7 @@ async function portableTest() {
   ok('portable: everything in CosmoU-data next to the .exe', Array.isArray(a) && a.length > 2, a);
   ok('portable: nothing in %APPDATA%\\CosmoU', !fs.existsSync(USERDATA), fs.existsSync(USERDATA) ? fs.readdirSync(USERDATA) : 'not there');
   // an earlier CosmoU in %APPDATA%: its settings move along, paths into the old folder are corrected
+  // (the Cemu path then points into CosmoU-data – or CosmoU downloads Cemu there, since this test has none)
   write(path.join(USERDATA, 'settings.json'), JSON.stringify({ gamesDir: 'C:\\Old\\Games', cemuPath: path.join(USERDATA, 'cemu', 'Cemu.exe') }, null, 2));
   write(path.join(USERDATA, 'covers', 'Old Game.png'), 'png');
   const sf = path.join(B, 'CosmoU-data', 'settings.json');
@@ -107,7 +108,7 @@ async function portableTest() {
   });
   ok(
     'portable: takes over the settings from %APPDATA% once',
-    b && b.gamesDir === 'C:\\Old\\Games' && b.cemuPath === path.join(B, 'CosmoU-data', 'cemu', 'Cemu.exe') && fs.existsSync(path.join(B, 'CosmoU-data', 'covers', 'Old Game.png')),
+    b && b.gamesDir === 'C:\\Old\\Games' && String(b.cemuPath).startsWith(path.join(B, 'CosmoU-data') + path.sep) && fs.existsSync(path.join(B, 'CosmoU-data', 'covers', 'Old Game.png')),
     b,
   );
   fs.rmSync(USERDATA, { recursive: true, force: true });

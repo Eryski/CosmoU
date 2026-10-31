@@ -44,6 +44,10 @@ if (PORTABLE_DIR) {
   } catch {}
   app.setPath('userData', PORTABLE_DIR);
   app.setPath('sessionData', PORTABLE_DIR);
+  // Electron makes the usual folder before CosmoU can say otherwise: an empty one is removed again
+  try {
+    if (fs.existsSync(old) && !fs.readdirSync(old).length) fs.rmdirSync(old);
+  } catch {}
   try {
     app.setPath('crashDumps', path.join(PORTABLE_DIR, 'Crashpad'));
   } catch {}
