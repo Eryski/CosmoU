@@ -7,6 +7,8 @@ WUHB="$1"
 OUT="$2"
 mkdir -p "$OUT"
 export HOME="$RUNNER_TEMP/cemu-home"
+# GitHub's runners set XDG_CONFIG_HOME themselves: point everything at the test home
+export XDG_CONFIG_HOME="$HOME/.config" XDG_DATA_HOME="$HOME/.local/share" XDG_CACHE_HOME="$HOME/.cache"
 mkdir -p "$HOME"
 CFG="$HOME/.config/Cemu"
 DATA="$HOME/.local/share/Cemu"
