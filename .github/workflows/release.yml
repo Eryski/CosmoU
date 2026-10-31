@@ -172,7 +172,7 @@ jobs:
   mac:
     if: github.event_name == 'release' || inputs.platforms == '' || contains(inputs.platforms, 'mac')
     # Apple silicon Mac; the .dmg is universal (Apple silicon and Intel)
-    runs-on: macos-14
+    runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
 
