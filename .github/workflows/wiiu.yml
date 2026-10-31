@@ -1,0 +1,85 @@
+# CosmoU for Wii U (an Aroma app, CosmoU.wuhb). Built once for CosmoU 0.13.0 and never updated:
+# this workflow only runs when it is started by hand, the normal release builds (release.yml) never build it,
+# and the app itself has no update check.
+# "Run workflow" builds it and tests it in Cemu; with a tag in "to_release" it also adds the file to that release.
+name: Wii U app (built once)
+
+on:
+  # while it is being built: every push to the wiiu branch (removed once it is released)
+  push:
+    branches: [wiiu]
+  workflow_dispatch:
+    inputs:
+      to_release:
+        description: Add CosmoU-WiiU.wuhb to this existing release (tag like v0.13.0, empty = only build and test)
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+  checks: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: devkitpro/devkitppc:latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: SDL2 for the Wii U
+        run: |
+          dkp-pacman -Syu --noconfirm --needed wiiu-sdl2 wiiu-sdl2_image wiiu-sdl2_mixer wiiu-sdl2_ttf
+          $DEVKITPRO/portlibs/wiiu/bin/powerpc-eabi-pkg-config --libs SDL2_mixer SDL2_ttf SDL2_image sdl2
+
+      - name: Build CosmoU.wuhb
+        run: |
+          make -C wiiu -j4
+          ls -la wiiu/CosmoU.wuhb wiiu/CosmoU.rpx
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cosmou-wiiu
+          path: |
+            wiiu/CosmoU.wuhb
+            wiiu/CosmoU.rpx
+
+  test:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: cosmou-wiiu
+          path: out
+
+      - name: Start it in Cemu
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/ci/wiiu-cemu.sh "$PWD/out/CosmoU.wuhb" "$RUNNER_TEMP/wiiu"
+
+      - name: Report the test
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/ci/report.js "$RUNNER_TEMP/wiiu" wiiu
+
+  release:
+    needs: [build, test]
+    if: github.event_name == 'workflow_dispatch' && inputs.to_release != ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: cosmou-wiiu
+          path: out
+      - name: Name the file
+        run: cp out/CosmoU.wuhb "out/CosmoU-WiiU-${TAG#v}.wuhb"
+        env:
+          TAG: ${{ inputs.to_release }}
+      - name: Add it to the release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.to_release }}
+          files: out/CosmoU-WiiU-*.wuhb
