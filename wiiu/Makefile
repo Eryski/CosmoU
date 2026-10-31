@@ -41,7 +41,7 @@ ICON		:=	icon.png
 TV_SPLASH	:=	tv-splash.png
 DRC_SPLASH	:=	drc-splash.png
 PKGCONF		:=	$(DEVKITPRO)/portlibs/wiiu/bin/powerpc-eabi-pkg-config
-LIBRARIES	:=	SDL2_mixer SDL2_ttf SDL2_image sdl2
+LIBRARIES	:=	SDL2_mixer SDL2_ttf SDL2_image sdl2 libcurl zlib
 
 #-------------------------------------------------------------------------------
 # options for code generation
@@ -57,7 +57,7 @@ CXXFLAGS	:= $(CFLAGS) -std=gnu++17
 ASFLAGS	:=	-g $(ARCH)
 LDFLAGS	=	-g $(ARCH) $(RPXSPECS) -Wl,-Map,$(notdir $*.map)
 
-LIBS	:= `$(PKGCONF) --libs $(LIBRARIES)` -lwut
+LIBS	:= `$(PKGCONF) --libs $(LIBRARIES)` `$(PKGCONF) --libs --static libcurl` -lwut
 
 #-------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level

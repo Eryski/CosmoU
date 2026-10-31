@@ -1,10 +1,11 @@
 #!/bin/bash
 # CosmoU for Wii U in Cemu: starts CosmoU.wuhb with three made-up installed games, lets its test mode walk through the
 # views and themes, takes screenshots and writes results.json for report.js.
-# usage: wiiu-cemu.sh <CosmoU.wuhb> <out folder>      (needs gh, a GitHub token in GH_TOKEN)
+# usage: wiiu-cemu.sh <CosmoU.wuhb> <out folder> [shop base url]      (needs gh, a GitHub token in GH_TOKEN)
 set -u
 WUHB="$1"
 OUT="$2"
+SHOPBASE="${3:-}"
 mkdir -p "$OUT"
 export HOME="$RUNNER_TEMP/cemu-home"
 # GitHub's runners set XDG_CONFIG_HOME themselves: point everything at the test home
@@ -46,7 +47,7 @@ EOF
 
 # three installed games in Cemu's system memory, each with its own icon
 python3 "$(dirname "$0")/wiiu-fake-titles.py" "$DATA/mlc01" | tee -a "$LOG"
-echo "test" > "$DATA/sdcard/cosmou-test.txt"
+{ echo "test"; [ -n "$SHOPBASE" ] && echo "shop=$SHOPBASE"; } > "$DATA/sdcard/cosmou-test.txt"
 
 # start it and take a picture every 8 seconds
 export DISPLAY=:99
@@ -55,7 +56,7 @@ sleep 2
 note "start"
 "$RUNNER_TEMP/Cemu.AppImage" --appimage-extract-and-run -g "$WUHB" > "$OUT/cemu-stdout.txt" 2>&1 &
 CEMU=$!
-for i in $(seq 1 11); do
+for i in $(seq 1 26); do
   sleep 8
   import -window root -resize 960x "$OUT/shot-$(printf %02d $i).png" 2>/dev/null || true
   convert "$OUT/shot-$(printf %02d $i).png" -quality 45 "$OUT/$(printf %02d $i)-cemu.jpg" 2>/dev/null || true
@@ -85,6 +86,11 @@ ok('CosmoU.wuhb built', os.path.getsize(wuhb) > 100000, f'{os.path.getsize(wuhb)
 ok('Cemu starts CosmoU for Wii U', 'games ' in log, log[:400] or 'no test log on the SD card')
 ok('it finds the installed games (names from meta.xml, icons from iconTex.tga)', all(n + ' icon=1' in log for n in ('Sky Harbor Racers', 'Pebble Quest', 'Lantern Keep')), log[:500])
 ok('test mode walks through views and themes', 'step 5' in log, '\n'.join(l for l in log.splitlines() if l.startswith('step')))
+shop = '\n'.join(l for l in log.splitlines() if l.startswith(('shop', 'theme now', 'font now')))
+ok('the shop loads its catalogs (Cemu has internet here)', 'shop catalog ok' in log, shop)
+ok('shop: a theme installed and used', 'shop install classic-wii ok' in log and 'theme now classic-wii' in log, shop)
+ok('shop: a font installed and used', 'font now pixel' in log, shop)
+ok('shop: an emulator installed (NooDS)', 'shop install NooDS ok' in log, shop)
 ok('Cemu log', True, '\n'.join(cemu.splitlines()[-30:]))
 json.dump({'platform': 'wiiu', 'results': res}, open(os.path.join(out, 'results.json'), 'w'), indent=1)
 print(json.dumps(res, indent=1)[:3000])

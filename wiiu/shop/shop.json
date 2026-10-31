@@ -1,0 +1,534 @@
+{
+ "about": "The CosmoU for Wii U shop. Emulators and apps come from the Homebrew App Store catalog by ForTheUsers (hb-app.store); themes and fonts from CosmoU. Only homebrew: no games, ROMs, BIOS files or keys.",
+ "featured": [
+  {
+   "id": "retroarch",
+   "note": "NES · SNES · Game Boy · Game Boy Color · GBA · Virtual Boy · Game & Watch and more, all in one app"
+  },
+  {
+   "id": "NooDS",
+   "note": "Nintendo DS"
+  }
+ ],
+ "nintendo": [
+  "retroarch",
+  "NooDS",
+  "gbiine",
+  "gacubeboy",
+  "PokeMiniU",
+  "Pokemini"
+ ],
+ "emulators": [
+  "CHIP8",
+  "Fake-08",
+  "yapesdl"
+ ],
+ "notes": {
+  "gbiine": "Game Boy · older app for the Homebrew Launcher",
+  "gacubeboy": "Game Boy · older app for the Homebrew Launcher",
+  "PokeMiniU": "Pokémon mini · older app for the Homebrew Launcher",
+  "Pokemini": "Pokémon mini · older app for the Homebrew Launcher"
+ },
+ "themes": [
+  {
+   "id": "classic-wii",
+   "title": "Classic Wii",
+   "desc": "Soft and simple, inspired by the original Wii menu",
+   "version": "1",
+   "colors": [
+    "#f8fafb",
+    "#22aee6",
+    "#3c464e",
+    "#ffffff"
+   ],
+   "size": 831,
+   "files": [
+    {
+     "url": "wiiu/shop/themes/classic-wii/theme.cfg",
+     "path": "themes/classic-wii/theme.cfg"
+    },
+    {
+     "url": "assets/music/themes/classic-wii.ogg",
+     "path": "themes/classic-wii/music.ogg"
+    }
+   ]
+  },
+  {
+   "id": "plaza",
+   "title": "Plaza",
+   "desc": "Warm pastel colors, playful",
+   "version": "1",
+   "colors": [
+    "#fff6ee",
+    "#ff7f57",
+    "#3d2b2b",
+    "#fffcf8"
+   ],
+   "size": 775,
+   "files": [
+    {
+     "url": "wiiu/shop/themes/plaza/theme.cfg",
+     "path": "themes/plaza/theme.cfg"
+    },
+    {
+     "url": "assets/music/themes/plaza.ogg",
+     "path": "themes/plaza/music.ogg"
+    }
+   ]
+  },
+  {
+   "id": "switch2",
+   "title": "Switch 2",
+   "desc": "Rounder and softer, a modern hybrid look",
+   "version": "1",
+   "colors": [
+    "#f7f8fa",
+    "#1ea6ec",
+    "#26282c",
+    "#ffffff"
+   ],
+   "size": 563,
+   "files": [
+    {
+     "url": "wiiu/shop/themes/switch2/theme.cfg",
+     "path": "themes/switch2/theme.cfg"
+    },
+    {
+     "url": "assets/music/themes/switch2.ogg",
+     "path": "themes/switch2/music.ogg"
+    }
+   ]
+  },
+  {
+   "id": "ds",
+   "title": "DS",
+   "desc": "Grid paper, grey boxes and blue corners",
+   "version": "1",
+   "colors": [
+    "#f7f7f7",
+    "#3a66e8",
+    "#2e2e2e",
+    "#ffffff"
+   ],
+   "size": 484,
+   "files": [
+    {
+     "url": "wiiu/shop/themes/ds/theme.cfg",
+     "path": "themes/ds/theme.cfg"
+    },
+    {
+     "url": "assets/music/themes/ds.ogg",
+     "path": "themes/ds/music.ogg"
+    }
+   ]
+  },
+  {
+   "id": "dsi",
+   "title": "DSi",
+   "desc": "White lines, rounded panels, teal accents",
+   "version": "1",
+   "colors": [
+    "#f8f8f8",
+    "#49b3a0",
+    "#333333",
+    "#ffffff"
+   ],
+   "size": 409,
+   "files": [
+    {
+     "url": "wiiu/shop/themes/dsi/theme.cfg",
+     "path": "themes/dsi/theme.cfg"
+    },
+    {
+     "url": "assets/music/themes/dsi.ogg",
+     "path": "themes/dsi/music.ogg"
+    }
+   ]
+  },
+  {
+   "id": "3ds",
+   "title": "3DS",
+   "desc": "Soft grid, framed icons, green corners",
+   "version": "1",
+   "colors": [
+    "#f7f9fb",
+    "#2ea6e0",
+    "#2f3a44",
+    "#ffffff"
+   ],
+   "size": 486,
+   "files": [
+    {
+     "url": "wiiu/shop/themes/3ds/theme.cfg",
+     "path": "themes/3ds/theme.cfg"
+    },
+    {
+     "url": "assets/music/themes/3ds.ogg",
+     "path": "themes/3ds/music.ogg"
+    }
+   ]
+  },
+  {
+   "id": "gamecube",
+   "title": "GameCube",
+   "desc": "Dark indigo glass with a violet glow",
+   "version": "1",
+   "colors": [
+    "#1d1442",
+    "#6b4fd8",
+    "#f1edff",
+    "#261c4e"
+   ],
+   "size": 462,
+   "files": [
+    {
+     "url": "wiiu/shop/themes/gamecube/theme.cfg",
+     "path": "themes/gamecube/theme.cfg"
+    },
+    {
+     "url": "assets/music/themes/gamecube.ogg",
+     "path": "themes/gamecube/music.ogg"
+    }
+   ]
+  },
+  {
+   "id": "gameboy",
+   "title": "Game Boy",
+   "desc": "Everything in four shades of green",
+   "version": "1",
+   "colors": [
+    "#9bbc0f",
+    "#0f380f",
+    "#0f380f",
+    "#b4cc4a"
+   ],
+   "size": 383,
+   "files": [
+    {
+     "url": "wiiu/shop/themes/gameboy/theme.cfg",
+     "path": "themes/gameboy/theme.cfg"
+    },
+    {
+     "url": "assets/music/themes/gameboy.ogg",
+     "path": "themes/gameboy/music.ogg"
+    }
+   ]
+  },
+  {
+   "id": "virtualboy",
+   "title": "Virtual Boy",
+   "desc": "Red on black, nothing else",
+   "version": "1",
+   "colors": [
+    "#080000",
+    "#d40000",
+    "#ff2a2a",
+    "#120000"
+   ],
+   "size": 584,
+   "files": [
+    {
+     "url": "wiiu/shop/themes/virtualboy/theme.cfg",
+     "path": "themes/virtualboy/theme.cfg"
+    },
+    {
+     "url": "assets/music/themes/virtualboy.ogg",
+     "path": "themes/virtualboy/music.ogg"
+    }
+   ]
+  },
+  {
+   "id": "snes",
+   "title": "SNES",
+   "desc": "Light grey plastic with lavender and purple",
+   "version": "1",
+   "colors": [
+    "#ededf2",
+    "#5b4fc4",
+    "#2c2a38",
+    "#f8f8fb"
+   ],
+   "size": 629,
+   "files": [
+    {
+     "url": "wiiu/shop/themes/snes/theme.cfg",
+     "path": "themes/snes/theme.cfg"
+    },
+    {
+     "url": "assets/music/themes/snes.ogg",
+     "path": "themes/snes/music.ogg"
+    }
+   ]
+  },
+  {
+   "id": "nes",
+   "title": "NES",
+   "desc": "Grey and black, boxy, with red accents",
+   "version": "1",
+   "colors": [
+    "#e0e0e0",
+    "#c8102e",
+    "#161616",
+    "#f0f0f0"
+   ],
+   "size": 375,
+   "files": [
+    {
+     "url": "wiiu/shop/themes/nes/theme.cfg",
+     "path": "themes/nes/theme.cfg"
+    },
+    {
+     "url": "assets/music/themes/nes.ogg",
+     "path": "themes/nes/music.ogg"
+    }
+   ]
+  },
+  {
+   "id": "gameandwatch",
+   "title": "Game & Watch",
+   "desc": "Silver LCD, black segments, red buttons",
+   "version": "1",
+   "colors": [
+    "#c9cdb9",
+    "#a8211c",
+    "#1b1c18",
+    "#d5d9c6"
+   ],
+   "size": 505,
+   "files": [
+    {
+     "url": "wiiu/shop/themes/gameandwatch/theme.cfg",
+     "path": "themes/gameandwatch/theme.cfg"
+    },
+    {
+     "url": "assets/music/themes/gameandwatch.ogg",
+     "path": "themes/gameandwatch/music.ogg"
+    }
+   ]
+  },
+  {
+   "id": "gbpocket",
+   "title": "Game Boy Pocket",
+   "desc": "Slim and silver with a crisp grey-green screen",
+   "version": "1",
+   "colors": [
+    "#c4cfa1",
+    "#1f1f1f",
+    "#1f1f1f",
+    "#d3dcb4"
+   ],
+   "size": 546,
+   "files": [
+    {
+     "url": "wiiu/shop/themes/gbpocket/theme.cfg",
+     "path": "themes/gbpocket/theme.cfg"
+    },
+    {
+     "url": "assets/music/themes/gbpocket.ogg",
+     "path": "themes/gbpocket/music.ogg"
+    }
+   ]
+  },
+  {
+   "id": "gbcolor",
+   "title": "Game Boy Color",
+   "desc": "Atomic purple plastic and bright colors",
+   "version": "1",
+   "colors": [
+    "#f1eaff",
+    "#6a35d1",
+    "#2a1760",
+    "#f6f1ff"
+   ],
+   "size": 409,
+   "files": [
+    {
+     "url": "wiiu/shop/themes/gbcolor/theme.cfg",
+     "path": "themes/gbcolor/theme.cfg"
+    },
+    {
+     "url": "assets/music/themes/gbcolor.ogg",
+     "path": "themes/gbcolor/music.ogg"
+    }
+   ]
+  },
+  {
+   "id": "gba",
+   "title": "Game Boy Advance",
+   "desc": "Indigo plastic, a wide screen, deep colors",
+   "version": "1",
+   "colors": [
+    "#e9ecfa",
+    "#2c3ab0",
+    "#151a4a",
+    "#eff1fc"
+   ],
+   "size": 546,
+   "files": [
+    {
+     "url": "wiiu/shop/themes/gba/theme.cfg",
+     "path": "themes/gba/theme.cfg"
+    },
+    {
+     "url": "assets/music/themes/gba.ogg",
+     "path": "themes/gba/music.ogg"
+    }
+   ]
+  },
+  {
+   "id": "gbasp",
+   "title": "Game Boy Advance SP",
+   "desc": "Pearl blue and silver with a front light",
+   "version": "1",
+   "colors": [
+    "#eef3fa",
+    "#2a67b8",
+    "#1b2a40",
+    "#f8fbff"
+   ],
+   "size": 582,
+   "files": [
+    {
+     "url": "wiiu/shop/themes/gbasp/theme.cfg",
+     "path": "themes/gbasp/theme.cfg"
+    },
+    {
+     "url": "assets/music/themes/gbasp.ogg",
+     "path": "themes/gbasp/music.ogg"
+    }
+   ]
+  },
+  {
+   "id": "gbmicro",
+   "title": "Game Boy Micro",
+   "desc": "Brushed metal, tiny and sleek",
+   "version": "1",
+   "colors": [
+    "#e4e6ea",
+    "#b92a21",
+    "#15181d",
+    "#eceef1"
+   ],
+   "size": 487,
+   "files": [
+    {
+     "url": "wiiu/shop/themes/gbmicro/theme.cfg",
+     "path": "themes/gbmicro/theme.cfg"
+    },
+    {
+     "url": "assets/music/themes/gbmicro.ogg",
+     "path": "themes/gbmicro/music.ogg"
+    }
+   ]
+  }
+ ],
+ "fonts": [
+  {
+   "id": "rounded",
+   "title": "Rounded",
+   "desc": "M PLUS Rounded 1c: round and friendly, like a console menu",
+   "author": "The M+ Fonts Project",
+   "version": "1",
+   "license": "OFL-1.1",
+   "size": 6937,
+   "files": [
+    {
+     "url": "wiiu/shop/fonts/rounded/regular.ttf",
+     "path": "fonts/rounded/regular.ttf"
+    },
+    {
+     "url": "wiiu/shop/fonts/rounded/bold.ttf",
+     "path": "fonts/rounded/bold.ttf"
+    },
+    {
+     "url": "wiiu/shop/fonts/rounded/OFL.txt",
+     "path": "fonts/rounded/OFL.txt"
+    }
+   ]
+  },
+  {
+   "id": "soft",
+   "title": "Soft",
+   "desc": "Varela Round: soft and simple",
+   "author": "Varela Round Project Authors",
+   "version": "1",
+   "license": "OFL-1.1",
+   "size": 137,
+   "files": [
+    {
+     "url": "wiiu/shop/fonts/soft/regular.ttf",
+     "path": "fonts/soft/regular.ttf"
+    },
+    {
+     "url": "wiiu/shop/fonts/soft/OFL.txt",
+     "path": "fonts/soft/OFL.txt"
+    }
+   ]
+  },
+  {
+   "id": "pixel",
+   "title": "Pixel",
+   "desc": "Silkscreen: a small pixel font, retro and readable",
+   "author": "Jason Kottke",
+   "version": "1",
+   "license": "OFL-1.1",
+   "size": 67,
+   "files": [
+    {
+     "url": "wiiu/shop/fonts/pixel/regular.ttf",
+     "path": "fonts/pixel/regular.ttf"
+    },
+    {
+     "url": "wiiu/shop/fonts/pixel/bold.ttf",
+     "path": "fonts/pixel/bold.ttf"
+    },
+    {
+     "url": "wiiu/shop/fonts/pixel/OFL.txt",
+     "path": "fonts/pixel/OFL.txt"
+    }
+   ]
+  },
+  {
+   "id": "arcade",
+   "title": "Arcade",
+   "desc": "Press Start 2P: big 8-bit letters like old arcade games",
+   "author": "CodeMan38",
+   "version": "1",
+   "license": "OFL-1.1",
+   "size": 123,
+   "files": [
+    {
+     "url": "wiiu/shop/fonts/arcade/regular.ttf",
+     "path": "fonts/arcade/regular.ttf"
+    },
+    {
+     "url": "wiiu/shop/fonts/arcade/OFL.txt",
+     "path": "fonts/arcade/OFL.txt"
+    }
+   ]
+  },
+  {
+   "id": "condensed",
+   "title": "Condensed",
+   "desc": "Barlow Condensed: narrow and clean, long names fit",
+   "author": "Jeremy Tribby",
+   "version": "1",
+   "license": "OFL-1.1",
+   "size": 217,
+   "files": [
+    {
+     "url": "wiiu/shop/fonts/condensed/regular.ttf",
+     "path": "fonts/condensed/regular.ttf"
+    },
+    {
+     "url": "wiiu/shop/fonts/condensed/bold.ttf",
+     "path": "fonts/condensed/bold.ttf"
+    },
+    {
+     "url": "wiiu/shop/fonts/condensed/OFL.txt",
+     "path": "fonts/condensed/OFL.txt"
+    }
+   ]
+  }
+ ]
+}
