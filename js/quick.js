@@ -81,70 +81,90 @@ function quickBuild() {
   }
   $('#qmrec').hidden = !l.length;
   head.hidden = !l.length;
-  // quick switches
-  const tg = $('#qmtg');
-  tg.replaceChildren();
-  const sw = (ic, col, label, on, sub, fn) => {
-    const b = document.createElement('button'),
-      i = document.createElement('i'),
-      t = document.createElement('span'),
-      x = document.createElement('b'),
-      y = document.createElement('small');
-    b.type = 'button';
-    b.className = 'qmt' + (on ? ' on' : '');
-    b.setAttribute('aria-pressed', String(on));
-    i.className = 'mi';
-    i.style.setProperty('--c', col);
-    i.innerHTML = QI[ic];
-    x.textContent = label;
-    y.textContent = sub;
-    t.append(x, y);
-    b.append(i, t);
-    b.onclick = () => {
+  // Look, Sound and System: rows with a switch (on/off) or an arrow (opens a window)
+  const look = $('#qmtg'),
+    snd = $('#qmsnd');
+  look.replaceChildren();
+  snd.replaceChildren();
+  const sw = (box, ic, col, label, on, sub, fn) =>
+    qmRow(box, ic, col, label, sub, () => {
       fn();
       setTimeout(quickBuild, 60);
-    };
-    tg.append(b);
-  };
-  sw('music', '#f29a3c', 'Menu music', musicOn, musicOn ? 'On' : 'Off', () => $('#mt').click());
-  sw('sound', '#e57ac0', 'UI sounds', qOn('#uis'), qOn('#uis') ? 'On' : 'Off', () => $('#uis').click());
-  sw('cube', '#8a6cf0', '3D cases', qOn('#hvc'), qOn('#hvc') ? 'On hover' : 'Off', () => $('#hvc').click());
-  sw('tv', '#16b3d9', 'TV mode', !!tv, (tv ? 'On · ' : 'Off · ') + TV_KEY, () => toggleTv());
+    }, on);
+  qmRow(look, 'palette', '#e57ac0', 'Themes', themeName(), () => {
+    $('#qmdlg').close();
+    openSettings('look');
+  });
+  sw(look, 'tv', '#16b3d9', 'TV mode', !!tv, (tv ? 'On · ' : 'Off · ') + TV_KEY, () => toggleTv());
+  if ($('#hvc') && !IS_MOBILE) sw(look, 'cube', '#8a6cf0', '3D cases', qOn('#hvc'), qOn('#hvc') ? 'On hover' : 'Off', () => $('#hvc').click());
+  // the plaza and its buddies belong to the Wii U Look
+  if (typeof curSys !== 'string' || curSys === 'wiiu') {
+    qmRow(look, 'buddy', '#3aa86b', 'Buddy maker', 'Your buddies on the plaza', () => {
+      $('#qmdlg').close();
+      openBuddies();
+    });
+    qmRow(look, 'post', '#1e8fe0', 'Plaza posts', 'What the buddies say', () => {
+      $('#qmdlg').close();
+      openPosts();
+    });
+  }
+  sw(snd, 'music', '#f29a3c', 'Menu music', musicOn, musicOn ? String(musicName || 'On').replace(/ · .*$/, '') : 'Off', () => $('#mt').click());
+  sw(snd, 'sound', '#e57ac0', 'UI sounds', qOn('#uis'), qOn('#uis') ? 'Clicks and moves' : 'Off', () => $('#uis').click());
   // light / dark and the music volume
   document.querySelectorAll('#qmlook button').forEach(b => b.classList.toggle('on', b.dataset.t === theme));
   const v = Math.round(musicVol() * 100);
   $('#qmvol').value = v;
   $('#qmvolo').textContent = v + '%';
 }
+// one row of the Quick Menu: an icon, a name with a short line below, and a switch (on/off) or an arrow
+function qmRow(box, ic, col, label, sub, fn, on, cls) {
+  const b = document.createElement('button'),
+    i = document.createElement('i'),
+    t = document.createElement('span'),
+    x = document.createElement('b'),
+    y = document.createElement('small'),
+    end = document.createElement('em');
+  b.type = 'button';
+  b.className = 'qmr' + (on === undefined ? '' : ' tgl') + (on ? ' on' : '') + (cls ? ' ' + cls : '');
+  if (on !== undefined) b.setAttribute('aria-pressed', String(!!on));
+  i.className = 'mi';
+  i.style.setProperty('--c', col);
+  i.innerHTML = QI[ic];
+  x.textContent = label;
+  y.textContent = sub || '';
+  y.hidden = !sub;
+  t.append(x, y);
+  end.className = on === undefined ? 'go' : 'sw';
+  end.textContent = on === undefined ? '›' : '';
+  b.append(i, t, end);
+  b.onclick = fn;
+  box.append(b);
+  return b;
+}
 function quickGo() {
   const box = $('#qmgo');
-  const go = (ic, col, label, fn) => {
-    const b = document.createElement('button'),
-      i = document.createElement('i'),
-      t = document.createElement('span');
-    b.type = 'button';
-    b.className = 'qmo';
-    i.className = 'mi';
-    i.style.setProperty('--c', col);
-    i.innerHTML = QI[ic];
-    t.textContent = label;
-    b.append(i, t);
-    b.onclick = () => {
-      $('#qmdlg').close();
-      fn();
-    };
-    box.append(b);
-  };
-  go('gear', '#8b959e', 'Settings', () => openSettings());
-  go('palette', '#e57ac0', 'Themes', () => openSettings('look'));
-  go('log', '#8a6cf0', 'Daily Log', () => openLog());
-  go('buddy', '#3aa86b', 'Buddy maker', () => openBuddies());
-  go('post', '#1e8fe0', 'Plaza posts', () => openPosts());
-  go('pad', '#16b3d9', 'Controllers', () => openSettings('controls'));
-  go('keys', '#5c6a75', 'Shortcuts', () => openKeys());
-  go('bug', '#e5534b', 'Feedback', () => openFeedback());
-  go('chat', '#5865f2', 'Community', () => (window.api ? api.openDiscord() : window.open(DISCORD_URL, '_blank')));
-  go('quit', '#c0392b', 'Quit CosmoU', () => window.close());
+  const go = (ic, col, label, sub, fn, cls) =>
+    qmRow(
+      box,
+      ic,
+      col,
+      label,
+      sub,
+      () => {
+        $('#qmdlg').close();
+        fn();
+      },
+      undefined,
+      cls,
+    );
+  go('gear', '#8b959e', 'Settings', 'Everything in one place', () => openSettings());
+  go('pad', '#16b3d9', 'Controllers', 'Buttons and profiles', () => openSettings('controls'));
+  if (!IS_MOBILE) go('keys', '#5c6a75', 'Shortcuts', 'Keyboard and controller', () => openKeys());
+  go('log', '#8a6cf0', 'Daily Log', 'How long you played', () => openLog());
+  go('bug', '#e5534b', 'Feedback', 'Report a bug or an idea', () => openFeedback());
+  go('chat', '#5865f2', 'Community', 'The CosmoU Discord', () => (window.api ? api.openDiscord() : window.open(DISCORD_URL, '_blank')));
+  // (iPhone and iPad apps are never quit by themselves)
+  if (!IS_IOS) go('quit', '#c0392b', 'Quit CosmoU', '', () => window.close(), 'danger');
 }
 quickGo();
 document.querySelectorAll('#qmlook button').forEach(
@@ -170,7 +190,7 @@ function openQuick() {
   quickBuild();
   blip('open');
   $('#qmdlg').showModal();
-  const f = $('#qmrec .qmg') || $('#qmtg .qmt');
+  const f = $('#qmrec .qmg') || $('#qmtg .qmr');
   if (f) f.focus();
 }
 $('#qmx').onclick = () => $('#qmdlg').close();

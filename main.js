@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog, shell, nativeImage, nativeTheme, Menu } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, shell, nativeImage, nativeTheme, Menu, screen } = require('electron');
 const fs = require('fs'),
   path = require('path'),
   { pathToFileURL } = require('url'),
@@ -542,7 +542,13 @@ ipcMain.handle('setAutoSaveBackup', (_, v) => {
 ipcMain.handle('setTvMode', (_, on) => {
   if (!mainWin || mainWin.isDestroyed()) return false;
   mainWin.setFullScreen(!!on);
-  mainWin.webContents.setZoomFactor(on ? 1.3 : 1);
+  // bigger on a big screen (readable from the sofa), normal size on a small one like the Steam Deck
+  let z = 1.3;
+  try {
+    const { width } = screen.getDisplayMatching(mainWin.getBounds()).size;
+    z = Math.round(Math.max(1, Math.min(1.5, width / 1400)) * 100) / 100;
+  } catch {}
+  mainWin.webContents.setZoomFactor(on ? z : 1);
   return !!on;
 });
 // ---------- Play time / Daily Log: a session lasts from launch until Cemu (or the app) closes ----------

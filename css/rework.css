@@ -1,0 +1,747 @@
+/* CosmoU – the UI rework: one set of building blocks for every window, every theme and every way to control it.
+   Loaded after cosmou.css. The themes still choose the colours (their tokens --ink, --mute, --card, --cardline,
+   --field, --dlg, --act1/--act2/--acttx, --wsel); this file sets spacing, type, shapes, hierarchy and motion,
+   so Library, Details, Settings, Quick Menu and the special windows look like they come from one product.
+   Rules of thumb: one main action per moment (Play is always the strongest button), secondary actions are quiet,
+   glass only where it adds atmosphere, text and controls always readable, everything reachable with a controller. */
+
+/* ===================================================================
+   1. Tokens
+   =================================================================== */
+:root {
+  /* spacing: a 4 px grid */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-7: 28px;
+  --sp-8: 32px;
+  /* type */
+  --fs-xs: 11.5px;
+  --fs-sm: 13px;
+  --fs-md: 14.5px;
+  --fs-lg: 17px;
+  --fs-xl: 22px;
+  --fs-2xl: 28px;
+  /* shapes */
+  --r-sm: 10px;
+  --r-md: 14px;
+  --r-lg: 20px;
+  --r-xl: 30px;
+  --r-pill: 999px;
+  /* control heights */
+  --h-sm: 34px;
+  --h-md: 42px;
+  --h-lg: 52px;
+  /* elevation */
+  --e-1: 0 1px 2px rgba(0, 0, 0, 0.06), 0 4px 10px -6px rgba(0, 0, 0, 0.18);
+  --e-2: 0 10px 28px -14px rgba(0, 0, 0, 0.32);
+  --e-3: 0 28px 70px -28px rgba(0, 0, 0, 0.5);
+  /* motion: quick and calm, a light settle instead of a bounce */
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-pop: cubic-bezier(0.3, 1.18, 0.5, 1);
+  --t-1: 0.14s;
+  --t-2: 0.22s;
+  --t-3: 0.34s;
+}
+/* names for what the theme colours are used for (on body, so every theme's own values are used) */
+body {
+  --accent: var(--act2, #12b4cc);
+  --accent-hi: var(--act1, #43d9ee);
+  --on-accent: var(--acttx, #02262d);
+  --surface: var(--card, rgba(255, 255, 255, 0.95));
+  --line: var(--cardline, rgba(16, 50, 80, 0.14));
+  --fill: var(--field, rgba(16, 50, 80, 0.08));
+  --text: var(--ink);
+  --text-2: var(--mute);
+  --ring: var(--wsel, var(--act2, #12b4cc));
+}
+
+/* ===================================================================
+   2. Building blocks
+   =================================================================== */
+/* one focus ring everywhere (mouse clicks don't show it, keyboard and controller do) */
+:is(button, input, select, textarea, a, [tabindex], .tile):focus-visible {
+  outline: 3px solid var(--ring);
+  outline-offset: 3px;
+}
+body.padnav :is(button, input, select, a, [tabindex]):focus {
+  outline: 3px solid var(--ring);
+  outline-offset: 3px;
+}
+/* buttons: secondary by default, .main / .pri is the one main action, .quiet is a text button */
+.btn {
+  min-height: var(--h-md);
+  padding: 0 var(--sp-5);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  font-size: var(--fs-md);
+  transition:
+    background var(--t-1),
+    box-shadow var(--t-1),
+    transform var(--t-1) var(--ease);
+}
+.btn:active {
+  transform: scale(0.97);
+}
+.btn.quiet {
+  background: transparent;
+  color: var(--text-2);
+  box-shadow: none;
+}
+.btn.quiet:hover {
+  background: var(--fill);
+  color: var(--text);
+}
+/* hover never "shouts": the ripple on the big buttons is gone, a small lift is enough */
+.play:hover {
+  animation: none;
+  transform: translateY(-1px);
+}
+/* Play is always the strongest button. Liquid Glass (and own themes) had Play and Details look the same:
+   Play now gets the theme's accent, Details stays clear glass */
+html body:not(.classic):not(.theme-plaza) :is(#play, #cfplay, #dplay).glass.pill,
+html body:not(.classic):not(.theme-plaza) #wplay {
+  color: var(--on-accent);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent-hi) 85%, #fff), var(--accent));
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.75),
+    inset 0 -10px 16px -12px rgba(0, 40, 60, 0.45),
+    0 0 0 1px color-mix(in srgb, var(--accent) 55%, transparent),
+    0 14px 28px -14px color-mix(in srgb, var(--accent) 85%, transparent);
+}
+html body:not(.classic):not(.theme-plaza) :is(#play, #cfplay, #dplay).glass.pill::after {
+  opacity: 0.55;
+}
+html body:not(.classic):not(.theme-plaza) :is(#play, #cfplay, #dplay).glass.pill:hover,
+html body:not(.classic):not(.theme-plaza) #wplay:hover {
+  filter: brightness(1.04) saturate(1.05);
+}
+/* the second button next to Play is a little smaller */
+:is(#more, #cfmore).play {
+  padding-left: 28px;
+  padding-right: 28px;
+  font-weight: 600;
+}
+/* chips (format, region, status) */
+.cmc {
+  line-height: 1.6;
+}
+/* thin, quiet scrollbars everywhere */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--mute) 45%, transparent) transparent;
+}
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  border: 3px solid transparent;
+  border-radius: 99px;
+  background: color-mix(in srgb, var(--mute) 45%, transparent) padding-box;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+/* every window: the same corner, the same close button, the same entrance */
+:is(#det, #dlg, #qmdlg, #gpdlg, #svdlg, #keysdlg, #fbdlg, #logdlg, #bdlg, #postdlg, #updlg, #mapdlg, #stdlg, #appdlg) {
+  border-radius: var(--r-xl);
+}
+.dx {
+  width: 36px;
+  height: 36px;
+  transition:
+    background var(--t-1),
+    transform var(--t-2) var(--ease);
+}
+dialog[open]:not(.cmenu):not(.cpick) {
+  animation: dlgIn var(--t-3) var(--ease) both;
+}
+@keyframes dlgIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  dialog[open]:not(.cmenu):not(.cpick) {
+    animation: none;
+  }
+}
+
+/* ===================================================================
+   3. Library: Covers, Grid, empty states
+   =================================================================== */
+/* Covers: the chosen game's name and its buttons in one calm column */
+.cfmeta small {
+  margin: 4px 0 18px;
+}
+.cfmeta .acts {
+  gap: var(--sp-3);
+}
+/* Grid: a calm banner – the cover sharp on the left, its colours softly blurred behind (no giant pixels) */
+.hero {
+  height: clamp(190px, 30vh, 290px);
+  border-radius: var(--r-xl);
+}
+.hero.blur .bgimg {
+  filter: blur(40px) saturate(1.05) brightness(0.9);
+  transform: translate(var(--px, 0), var(--py, 0)) scale(1.3);
+}
+body.pal-gb .hero.blur .bgimg,
+body.pal-vb .hero.blur .bgimg {
+  filter: url(#gbpal) blur(34px);
+}
+body.pal-vb .hero.blur .bgimg {
+  filter: url(#vbpal) blur(34px);
+}
+.hero.blur::before {
+  background:
+    linear-gradient(90deg, rgba(6, 18, 30, 0.66), rgba(6, 18, 30, 0.38) 60%, rgba(6, 18, 30, 0.26)),
+    linear-gradient(0deg, rgba(6, 18, 30, 0.35), transparent 60%);
+}
+.hero .in {
+  align-items: center;
+  gap: var(--sp-5);
+}
+/* the banner's inner row fills its height, so the cover can be as tall as the banner allows */
+.hero.blur {
+  align-items: stretch;
+}
+.hero.blur .in {
+  flex-wrap: nowrap;
+}
+.hero .hcov {
+  flex: none;
+  height: 100%;
+  aspect-ratio: var(--ar, 0.75);
+  border-radius: var(--r-md);
+  background-size: cover;
+  background-position: center;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.35),
+    0 18px 30px -14px rgba(0, 0, 0, 0.6);
+  display: grid;
+  place-items: center;
+  font: 800 30px var(--head);
+  color: #fff;
+}
+.hero .hcov .art-name {
+  display: none;
+}
+.hero:not(.blur) .hcov {
+  display: none;
+}
+.hero .in > div:not(.acts):not(.hcov) {
+  flex: 1;
+  min-width: 0;
+}
+.hero h3 {
+  font-size: clamp(26px, 3.3vw, 42px);
+  overflow-wrap: anywhere;
+}
+.hero .acts {
+  gap: var(--sp-3);
+}
+/* empty states lead somewhere: a clear title, one sentence, the next step as a button */
+.empty {
+  max-width: 470px;
+  padding: var(--sp-8) var(--sp-8) var(--sp-7);
+  border-radius: var(--r-xl);
+}
+.empty .in {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.empty .eic {
+  width: 56px;
+  height: 56px;
+  margin-bottom: var(--sp-3);
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--fill);
+  color: var(--accent);
+}
+.empty .eic svg {
+  width: 26px;
+  height: 26px;
+}
+.empty h3 {
+  font-size: var(--fs-xl);
+}
+.empty p {
+  max-width: 34ch;
+  margin: var(--sp-2) auto var(--sp-5);
+}
+.empty .eacts {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--sp-2);
+}
+#empty #eall {
+  margin-top: 0;
+}
+
+/* ===================================================================
+   4. Game details: cover and title, Play first, a quiet tool row, the rest as rows
+   =================================================================== */
+#det {
+  width: min(760px, 95vw);
+  max-height: 92vh;
+  overflow-y: auto;
+}
+#det .in.det {
+  gap: var(--sp-4);
+  padding: var(--sp-7) var(--sp-7) var(--sp-6);
+}
+.dhead {
+  gap: var(--sp-6);
+}
+.dhead .box3d {
+  --bw: 150px;
+}
+#det #dt {
+  margin: var(--sp-1) 0 var(--sp-3);
+}
+.dchips {
+  margin-bottom: var(--sp-4);
+}
+#det #dplay {
+  min-width: 170px;
+  height: var(--h-lg);
+}
+/* favorite: a quiet toggle next to Play, not a second big button */
+#det .dfav {
+  height: var(--h-lg);
+  padding: 0 var(--sp-4);
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--line);
+  color: var(--text);
+  font-weight: 600;
+}
+#det .dfav:hover {
+  background: var(--fill);
+}
+#det .dfav.on {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, #f2b01e 60%, var(--line));
+}
+/* play statistics: four small numbers once there is something to count, one quiet line before that */
+.dstats {
+  gap: var(--sp-2);
+}
+.dst {
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--r-md);
+}
+.dst b {
+  font-size: 17px;
+}
+.dstats.fresh {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: var(--r-md);
+  background: var(--fill);
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+}
+.dstats.fresh svg {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  opacity: 0.8;
+}
+/* tools: one row of equal, quiet buttons */
+.dtools {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--sp-2);
+}
+.dtl {
+  gap: var(--sp-3);
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--r-md);
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.dtl:hover {
+  background: var(--fill);
+}
+.dtl .mi {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+}
+.dtl .mi svg {
+  width: 19px;
+  height: 19px;
+}
+.dtl b {
+  font-size: var(--fs-sm);
+}
+.dtl small {
+  font-size: var(--fs-xs);
+}
+/* save data and updates read like settings rows: one card, two rows */
+#det .sv {
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+#det .sv .btn {
+  min-height: var(--h-sm);
+  padding: 0 var(--sp-4);
+  font-size: var(--fs-sm);
+}
+#det #dsv:not([hidden]) + #dup:not([hidden]) {
+  margin-top: calc(-1 * var(--sp-4));
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  box-shadow:
+    inset 1px 0 0 var(--line),
+    inset -1px 0 0 var(--line),
+    inset 0 -1px 0 var(--line),
+    inset 0 1px 0 var(--line);
+}
+#det #dsv:not([hidden]):has(+ #dup:not([hidden])) {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+/* ===================================================================
+   5. Settings: a calm category bar, a search you can't miss, the same rows everywhere
+   =================================================================== */
+.sx-side {
+  padding-top: var(--sp-6);
+}
+.sx-q {
+  padding: 0 var(--sp-3);
+  min-height: var(--h-md);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  margin-bottom: var(--sp-4);
+}
+.sx-q kbd {
+  flex: none;
+  padding: 1px 6px;
+  border-radius: 6px;
+  font: 700 11px/18px var(--head);
+  color: var(--mute);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--mute) 40%, transparent);
+  transition: opacity var(--t-1);
+}
+.sx-q:focus-within kbd {
+  opacity: 0;
+}
+/* the category icons only show their colour on the open category (and on hover) */
+.sx-nav button:not(.on) .ci {
+  filter: grayscale(0.85) brightness(1.08);
+  opacity: 0.72;
+  box-shadow: none;
+  transition:
+    filter var(--t-2),
+    opacity var(--t-2);
+}
+.sx-nav button:not(.on):hover .ci {
+  filter: none;
+  opacity: 1;
+}
+.sx-nav button {
+  padding: 7px 10px;
+  border-radius: var(--r-md);
+  font-size: var(--fs-md);
+}
+.sx-nav button.on {
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 30%, var(--line));
+}
+/* focus inside the category bar: an inner ring, not a loud outline around it */
+.sx-nav button:focus-visible,
+body.padnav .sx-nav button:focus {
+  outline: 2px solid var(--ring);
+  outline-offset: -2px;
+}
+.sx-hd {
+  padding: var(--sp-7) var(--sp-8) var(--sp-3);
+}
+.sx-hd p {
+  font-size: var(--fs-sm);
+}
+.grp {
+  border-radius: var(--r-lg);
+}
+.grp .set {
+  padding: var(--sp-4) var(--sp-5);
+}
+.sx-stat .st {
+  border-radius: var(--r-lg);
+}
+
+/* ===================================================================
+   6. Theme gallery: big cards with a picture of each theme
+   =================================================================== */
+/* the mini previews were drawn but 0 px wide inside the cards – now they fill the card */
+.thc .pv {
+  align-self: stretch;
+  width: 100%;
+  margin-bottom: var(--sp-2);
+  border-radius: var(--r-md);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+}
+.sx-bd .themes {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--sp-3);
+}
+@media (max-width: 760px) {
+  .sx-bd .themes {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.thc {
+  padding: var(--sp-2) var(--sp-2) var(--sp-3);
+  border-radius: var(--r-lg);
+  transition:
+    box-shadow var(--t-2),
+    background var(--t-2),
+    transform var(--t-2) var(--ease);
+}
+.thc .thd {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.thc.on::after {
+  top: 16px;
+  right: 16px;
+  animation-timing-function: var(--ease-pop);
+}
+/* "Surprise me": fun, but not the main thing */
+.thfb.rnd {
+  font-weight: 600;
+  color: var(--text-2);
+}
+.thfb.rnd:hover {
+  color: var(--text);
+}
+
+/* ===================================================================
+   7. Quick Menu: games first, then three clear groups – Look, Sound, System
+   =================================================================== */
+#qmdlg {
+  width: min(900px, 95vw);
+}
+.qm {
+  padding: var(--sp-7) var(--sp-7) var(--sp-6);
+}
+.qm-cols {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--sp-4);
+  margin-top: var(--sp-2);
+}
+@media (max-width: 760px) {
+  .qm-cols {
+    grid-template-columns: 1fr;
+  }
+}
+.qm-col {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding: var(--sp-3);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.qm-col > .sh {
+  margin: var(--sp-1) var(--sp-2) var(--sp-1);
+}
+.qm-col .seg {
+  display: flex;
+  margin: 0 var(--sp-1) var(--sp-1);
+}
+.qm-col .seg button {
+  flex: 1;
+}
+.qm-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.qmr {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  width: 100%;
+  min-height: 46px;
+  padding: var(--sp-1) var(--sp-2);
+  border-radius: var(--r-md);
+  text-align: left;
+  color: var(--text);
+  transition: background var(--t-1);
+}
+.qmr:hover {
+  background: var(--fill);
+}
+.qmr .mi {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: var(--c);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+.qmr .mi svg {
+  width: 19px;
+  height: 19px;
+}
+.qmr > span {
+  flex: 1;
+  min-width: 0;
+}
+.qmr b {
+  display: block;
+  font: 600 var(--fs-md) / 1.25 var(--head);
+}
+.qmr small {
+  display: block;
+  font-size: var(--fs-xs);
+  color: var(--text-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* switches in the list look like the switches in Settings */
+.qmr .sw {
+  flex: none;
+  width: 40px;
+  height: 24px;
+  border-radius: 99px;
+  background: color-mix(in srgb, var(--mute) 35%, transparent);
+  position: relative;
+  transition: background var(--t-2);
+}
+.qmr .sw::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  transition: transform var(--t-2) var(--ease);
+}
+.qmr.on .sw {
+  background: var(--accent);
+}
+.qmr.on .sw::after {
+  transform: translateX(16px);
+}
+.qmr .go {
+  flex: none;
+  font-size: 18px;
+  color: var(--text-2);
+  opacity: 0.6;
+}
+.qmr.danger b {
+  color: #d23b2f;
+}
+html.dark .qmr.danger b {
+  color: #ff7a6e;
+}
+.qm-col .qm-vol {
+  margin: var(--sp-1) var(--sp-2) 0;
+}
+
+/* ===================================================================
+   8. TV mode: readable from the sofa – the button legend takes the place of the bottom bar
+   =================================================================== */
+body.tv nav {
+  display: none;
+}
+body.tv .tvbar {
+  top: auto;
+  right: auto;
+  left: 50%;
+  bottom: 22px;
+  translate: -50% 0;
+  width: max-content;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--sp-2);
+  max-width: calc(100vw - 48px);
+}
+body.tv .tvbar span {
+  padding: 7px 14px 7px 7px;
+  font-size: 14px;
+  opacity: 0.94;
+  box-shadow: var(--e-2);
+}
+body.tv .tvbar i {
+  width: 26px;
+  height: 26px;
+  font-size: 13px;
+}
+/* with no dock at the bottom the covers and their buttons get the room */
+body.tv .page {
+  padding-bottom: 96px;
+}
+body.tv :is(button, .tile, .cc, .wh-t):focus-visible {
+  outline-width: 4px;
+  outline-offset: 4px;
+}
+
+/* ===================================================================
+   9. Calmer motion
+   =================================================================== */
+.thc:hover,
+.qmg:hover {
+  transform: translateY(-2px);
+}
+.lp {
+  transition: transform 0.45s var(--ease-pop);
+}
+/* four-shade themes (Game Boy and friends): the Quick Menu icons use the theme's colour like the other menus */
+body:is(.pal-gb, .pal-vb, .pal-gw, .pal-gp) .qmr .mi {
+  background: var(--wsel) !important;
+  box-shadow: none;
+}
+body:is(.pal-gb, .pal-vb, .pal-gw, .pal-gp) .qmr .mi :is(path, rect, circle, text, g)[fill]:not([fill='none']) {
+  fill: var(--dlg);
+}
+body:is(.pal-gb, .pal-vb, .pal-gw, .pal-gp) .qmr .mi [stroke]:not([stroke='none']) {
+  stroke: var(--dlg);
+}
+/* TV mode: the name under the Home Menu and the plaza's game bar sit above the button legend */
+body.tv .wh-foot {
+  padding-bottom: 64px;
+}
+body.tv .wbar {
+  bottom: 76px;
+}
+/* the tool windows (graphic packs, buddies, posts, log, feedback, shortcuts…): the same spacing as Settings */
+.win .hd {
+  padding: var(--sp-7) var(--sp-7) var(--sp-3);
+}
+.win .bd {
+  padding: var(--sp-1) var(--sp-7) var(--sp-6);
+}
+.win .ft {
+  padding: var(--sp-4) var(--sp-7) var(--sp-5);
+}
