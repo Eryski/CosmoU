@@ -372,6 +372,7 @@ static int text(const std::string &s, int size, float x, float y, SDL_Color c, i
       SDL_Surface *sf = TTF_RenderUTF8_Blended(f, t.c_str(), {c.r, c.g, c.b, 255});
       if (!sf) return 0;
       Txt x;
+      x.used = SDL_GetTicks(); // new: never the one that gets cleared away below
       x.t = SDL_CreateTextureFromSurface(R, sf);
       x.w = sf->w;
       x.h = sf->h;
@@ -387,8 +388,10 @@ static int text(const std::string &s, int size, float x, float y, SDL_Color c, i
             } else ++i;
          it = textCache.find(k);
       }
+      if (it == textCache.end()) return 0;
    }
    Txt &t = it->second;
+   if (!t.t) return 0;
    t.used = SDL_GetTicks();
    SDL_SetTextureAlphaMod(t.t, c.a);
    SDL_FRect d = {align == 1 ? x - t.w / 2.f : align == 2 ? x - t.w : x, y, (float)t.w, (float)t.h};

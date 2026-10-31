@@ -94,6 +94,25 @@ ok('shop: an emulator installed (NooDS)', 'shop install NooDS ok' in log, shop)
 cl = cemu.splitlines()
 bad = [i for i, l in enumerate(cl) if any(w in l for w in ('xception', 'rash', 'nhandled', 'DSI', 'ISI', 'Callstack', 'Stack trace', 'PPC'))]
 ok('Cemu log', True, '\n'.join(cl[max(0, bad[0] - 15):bad[0] + 40]) if bad else '\n'.join(cl[-30:]))
+# a crash: which functions (symbols.txt from the build, next to the .wuhb)
+import bisect, re
+syms = []
+try:
+    for l in open(os.path.join(os.path.dirname(wuhb), 'symbols.txt'), errors='replace'):
+        p = l.split(' ', 2)
+        if len(p) == 3 and p[1] in 'tTwW':
+            syms.append((int(p[0], 16), p[2].strip()))
+except Exception:
+    pass
+addrs = re.findall(r'(?:IP|LR) 0x([0-9a-f]{8})|ReturnAddr ([0-9a-f]{8})', cemu)
+if bad and syms:
+    keys = [a for a, _ in syms]
+    named = []
+    for a in addrs:
+        v = int(a[0] or a[1], 16)
+        i = bisect.bisect_right(keys, v) - 1
+        named.append(f'{v:08x} {syms[i][1]}+0x{v - syms[i][0]:x}' if i >= 0 else f'{v:08x} ?')
+    ok('crash in', False, '\n'.join(named))
 ok('CosmoU test log (end)', True, '\n'.join(log.splitlines()[-25:]))
 json.dump({'platform': 'wiiu', 'results': res}, open(os.path.join(out, 'results.json'), 'w'), indent=1)
 print(json.dumps(res, indent=1)[:3000])

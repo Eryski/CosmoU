@@ -49,6 +49,8 @@ jobs:
           set -o pipefail
           make -C wiiu -j4 2>&1 | tee build.log || { grep -iE "error|undefined|warning" build.log | head -25 | sed 's/^/::error::/'; tail -8 build.log | sed 's/^/::error::/'; exit 1; }
           ls -la wiiu/CosmoU.wuhb wiiu/CosmoU.rpx
+          # function addresses, so a crash in Cemu can be named
+          $DEVKITPPC/bin/powerpc-eabi-nm -C --numeric-sort wiiu/CosmoU.elf > wiiu/symbols.txt || true
 
       - uses: actions/upload-artifact@v4
         with:
@@ -56,6 +58,7 @@ jobs:
           path: |
             wiiu/CosmoU.wuhb
             wiiu/CosmoU.rpx
+            wiiu/symbols.txt
 
   # the shop on a PC: the real catalogs, installing into a folder that stands in for the SD card, removing again
   shop-test:
