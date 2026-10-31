@@ -30,7 +30,8 @@ jobs:
 
       - name: Build CosmoU.wuhb
         run: |
-          make -C wiiu -j4
+          set -o pipefail
+          make -C wiiu -j4 2>&1 | tee build.log || { grep -E "error|undefined" build.log | head -20 | sed 's/^/::error::/'; exit 1; }
           ls -la wiiu/CosmoU.wuhb wiiu/CosmoU.rpx
 
       - uses: actions/upload-artifact@v4

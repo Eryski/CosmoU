@@ -283,6 +283,7 @@ static int text(const std::string &s, int size, float x, float y, SDL_Color c, i
 // ---------------------------------------------------------------- sounds (made here, no files): move, open, back, start
 static Mix_Chunk *sMove = nullptr, *sOpen = nullptr, *sBack = nullptr, *sStart = nullptr;
 static Mix_Music *music = nullptr;
+static bool audioReady = false;
 static Mix_Chunk *tone(std::initializer_list<float> freqs, float len, float vol) {
    int rate = 48000, n = (int)(rate * len * freqs.size());
    Sint16 *buf = (Sint16 *)SDL_malloc(n * 2 * sizeof(Sint16));
@@ -305,7 +306,6 @@ static void play(Mix_Chunk *c) {
 }
 // sound is closed before CosmoU leaves the screen (starting a game, HOME Menu, closing): a Wii U app that keeps
 // its audio running while the system switches can leave the next game hanging on its start screen
-static bool audioReady = false;
 static void startMusic();
 static void audioOpen() {
    if (audioReady) return;
