@@ -1,25 +1,26 @@
-## A huge thanks to Eduard ❤️
+## ✨ A calmer, clearer CosmoU
 
-Every fix and idea in this update came from **Eduard**, who tested CosmoU 0.12 in depth and reported everything on Discord. Thank you so much!
+CosmoU 0.13 reworks the whole interface. All the features are still there, just sorted better, so every window and every theme feels like one product: easy to understand on the first start, calm with a big library, readable from the sofa.
 
-## New
+## What changed
 
-- **Choose your console on start** – with more than one console, CosmoU starts with big console cards. D-pad to choose, A to pick, B to close. The console button at the top opens them too. You can turn this off in Settings → Look.
-- **Right stick (R3) opens the game menu** – same as a right click, so adding favorites is quicker.
-
-## Fixed
-
-- **The portable Windows version is really portable now** – it keeps everything (settings, covers, music, themes, backups and a Cemu that CosmoU downloads) in a **CosmoU-data** folder next to the .exe instead of %APPDATA%. Your old settings are copied over on the first start.
-- **Switch Home stopped at the 12th game** – the controller now reaches **All games** after the twelve most recent games: A shows every game, B goes back.
-- **DS and 3DS covers were cut off on the left** – the top screen now shows the whole box.
-- **Moving with the controller flashed like a page reload** on the console home screens – now only the selection moves.
-- **TV mode** – the small "A Start / + Options" hint no longer overlaps the TV mode button legend.
+- **Play is always the strongest button** – in Covers, Grid, the Wii U Look and the game details. Details and the other actions are quieter.
+- **Grid** – a calm banner: the cover sharp in front of its own softly blurred colours, instead of a giant pixelated picture.
+- **Game details** – a smaller cover, Play first, *Add to favorites* as a quiet toggle, one line instead of four empty statistics before the first play, the tools in one row, save data and updates as simple rows.
+- **Settings** – a calmer category bar (only the open category is in colour), a bigger search with its shortcut (Ctrl F / ⌘F).
+- **Quick Menu** – your games first, then three clear groups: **Look**, **Sound** and **System**.
+- **Theme gallery** – big cards with a preview picture of every theme.
+- **Empty screens lead somewhere** – *Clear search*, *Show the library*, or the folder button of the console you're looking at.
+- **TV mode** – the button legend sits at the bottom instead of over your games; bigger on a TV, normal size on a Steam Deck.
+- **Controller and keyboard** – in every window the D-pad and the arrow keys move to the button that is really in that direction, in lists, rows and grids alike.
+- **Calmer motion** – no ripple on hover, every window slides in the same way, the cover flow settles instead of bouncing.
+- Smaller fixes: readable selected chips in the N64 theme, no *Quit* entry on iPhone and iPad.
 
 ## Downloads
 
 | | |
 |---|---|
-| Windows | `CosmoU-Windows-Setup-0.12.1.exe` or the portable `.exe` |
+| Windows | `CosmoU-Windows-Setup-0.13.0.exe` or the portable `.exe` |
 | macOS | `.dmg` (Apple silicon and Intel) |
 | Linux | `.AppImage`, `.deb`, `.tar.gz` |
 | Android | `.apk` |
