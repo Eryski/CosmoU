@@ -81,7 +81,7 @@ def rd(p):
     except Exception: return ''
 log, cemu = rd('cosmou-test.log'), rd('cemu-log.txt')
 res = []
-ok = lambda n, p, d='': res.append({'name': n, 'pass': bool(p), 'detail': d[:900]})
+ok = lambda n, p, d='': res.append({'name': n, 'pass': bool(p), 'detail': d[:2500]})
 ok('CosmoU.wuhb built', os.path.getsize(wuhb) > 100000, f'{os.path.getsize(wuhb)} bytes')
 ok('Cemu starts CosmoU for Wii U', 'games ' in log, log[:400] or 'no test log on the SD card')
 ok('it finds the installed games (names from meta.xml, icons from iconTex.tga)', all(n + ' icon=1' in log for n in ('Sky Harbor Racers', 'Pebble Quest', 'Lantern Keep')), log[:500])
@@ -91,7 +91,10 @@ ok('the shop loads its catalogs (Cemu has internet here)', 'shop catalog ok' in 
 ok('shop: a theme installed and used', 'shop install classic-wii ok' in log and 'theme now classic-wii' in log, shop)
 ok('shop: a font installed and used', 'font now pixel' in log, shop)
 ok('shop: an emulator installed (NooDS)', 'shop install NooDS ok' in log, shop)
-ok('Cemu log', True, '\n'.join(cemu.splitlines()[-30:]))
+cl = cemu.splitlines()
+bad = [i for i, l in enumerate(cl) if any(w in l for w in ('xception', 'rash', 'nhandled', 'DSI', 'ISI', 'Callstack', 'Stack trace', 'PPC'))]
+ok('Cemu log', True, '\n'.join(cl[max(0, bad[0] - 15):bad[0] + 40]) if bad else '\n'.join(cl[-30:]))
+ok('CosmoU test log (end)', True, '\n'.join(log.splitlines()[-25:]))
 json.dump({'platform': 'wiiu', 'results': res}, open(os.path.join(out, 'results.json'), 'w'), indent=1)
 print(json.dumps(res, indent=1)[:3000])
 EOF

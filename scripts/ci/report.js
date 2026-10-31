@@ -29,7 +29,7 @@ async function gh(method, url, body) {
   }
   const res = r.results || [];
   const failed = res.filter(x => !x.pass).length;
-  const lines = res.map(x => (x.pass ? 'PASS ' : 'FAIL ') + x.name + (x.detail ? '  ' + x.detail.slice(0, 900) : ''));
+  const lines = res.map(x => (x.pass ? 'PASS ' : 'FAIL ') + x.name + (x.detail ? '  ' + x.detail.slice(0, 2500) : ''));
   if (r.crash) lines.push('CRASH ' + r.crash);
   // what the test printed (when there is a log next to the results)
   try {

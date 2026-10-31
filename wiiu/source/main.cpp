@@ -1170,8 +1170,23 @@ static void shopView(float t) {
    for (auto &d : iconData) {
       SDL_RWops *rw = SDL_RWFromConstMem(d.second.data(), (int)d.second.size());
       SDL_Surface *s = rw ? IMG_Load_RW(rw, 1) : nullptr;
-      iconTex[d.first] = s ? SDL_CreateTextureFromSurface(R, s) : nullptr;
+      SDL_Texture *tex = nullptr;
+      if (s && s->w > 0 && s->h > 0) {
+         // icons come in all sizes and formats: one small RGBA picture each
+         SDL_Surface *small = SDL_CreateRGBSurfaceWithFormat(0, 128, 128, 32, SDL_PIXELFORMAT_RGBA32);
+         SDL_Surface *conv = SDL_ConvertSurfaceFormat(s, SDL_PIXELFORMAT_RGBA32, 0);
+         if (small && conv) {
+            SDL_SetSurfaceBlendMode(conv, SDL_BLENDMODE_NONE);
+            SDL_Rect dst = {0, 0, 128, 128};
+            SDL_BlitScaled(conv, nullptr, small, &dst);
+            tex = SDL_CreateTextureFromSurface(R, small);
+         }
+         if (small) SDL_FreeSurface(small);
+         if (conv) SDL_FreeSurface(conv);
+      }
       if (s) SDL_FreeSurface(s);
+      tlog("icon %s %d bytes %s\n", d.first.c_str(), (int)d.second.size(), tex ? "ok" : "none");
+      iconTex[d.first] = tex;
    }
    iconData.clear();
    std::vector<int> rows = rowsOf(shopTab);
