@@ -351,8 +351,13 @@ setTimeout(() => {
   await shot('05-dark');
   await E(() => api.setTheme('system'));
   trySim('ui', U, 'appearance', 'dark');
-  await wait(2500);
-  const sys = await bg();
+  // a busy simulator can take a while to tell the app (the same wait as for the way back)
+  let sys = null;
+  for (let i = 0; i < 8; i++) {
+    await wait(2500);
+    sys = await bg();
+    if (sys && sys[1] === true) break;
+  }
   ok('System follows the iPhone’s dark mode', sys[1] === true, sys);
   trySim('ui', U, 'appearance', 'light');
   // a busy simulator can take a while to tell the app
