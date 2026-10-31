@@ -11,6 +11,10 @@ on:
         description: Add CosmoU-WiiU.wuhb to this existing release (tag like v0.13.0, empty = only build and test)
         required: false
         default: ''
+      release_notes:
+        description: Also add the Wii U install notes to the release text (only the first time)
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -83,6 +87,7 @@ jobs:
         with:
           tag_name: ${{ inputs.to_release }}
           files: out/CosmoU-WiiU-*.wuhb
-          # the release text gets a short Wii U section (how to install it) at the end
-          body_path: .github/wiiu-release-notes.md
-          append_body: true
+          # the first time ("release_notes") the release text gets a short Wii U section (how to install it) at the end;
+          # a file with the same name is replaced; the release text stays as it is
+          body_path: ${{ inputs.release_notes && '.github/wiiu-release-notes.md' || '' }}
+          append_body: ${{ inputs.release_notes }}
