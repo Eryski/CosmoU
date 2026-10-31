@@ -752,3 +752,7 @@ body.tv .wbar {
     opacity 0.4s,
     filter 0.4s;
 }
+/* text on the selection colour: themes with a light selection (N64) give their dark selection text */
+body.flat :is(.thfb.on, .search .qk.n) {
+  color: var(--seltx, var(--indtx, #fff));
+}
