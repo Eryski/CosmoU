@@ -28,8 +28,15 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: SDL2 for the Wii U
+        shell: bash
         run: |
-          dkp-pacman -Syu --noconfirm --needed wiiu-sdl2 wiiu-sdl2_image wiiu-sdl2_mixer wiiu-sdl2_ttf wiiu-curl ppc-zlib
+          # devkitPro's package server sometimes drops a download: try a few times
+          ok=0
+          for i in 1 2 3 4; do
+            if dkp-pacman -Syu --noconfirm --needed wiiu-sdl2 wiiu-sdl2_image wiiu-sdl2_mixer wiiu-sdl2_ttf wiiu-curl ppc-zlib > pacman.log 2>&1; then ok=1; break; fi
+            sleep 20
+          done
+          if [ $ok = 0 ]; then tail -15 pacman.log | sed 's/^/::error::/'; exit 1; fi
           $DEVKITPRO/portlibs/wiiu/bin/powerpc-eabi-pkg-config --libs SDL2_mixer SDL2_ttf SDL2_image sdl2 libcurl zlib
           $DEVKITPRO/portlibs/wiiu/bin/powerpc-eabi-pkg-config --libs --static libcurl
 
