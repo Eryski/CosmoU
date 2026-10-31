@@ -29,9 +29,10 @@ jobs:
           $DEVKITPRO/portlibs/wiiu/bin/powerpc-eabi-pkg-config --libs SDL2_mixer SDL2_ttf SDL2_image sdl2
 
       - name: Build CosmoU.wuhb
+        shell: bash
         run: |
           set -o pipefail
-          make -C wiiu -j4 2>&1 | tee build.log || { grep -E "error|undefined" build.log | head -20 | sed 's/^/::error::/'; exit 1; }
+          make -C wiiu -j4 2>&1 | tee build.log || { grep -iE "error|undefined|warning" build.log | head -25 | sed 's/^/::error::/'; tail -8 build.log | sed 's/^/::error::/'; exit 1; }
           ls -la wiiu/CosmoU.wuhb wiiu/CosmoU.rpx
 
       - uses: actions/upload-artifact@v4
