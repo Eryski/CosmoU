@@ -50,9 +50,27 @@ function rwEmpty() {
   $('#eic').innerHTML = RW_IC[kind];
   $('#eclr').hidden = !q;
   $('#elib').hidden = !!q || view !== 'recent';
+  if (kind === 'folder' && typeof curSys === 'string' && curSys !== 'wiiu' && SYS[curSys]) {
+    $('#et').textContent = 'No ' + SYS[curSys].name + ' games yet';
+    $('#ep').textContent = IS_IOS
+      ? 'Your ' + SYS[curSys].name + ' games come from its emulator app.'
+      : 'Choose the folder with your ' + SYS[curSys].short + ' games – they show up here in the ' + SYS[curSys].short + ' look.';
+    $('#ebtn').textContent = IS_IOS ? 'Get games' : 'Choose ' + SYS[curSys].short + ' folder';
+  } else $('#ebtn').textContent = IS_IOS ? 'Get games from MeloCafe' : 'Choose games folder';
   if (q) $('#et').textContent = 'Nothing called “' + (q.length > 28 ? q.slice(0, 27) + '…' : q) + '”';
   if (q) $('#ep').textContent = 'Search looks at the game names. Try a shorter word, or clear the search.';
 }
+// the folder button of an empty library: the folder of the console you are looking at
+$('#ebtn').onclick = async () => {
+  if (typeof curSys !== 'string' || curSys === 'wiiu' || !window.api || !api.systemPickFolder) return pickFolder();
+  const r = await api.systemPickFolder(curSys);
+  if (r && r.error) return toast(r.error, 7000);
+  cfg = await api.getSettings();
+  games = await api.scan();
+  games.forEach(sample);
+  applySystem();
+  render();
+};
 $('#eclr').onclick = () => {
   const i = $('#q');
   i.value = '';
