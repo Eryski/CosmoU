@@ -22,6 +22,7 @@
 #include <cctype>
 #include <initializer_list>
 #include <cmath>
+#include <cstdarg>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -74,10 +75,22 @@ static float coverPos = 0.f, gridScroll = 0.f;
 static uint32_t playCounter = 0;
 static std::string launching;
 static Uint32 launchAt = 0;
-static FILE *testLog = nullptr;
+static bool testMode = false;
 static SDL_Texture *logo = nullptr;
 
 static const Theme &T() { return THEMES[themeIx]; }
+// test log on the SD card (only in test mode): opened and closed for every line, so nothing waits in a buffer
+static void tlog(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
+static void tlog(const char *fmt, ...) {
+   if (!testMode) return;
+   FILE *f = fopen(SD_LOG, "a");
+   if (!f) return;
+   va_list a;
+   va_start(a, fmt);
+   vfprintf(f, fmt, a);
+   va_end(a);
+   fclose(f);
+}
 
 // ---------------------------------------------------------------- settings on the SD card (theme, view, music, last played)
 static void loadCfg() {
@@ -617,10 +630,7 @@ static void doLaunch() {
       if (MCP_GetTitleInfo(h, g->tid, &info) >= 0) ACPAssignTitlePatch(&info);
       MCP_Close(h);
    }
-   if (testLog) {
-      fprintf(testLog, "launch %016llX %s\n", (unsigned long long)g->tid, g->name.c_str());
-      fflush(testLog);
-   }
+   tlog("launch %016llX %s\n", (unsigned long long)g->tid, g->name.c_str());
    SYSLaunchTitle(g->tid);
 }
 static void setView(int v) {
@@ -690,7 +700,8 @@ int main(int, char **) {
    FILE *probe = fopen(SD_TEST, "r");
    if (probe) {
       fclose(probe);
-      testLog = fopen(SD_LOG, "w");
+      testMode = true;
+      remove(SD_LOG);
    }
 
    logo = IMG_LoadTexture(R, (std::string(CONTENT) + "logo.png").c_str());
@@ -700,11 +711,8 @@ int main(int, char **) {
    loadGames();
    loadCfg();
    sortGames();
-   if (testLog) {
-      fprintf(testLog, "font %s\naudio %d\ngames %d\n", sharedFont ? "system" : "bundled", audio ? 1 : 0, (int)games.size());
-      for (auto &g : games) fprintf(testLog, "game %016llX %s icon=%d\n", (unsigned long long)g.tid, g.name.c_str(), g.icon ? 1 : 0);
-      fflush(testLog);
-   }
+   tlog("font %s\naudio %d\ngames %d\n", sharedFont ? "system" : "bundled", audio ? 1 : 0, (int)games.size());
+   for (auto &g : games) tlog("game %016llX %s icon=%d\n", (unsigned long long)g.tid, g.name.c_str(), g.icon ? 1 : 0);
    if (audio) startMusic();
 
    bool run = true;
@@ -782,7 +790,7 @@ int main(int, char **) {
          lastAxis = now - 200;
       }
       // test mode (only when the test file is on the SD card): walks through the views and themes by itself
-      if (testLog && launching.empty()) {
+      if (testMode && launching.empty()) {
          Uint32 step = (now - start) / 7000;
          if (step != demoStep) {
             demoStep = step;
@@ -792,8 +800,7 @@ int main(int, char **) {
             if (step == 4) setView(0);
             if (step == 5) nextTheme();
             if (step == 6) nextTheme();
-            fprintf(testLog, "step %u view %d theme %s sel %d\n", (unsigned)step, view, T().id, sel);
-            fflush(testLog);
+            tlog("step %u view %d theme %s sel %d\n", (unsigned)step, view, T().id, sel);
          }
       }
       float t = (now - start) / 1000.f;
@@ -816,7 +823,6 @@ int main(int, char **) {
    }
 
    saveCfg();
-   if (testLog) fclose(testLog);
    for (auto &g : games)
       if (g.icon) SDL_DestroyTexture(g.icon);
    if (logo) SDL_DestroyTexture(logo);
