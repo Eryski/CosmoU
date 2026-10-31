@@ -75,6 +75,7 @@ static uint32_t playCounter = 0;
 static std::string launching;
 static Uint32 launchAt = 0;
 static FILE *testLog = nullptr;
+static SDL_Texture *logo = nullptr;
 
 static const Theme &T() { return THEMES[themeIx]; }
 
@@ -462,10 +463,16 @@ static void background(float t) {
 static SDL_FRect viewBtn[2], playBtn;
 static void header() {
    const Theme &th = T();
-   text("CosmoU", -40, 48, 26, th.ink);
+   float bx = 48;
+   if (logo) {
+      SDL_FRect d = {48, 28, 66, 66};
+      SDL_RenderCopyF(R, logo, nullptr, &d);
+      bx = 128;
+   }
+   text("CosmoU", -40, bx, 26, th.ink);
    char sub[96];
    snprintf(sub, sizeof sub, "Wii U Library · %d %s", (int)games.size(), games.size() == 1 ? "game" : "games");
-   text(sub, 19, 50, 74, th.accent);
+   text(sub, 19, bx + 2, 74, th.accent);
    // Covers / Grid
    const char *lbl[2] = {"Covers", "Grid"};
    float x = 760, y = 30, h = 46;
@@ -686,6 +693,7 @@ int main(int, char **) {
       testLog = fopen(SD_LOG, "w");
    }
 
+   logo = IMG_LoadTexture(R, (std::string(CONTENT) + "logo.png").c_str());
    // first frame while the games load
    gradient(0, 0, W, H, T().bgTop, T().bgBottom);
    SDL_RenderPresent(R);
@@ -811,6 +819,7 @@ int main(int, char **) {
    if (testLog) fclose(testLog);
    for (auto &g : games)
       if (g.icon) SDL_DestroyTexture(g.icon);
+   if (logo) SDL_DestroyTexture(logo);
    for (auto &c : textCache) SDL_DestroyTexture(c.second.t);
    for (auto &f : fonts)
       if (f.second) TTF_CloseFont(f.second);

@@ -1,5 +1,5 @@
 #!/bin/bash
-# CosmoU for Wii U in Cemu: starts CosmoU.wuhb with one made-up installed game, lets its test mode walk through the
+# CosmoU for Wii U in Cemu: starts CosmoU.wuhb with three made-up installed games, lets its test mode walk through the
 # views and themes, takes screenshots and writes results.json for report.js.
 # usage: wiiu-cemu.sh <CosmoU.wuhb> <out folder>      (needs gh, a GitHub token in GH_TOKEN)
 set -u
@@ -44,53 +44,8 @@ cat > "$CFG/settings.xml" <<'EOF'
 </content>
 EOF
 
-# one installed game in Cemu's system memory, with its own icon
-T="$DATA/mlc01/usr/title/00050000/10c05000"
-mkdir -p "$T/code" "$T/content" "$T/meta"
-cat > "$T/code/app.xml" <<'EOF'
-<?xml version="1.0" encoding="utf-8"?>
-<app type="complex" access="777">
-  <version type="unsignedInt" length="4">16</version>
-  <os_version type="hexBinary" length="8">000500101000400A</os_version>
-  <title_id type="hexBinary" length="8">0005000010C05000</title_id>
-  <title_version type="hexBinary" length="2">0000</title_version>
-  <sdk_version type="unsignedInt" length="4">21204</sdk_version>
-  <app_type type="hexBinary" length="4">80000000</app_type>
-  <group_id type="hexBinary" length="4">00010C05</group_id>
-</app>
-EOF
-cat > "$T/code/cos.xml" <<'EOF'
-<?xml version="1.0" encoding="utf-8"?>
-<app type="complex" access="777">
-  <version type="unsignedInt" length="4">1</version>
-  <argstr type="string" length="4096">sky.rpx</argstr>
-</app>
-EOF
-cat > "$T/meta/meta.xml" <<'EOF'
-<?xml version="1.0" encoding="utf-8"?>
-<menu type="complex" access="777">
-  <title_id type="hexBinary" length="8">0005000010C05000</title_id>
-  <longname_en type="string" length="512">Sky Harbor
-Racers</longname_en>
-  <shortname_en type="string" length="256">Sky Harbor Racers</shortname_en>
-</menu>
-EOF
-python3 - "$T/meta/iconTex.tga" <<'EOF'
-import struct, sys, math
-w = h = 128
-px = bytearray()
-for y in range(h - 1, -1, -1):  # TGA rows go bottom-up
-    for x in range(w):
-        t = y / h
-        r, g, b = int(255 * (1 - t) + 250 * t), int(120 * (1 - t) + 200 * t), int(60 * (1 - t) + 40 * t)
-        if (x - 80) ** 2 + (y - 46) ** 2 < 26 ** 2:
-            r, g, b = 255, 236, 120
-        if y > 92:
-            r, g, b = 255, 255, 255
-        px += bytes((b, g, r, 255))
-hdr = struct.pack('<BBBHHBHHHHBB', 0, 0, 2, 0, 0, 0, 0, 0, w, h, 32, 8)
-open(sys.argv[1], 'wb').write(hdr + px)
-EOF
+# three installed games in Cemu's system memory, each with its own icon
+python3 "$(dirname "$0")/wiiu-fake-titles.py" "$DATA/mlc01" | tee -a "$LOG"
 echo "test" > "$DATA/sdcard/cosmou-test.txt"
 
 # start it and take a picture every 8 seconds
@@ -109,7 +64,10 @@ done
 kill $CEMU 2>/dev/null
 sleep 2
 pkill -f Cemu 2>/dev/null
-cp "$DATA/sdcard/cosmou-test.log" "$OUT/cosmou-test.log" 2>/dev/null
+note "sd card: $(ls -la "$DATA/sdcard" | tr '\n' ' ')"
+f=$(find "$HOME" -name cosmou-test.log 2>/dev/null | head -1)
+note "test log: ${f:-none}"
+[ -n "$f" ] && cp "$f" "$OUT/cosmou-test.log"
 cp "$DATA/log.txt" "$OUT/cemu-log.txt" 2>/dev/null || cp "$CFG/log.txt" "$OUT/cemu-log.txt" 2>/dev/null
 note "done"
 
@@ -125,7 +83,7 @@ res = []
 ok = lambda n, p, d='': res.append({'name': n, 'pass': bool(p), 'detail': d[:900]})
 ok('CosmoU.wuhb built', os.path.getsize(wuhb) > 100000, f'{os.path.getsize(wuhb)} bytes')
 ok('Cemu starts CosmoU for Wii U', 'games ' in log, log[:400] or 'no test log on the SD card')
-ok('it finds the installed game (name from meta.xml, icon from iconTex.tga)', 'Sky Harbor Racers icon=1' in log, log[:400])
+ok('it finds the installed games (names from meta.xml, icons from iconTex.tga)', all(n + ' icon=1' in log for n in ('Sky Harbor Racers', 'Pebble Quest', 'Lantern Keep')), log[:500])
 ok('test mode walks through views and themes', 'step 5' in log, '\n'.join(l for l in log.splitlines() if l.startswith('step')))
 ok('Cemu log', True, '\n'.join(cemu.splitlines()[-30:]))
 json.dump({'platform': 'wiiu', 'results': res}, open(os.path.join(out, 'results.json'), 'w'), indent=1)
