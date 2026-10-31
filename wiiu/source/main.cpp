@@ -76,6 +76,8 @@ static uint32_t playCounter = 0;
 static std::string launching;
 static Uint32 launchAt = 0;
 static bool testMode = false;
+static bool leaving = false; // a game is being started: nothing more is drawn
+static Uint32 leftAt = 0;
 static SDL_Texture *logo = nullptr;
 
 static const Theme &T() { return THEMES[themeIx]; }
@@ -299,7 +301,35 @@ static Mix_Chunk *tone(std::initializer_list<float> freqs, float len, float vol)
    return c;
 }
 static void play(Mix_Chunk *c) {
-   if (c) Mix_PlayChannel(-1, c, 0);
+   if (c && audioReady) Mix_PlayChannel(-1, c, 0);
+}
+// sound is closed before CosmoU leaves the screen (starting a game, HOME Menu, closing): a Wii U app that keeps
+// its audio running while the system switches can leave the next game hanging on its start screen
+static bool audioReady = false;
+static void startMusic();
+static void audioOpen() {
+   if (audioReady) return;
+   if (Mix_OpenAudio(48000, AUDIO_S16SYS, 2, 2048) != 0) return;
+   audioReady = true;
+   Mix_AllocateChannels(8);
+   if (!sMove) {
+      sMove = tone({1320.f}, 0.045f, 0.18f);
+      sOpen = tone({880.f, 1320.f}, 0.06f, 0.2f);
+      sBack = tone({990.f, 660.f}, 0.06f, 0.18f);
+      sStart = tone({660.f, 990.f, 1320.f}, 0.08f, 0.22f);
+   }
+   startMusic();
+}
+static void audioClose() {
+   if (!audioReady) return;
+   Mix_HaltChannel(-1);
+   Mix_HaltMusic();
+   if (music) {
+      Mix_FreeMusic(music);
+      music = nullptr;
+   }
+   Mix_CloseAudio();
+   audioReady = false;
 }
 static void startMusic() {
    if (music) {
@@ -307,7 +337,7 @@ static void startMusic() {
       Mix_FreeMusic(music);
       music = nullptr;
    }
-   if (!musicOn) return;
+   if (!musicOn || !audioReady) return;
    music = Mix_LoadMUS((std::string(CONTENT) + "music/" + T().music).c_str());
    if (music) {
       Mix_VolumeMusic(MIX_MAX_VOLUME * 45 / 100);
@@ -627,11 +657,15 @@ static void doLaunch() {
    MCPTitleListType info;
    int32_t h = MCP_Open();
    if (h >= 0) {
-      if (MCP_GetTitleInfo(h, g->tid, &info) >= 0) ACPAssignTitlePatch(&info);
+      if (MCP_GetTitleInfo(h, g->tid, &info) == 0) ACPAssignTitlePatch(&info);
       MCP_Close(h);
    }
    tlog("launch %016llX %s\n", (unsigned long long)g->tid, g->name.c_str());
-   SYSLaunchTitle(g->tid);
+   audioClose();
+   leaving = true;
+   leftAt = SDL_GetTicks();
+   // like the Wii U Menu (and Aroma's own menu): straight into the game, without a second start screen
+   _SYSLaunchTitleWithStdArgsInNoSplash(g->tid, nullptr);
 }
 static void setView(int v) {
    if (v == view) return;
@@ -687,15 +721,7 @@ int main(int, char **) {
    TTF_Init();
    OSGetSharedData(OS_SHAREDDATATYPE_FONT_STANDARD, 0, &sharedFont, &sharedFontSize);
    if (!sharedFontSize) sharedFont = nullptr;
-   bool audio = Mix_OpenAudio(48000, AUDIO_S16SYS, 2, 2048) == 0;
-   if (audio) {
-      Mix_Init(MIX_INIT_OGG);
-      Mix_AllocateChannels(8);
-      sMove = tone({1320.f}, 0.045f, 0.18f);
-      sOpen = tone({880.f, 1320.f}, 0.06f, 0.2f);
-      sBack = tone({990.f, 660.f}, 0.06f, 0.18f);
-      sStart = tone({660.f, 990.f, 1320.f}, 0.08f, 0.22f);
-   }
+   Mix_Init(MIX_INIT_OGG);
    ACPInitialize();
    FILE *probe = fopen(SD_TEST, "r");
    if (probe) {
@@ -711,9 +737,9 @@ int main(int, char **) {
    loadGames();
    loadCfg();
    sortGames();
-   tlog("font %s\naudio %d\ngames %d\n", sharedFont ? "system" : "bundled", audio ? 1 : 0, (int)games.size());
+   audioOpen();
+   tlog("font %s\naudio %d\ngames %d\n", sharedFont ? "system" : "bundled", audioReady ? 1 : 0, (int)games.size());
    for (auto &g : games) tlog("game %016llX %s icon=%d\n", (unsigned long long)g.tid, g.name.c_str(), g.icon ? 1 : 0);
-   if (audio) startMusic();
 
    bool run = true;
    Uint32 start = SDL_GetTicks(), lastAxis = 0, demoStep = 0;
@@ -730,10 +756,10 @@ int main(int, char **) {
             SDL_GameControllerOpen(e.cdevice.which);
             break;
          case SDL_APP_WILLENTERBACKGROUND:
-            Mix_PauseMusic();
+            audioClose();
             break;
          case SDL_APP_DIDENTERFOREGROUND:
-            if (launching.empty()) Mix_ResumeMusic();
+            if (!leaving) audioOpen();
             break;
          case SDL_CONTROLLERBUTTONDOWN:
             if (!launching.empty()) break;
@@ -803,6 +829,17 @@ int main(int, char **) {
             tlog("step %u view %d theme %s sel %d\n", (unsigned)step, view, T().id, sel);
          }
       }
+      if (leaving) {
+         // the system takes CosmoU off the screen when the game starts; still here after 10 seconds = it didn't start
+         if (now - leftAt > 10000) {
+            leaving = false;
+            launching.clear();
+            audioOpen();
+         } else {
+            SDL_Delay(16);
+            continue;
+         }
+      }
       float t = (now - start) / 1000.f;
       coverPos += (sel - coverPos) * 0.18f;
 
@@ -822,20 +859,12 @@ int main(int, char **) {
       SDL_RenderPresent(R);
    }
 
+   // leave quickly: the system (or the game that is starting) is waiting. SDL_Quit hands the screen back.
    saveCfg();
-   for (auto &g : games)
-      if (g.icon) SDL_DestroyTexture(g.icon);
-   if (logo) SDL_DestroyTexture(logo);
-   for (auto &c : textCache) SDL_DestroyTexture(c.second.t);
+   audioClose();
    for (auto &f : fonts)
       if (f.second) TTF_CloseFont(f.second);
-   if (music) Mix_FreeMusic(music);
-   if (audio) Mix_CloseAudio();
    ACPFinalize();
-   TTF_Quit();
-   IMG_Quit();
-   SDL_DestroyRenderer(R);
-   SDL_DestroyWindow(win);
    SDL_Quit();
    return 0;
 }
