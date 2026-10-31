@@ -58,9 +58,15 @@ const closeConsolePick = () => {
   if (d && d.open) d.close();
 };
 // on start: only when nothing else is on the screen (setup, a window, a game started from Steam)
+// (a first-time setup or another window first – the cards come once it is closed, if no game was started meanwhile)
+let cpTries = 0;
+const cpSince = Date.now();
 function consolePickOnStart() {
   if (!lsGet('consolePick', true) || (window.api && api.launchPlay)) return;
-  if (document.querySelector('dialog[open]') || $('#setup').classList.contains('on') || $('#launch').classList.contains('on')) return;
+  if (document.querySelector('dialog[open]') || $('#setup').classList.contains('on') || $('#launch').classList.contains('on') || $('#boot').classList.contains('on')) {
+    if (++cpTries < 120 && !Object.values(plays).some(t => t > cpSince)) setTimeout(consolePickOnStart, 1000);
+    return;
+  }
   consolePick(true);
 }
 // the header button and the round "Consoles" button open the cards instead of a small menu
