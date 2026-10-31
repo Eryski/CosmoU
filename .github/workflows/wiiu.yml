@@ -5,9 +5,6 @@
 name: Wii U app (built once)
 
 on:
-  # while it is being built: every push to the wiiu branch (removed once it is released)
-  push:
-    branches: [wiiu]
   workflow_dispatch:
     inputs:
       to_release:
@@ -67,9 +64,10 @@ jobs:
 
   release:
     needs: [build, test]
-    if: github.event_name == 'workflow_dispatch' && inputs.to_release != ''
+    if: inputs.to_release != ''
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
           name: cosmou-wiiu
@@ -83,3 +81,6 @@ jobs:
         with:
           tag_name: ${{ inputs.to_release }}
           files: out/CosmoU-WiiU-*.wuhb
+          # the release text gets a short Wii U section (how to install it) at the end
+          body_path: .github/wiiu-release-notes.md
+          append_body: true
