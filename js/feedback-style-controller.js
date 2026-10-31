@@ -150,6 +150,7 @@ function padTick(now) {
     lb: b(4),
     rb: b(5),
     hm: b(16),
+    r3: b(11),
   };
   const hit = k => {
     if (!s[k]) {
@@ -207,7 +208,8 @@ function padTick(now) {
       // L and R change the console (when there is more than one)
       if ((fire.lb || fire.rb) && !isHome() && typeof sysNext === 'function') sysNext(fire.rb ? 1 : -1);
       if (fire.y && cur()) openDetail(cur());
-      if (fire.x && cur() && typeof gameMenu === 'function') gameMenu(cur(), null);
+      // X or pressing the right stick: the game's menu (like a right click – favorites, details, folder…)
+      if ((fire.x || fire.r3) && cur() && typeof gameMenu === 'function') gameMenu(cur(), null);
       if (fire.st) openSettings();
       if (fire.sl && typeof toggleTv === 'function') toggleTv();
     }

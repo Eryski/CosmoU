@@ -419,6 +419,8 @@ load().then(() => {
   noteNewGames();
   playFromSteam();
   setTimeout(buddyHello, lsGet('boot', true) ? 2700 : 700);
+  // more than one console: the console cards first (after the intro)
+  setTimeout(consolePickOnStart, lsGet('boot', true) && !(window.api && api.launchPlay) ? 2100 : 300);
 });
 initMusic();
 initCemu();

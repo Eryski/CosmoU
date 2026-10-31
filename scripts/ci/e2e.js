@@ -218,6 +218,13 @@ async function waitFor(fn, ms) {
     await w.waitForTimeout(900);
     await w.screenshot({ path: path.join(OUT, name + '.png') });
   };
+  // with several consoles CosmoU starts with the console cards (not while it is setting up Cemu)
+  const cards = await E(() =>
+    document.querySelector('#cpick[open]') ? [...document.querySelectorAll('#cpick .cp-card')].map(b => b.dataset.s) : $('#setup').classList.contains('on') ? 'setup' : null,
+  );
+  ok('console cards on start', JSON.stringify(cards) === '["wiiu","switch","wii","n64"]' || cards === 'setup', cards);
+  if (Array.isArray(cards)) await shot('00-consoles');
+  await E(() => document.querySelector('#cpick') && document.querySelector('#cpick').close());
 
   const info = await E(() => ({
     p: api.platform,

@@ -139,6 +139,26 @@ async function portableTest() {
         await w.screenshot({ path: path.join(OUT, n + '.jpg'), type: 'jpeg', quality: 38 });
       } catch {}
     };
+    // the console cards on start: the arrow keys (the D-pad) choose, Enter (A) takes that console
+    const cards = await E(() => (document.querySelector('#cpick[open]') ? [...document.querySelectorAll('#cpick .cp-card')].map(b => b.dataset.s) : null));
+    ok('console cards on start, one per console', JSON.stringify(cards) === JSON.stringify(CONSOLES.map(c => c[0])), cards);
+    await shot('00-consoles');
+    for (const k of ['ArrowRight', 'ArrowRight']) {
+      await w.keyboard.press(k);
+      await w.waitForTimeout(200);
+    }
+    await shot('00-consoles-moved');
+    await w.keyboard.press('Enter');
+    await w.waitForTimeout(1500);
+    const picked = await E(() => ({ open: !!document.querySelector('#cpick[open]'), sys: curSys, theme: style, lay: $('#sw').dataset.lay }));
+    ok('a card takes you to that console (GameCube)', !picked.open && picked.sys === 'gamecube' && picked.theme === 'gamecube' && picked.lay === 'discs', picked);
+    await E(() => document.querySelector('#sys button').click());
+    await w.waitForTimeout(500);
+    const opened = await E(() => !!document.querySelector('#cpick[open]'));
+    await w.keyboard.press('Escape');
+    await w.waitForTimeout(300);
+    const again = await E(() => ({ open: !!document.querySelector('#cpick[open]'), sys: curSys }));
+    ok('the console button opens the cards, Escape (B) closes them', opened === true && !again.open && again.sys === 'gamecube', again);
     await E(() => document.querySelectorAll('dialog[open]').forEach(d => d.close()));
     const info = await E(() => ({ p: api.platform, list: api.systemList }));
     ok('Windows', info.p === 'win32', info);

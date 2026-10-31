@@ -9447,3 +9447,113 @@ html.dark .wch.ch-empty {
 .swh[data-cart='vb'] .cart .art {
   filter: grayscale(1) sepia(1) saturate(6) hue-rotate(-50deg) brightness(0.8);
 }
+
+/* ---------- choosing a console (js/console-pick.js) ---------- */
+dialog.cpick {
+  width: min(1180px, 96vw);
+  max-width: none;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #fff;
+  overflow: visible;
+}
+dialog#cpick::backdrop {
+  background: rgba(8, 12, 20, 0.72);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+dialog.cpick[open] {
+  animation: cpin 0.28s cubic-bezier(0.2, 1, 0.3, 1) both;
+}
+@keyframes cpin {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+}
+#cpick .cp-in h2 {
+  color: #fff;
+  margin: 0 0 18px;
+  text-align: center;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+.cp-row {
+  display: flex;
+  justify-content: safe center;
+  gap: 18px;
+  overflow-x: auto;
+  padding: 18px 24px 26px;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+}
+.cp-row::-webkit-scrollbar {
+  display: none;
+}
+.cp-card {
+  flex: none;
+  width: 210px;
+  padding: 12px 12px 14px;
+  border: 0;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+  color: #fff;
+  text-align: center;
+  cursor: pointer;
+  scroll-snap-align: center;
+  transition:
+    transform 0.22s cubic-bezier(0.3, 1.4, 0.5, 1),
+    background 0.2s,
+    box-shadow 0.2s;
+}
+.cp-card .pv {
+  margin-bottom: 12px;
+  pointer-events: none;
+}
+.cp-card b {
+  display: block;
+  font-size: 17px;
+  font-weight: 700;
+}
+.cp-card small {
+  display: block;
+  margin-top: 3px;
+  font-size: 13px;
+  opacity: 0.7;
+}
+.cp-card:hover,
+.cp-card:focus-visible,
+.cp-card:focus {
+  outline: none;
+  transform: translateY(-6px) scale(1.05);
+  background: rgba(255, 255, 255, 0.16);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.2),
+    0 0 0 3px #3ccbe0,
+    0 18px 34px -14px rgba(0, 0, 0, 0.7);
+}
+.cp-card.cur small::after {
+  content: ' · now';
+  color: #7fe3f2;
+  opacity: 1;
+}
+.cp-hint {
+  margin: 0;
+  min-height: 1em;
+  text-align: center;
+  font-size: 13px;
+  opacity: 0.65;
+}
+@media (max-width: 700px) {
+  .cp-card {
+    width: 168px;
+  }
+}
+
+/* TV mode shows its own controller legend: the console home's small hint would sit on top of it */
+body.tv .sw-hint {
+  display: none;
+}
