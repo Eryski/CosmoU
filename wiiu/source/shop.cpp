@@ -104,7 +104,11 @@ static bool fetch(const std::string &url, Sink &k, std::string &err) {
    curl_easy_setopt(c, CURLOPT_URL, url.c_str());
    curl_easy_setopt(c, CURLOPT_FOLLOWLOCATION, 1L);
    curl_easy_setopt(c, CURLOPT_USERAGENT, userAgent.c_str());
-   if (!caFile.empty() && exists(caFile)) curl_easy_setopt(c, CURLOPT_CAINFO, caFile.c_str());
+   if (!caFile.empty()) {
+      // only CosmoU's own certificate list: the Wii U's system folder that curl would also look in can't be read
+      curl_easy_setopt(c, CURLOPT_CAINFO, caFile.c_str());
+      curl_easy_setopt(c, CURLOPT_CAPATH, (char *)nullptr);
+   }
    curl_easy_setopt(c, CURLOPT_CONNECTTIMEOUT, 20L);
    curl_easy_setopt(c, CURLOPT_LOW_SPEED_LIMIT, 64L);
    curl_easy_setopt(c, CURLOPT_LOW_SPEED_TIME, 40L);

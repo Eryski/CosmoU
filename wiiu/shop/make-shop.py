@@ -55,7 +55,7 @@ FONTS = [
 
 # recommended emulators (with a note what they play), the Nintendo ones, and other emulators
 FEATURED = [
-    ('retroarch', 'NES · SNES · Game Boy · Game Boy Color · GBA · Virtual Boy · Game & Watch and more, all in one app'),
+    ('retroarch', 'NES · SNES · Game Boy · Game Boy Color · Game Boy Advance, all in one app'),
     ('NooDS', 'Nintendo DS'),
 ]
 NINTENDO = ['retroarch', 'NooDS', 'gbiine', 'gacubeboy', 'PokeMiniU', 'Pokemini']
