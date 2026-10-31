@@ -498,7 +498,7 @@ function renderPane(t) {
 }
 
 // ================= The Settings window =================
-const APP_VERSION = (window.api && api.appVersion) || '0.12.0';
+const APP_VERSION = (window.api && api.appVersion) || '0.12.1';
 const SX_ICON = {
   general:
     '<svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="11" fill="none" stroke="#fff" stroke-width="3.4"/><circle cx="16" cy="16" r="3.2" fill="#fff"/></svg>',
