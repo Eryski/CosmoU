@@ -45,9 +45,9 @@ function chTile(x, i, cls) {
     chZone = 'games';
     if (sel === x.name) launch(cur());
     else {
-      sel = x.name;
       blip('move');
-      render();
+      chZoneUi();
+      chSel(x.name);
     }
   };
   t.ondblclick = () => launch(cur());
@@ -112,24 +112,7 @@ function buildCHome(l) {
     order.forEach((x, k) => row.append(chTile(x, k, cls)));
   }
   // the top screen of the DS and the 3DS: the chosen game, big
-  if (p.home === 'dual') {
-    const g = order[i];
-    const art = document.createElement('div');
-    art.className = 'top-art';
-    if (g) paint(art, g);
-    const info = document.createElement('div');
-    info.className = 'top-info';
-    const t = document.createElement('b'),
-      s = document.createElement('small');
-    t.textContent = g ? g.name : '';
-    s.textContent = g ? (plays[g.name] ? 'Last played ' + dayName(plays[g.name]) : 'Tap to start') : '';
-    info.append(t, s);
-    const clock = document.createElement('div');
-    clock.className = 'top-clock';
-    const now = new Date();
-    clock.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    top.append(clock, art, info);
-  }
+  if (p.home === 'dual') chTop(order[i]);
   // keep the chosen game on the screen (rows, discs, cartridges)
   requestAnimationFrame(() => chScroll());
   // the round buttons
@@ -151,6 +134,53 @@ function buildCHome(l) {
     });
   apps.querySelector('[data-a="systems"]').hidden = sysAvail().length < 2;
   chZoneUi();
+}
+function chTop(g) {
+  const top = $('#chtop');
+  top.replaceChildren();
+  const art = document.createElement('div');
+  art.className = 'top-art';
+  if (g) chPaintBox(art, g);
+  const info = document.createElement('div');
+  info.className = 'top-info';
+  const t = document.createElement('b'),
+    s = document.createElement('small');
+  t.textContent = g ? g.name : '';
+  s.textContent = g ? (plays[g.name] ? 'Last played ' + dayName(plays[g.name]) : 'Tap to start') : '';
+  info.append(t, s);
+  const clock = document.createElement('div');
+  clock.className = 'top-clock';
+  clock.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  top.append(clock, art, info);
+}
+// a box cover keeps its own shape (DS and 3DS boxes are not square): the picture is measured once and the box
+// takes its width-to-height ratio, so nothing is cut off
+const chRatio = {};
+function chPaintBox(el, g) {
+  paint(el, g);
+  if (!g.cover) return;
+  const set = r => el.style.setProperty('--ar', r);
+  if (chRatio[g.cover]) return set(chRatio[g.cover]);
+  const im = new Image();
+  im.onload = () => {
+    if (!im.naturalWidth || !im.naturalHeight) return;
+    chRatio[g.cover] = Math.max(0.55, Math.min(1.8, im.naturalWidth / im.naturalHeight)).toFixed(3);
+    set(chRatio[g.cover]);
+  };
+  im.src = g.cover;
+}
+// choosing another game: only the selection moves (no new tiles, so nothing flashes like a reloaded page);
+// a new page of channels or icons is built new
+function chSel(name) {
+  const per = chPer(),
+    a = chOrder.findIndex(x => x.name === sel),
+    b = chOrder.findIndex(x => x.name === name),
+    row = $('#swrow');
+  sel = name;
+  if (mode !== 'chome' || b < 0 || !row.childElementCount || (per && Math.floor(Math.max(0, a) / per) !== Math.floor(b / per))) return render();
+  for (const t of row.children) t.classList.toggle('on', t.dataset.g === name);
+  if (chProfile().home === 'dual') chTop(chOrder[b]);
+  chScroll();
 }
 function chScroll() {
   const p = chProfile(),
@@ -216,9 +246,8 @@ function chNav(dir) {
   }
   j = Math.max(0, Math.min(n - 1, j));
   if (chOrder[j] && j !== i) {
-    sel = chOrder[j].name;
     blip('move');
-    render();
+    chSel(chOrder[j].name);
   }
 }
 // A / Enter: start the game, or press the chosen round button

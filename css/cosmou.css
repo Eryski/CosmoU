@@ -8659,6 +8659,11 @@ html {
   animation: swin 0.42s cubic-bezier(0.2, 1.2, 0.4, 1) both;
   animation-delay: calc(min(var(--i, 0), 6) * 35ms);
 }
+@keyframes chfade {
+  from {
+    opacity: 0.35;
+  }
+}
 @keyframes swin {
   0% {
     opacity: 0;
@@ -9158,19 +9163,23 @@ html.dark .wch.ch-empty {
   color: var(--mute);
 }
 .top-art {
-  aspect-ratio: 1;
+  /* the shape of the box cover (set from the picture), square until it is known */
+  aspect-ratio: var(--ar, 1);
   /* as big as the top screen allows, never taller */
   height: 100%;
   max-width: 100%;
   min-height: 0;
   justify-self: center;
   border-radius: 10px;
-  background-size: cover;
+  /* the whole cover, never cut (DS and 3DS boxes have the logo strip on the left edge) */
+  background-size: contain;
+  background-repeat: no-repeat;
   background-position: center;
   display: grid;
   place-items: center;
   box-shadow: 0 10px 22px -10px rgba(0, 0, 0, 0.5);
-  animation: swin 0.4s cubic-bezier(0.2, 1.2, 0.4, 1) both;
+  /* a soft change when another game is chosen (no jump) */
+  animation: chfade 0.22s ease-out both;
 }
 .top-art > span {
   font-size: 46px;
