@@ -21,6 +21,17 @@ permissions:
   checks: write
 
 jobs:
+  catalog:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Read the shop catalog
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 scripts/ci/wiiu-catalog.py "$RUNNER_TEMP/catalog.md"
+          gh api repos/${{ github.repository }}/check-runs -f name="Wii U shop catalog" -f head_sha=$GITHUB_SHA -f status=completed -f conclusion=neutral -f 'output[title]=catalog' -F "output[summary]=@$RUNNER_TEMP/catalog.md" >/dev/null
+
   build:
     runs-on: ubuntu-latest
     container: devkitpro/devkitppc:latest
