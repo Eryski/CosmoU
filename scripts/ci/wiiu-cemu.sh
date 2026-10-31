@@ -59,7 +59,7 @@ CEMU=$!
 for i in $(seq 1 26); do
   sleep 8
   import -window root -resize 960x "$OUT/shot-$(printf %02d $i).png" 2>/dev/null || true
-  convert "$OUT/shot-$(printf %02d $i).png" -quality 45 "$OUT/$(printf %02d $i)-cemu.jpg" 2>/dev/null || true
+  convert "$OUT/shot-$(printf %02d $i).png" -quality 40 "$OUT/$(printf %02d $i)-cemu.jpg" 2>/dev/null || true
   rm -f "$OUT/shot-$(printf %02d $i).png"
 done
 kill $CEMU 2>/dev/null
@@ -91,6 +91,7 @@ ok('the shop loads its catalogs (Cemu has internet here)', 'shop catalog ok' in 
 ok('shop: a theme installed and used', 'shop install classic-wii ok' in log and 'theme now classic-wii' in log, shop)
 ok('shop: a font installed and used', 'font now pixel' in log, shop)
 ok('shop: an emulator installed (NooDS)', 'shop install NooDS ok' in log, shop)
+ok('back in the library after the shop, still running', 'step 18' in log, '\n'.join(log.splitlines()[-6:]))
 cl = cemu.splitlines()
 bad = [i for i, l in enumerate(cl) if any(w in l for w in ('xception', 'rash', 'nhandled', 'DSI', 'ISI', 'Callstack', 'Stack trace', 'PPC'))]
 ok('Cemu log', True, '\n'.join(cl[max(0, bad[0] - 15):bad[0] + 40]) if bad else '\n'.join(cl[-30:]))

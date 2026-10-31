@@ -666,7 +666,7 @@ static void header() {
    text(sub, 19, bx + 2, 74, th.accent);
    float x = 760, y = 30, h = 46;
    // Shop (in the shop: back to the library)
-   shopBtn = {shopOpen ? x + 132 : x - 162, y - 6, 150, h + 12};
+   shopBtn = {shopOpen ? x + 132 : x - 172, y - 6, 150, h + 12};
    fillRound(shopBtn.x, shopBtn.y, shopBtn.w, shopBtn.h, shopBtn.h / 2, shopOpen ? th.card : th.accent);
    ringRound(shopBtn.x, shopBtn.y, shopBtn.w, shopBtn.h, shopBtn.h / 2, 1.5f, shopOpen ? th.line : alpha(th.accent, 0));
    SDL_Color sc = shopOpen ? th.ink : th.onAccent;
