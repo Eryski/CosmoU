@@ -46,6 +46,9 @@ function consolePick(onStart) {
       else if (typeof blip === 'function') blip('open');
     };
     b.onfocus = () => b.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
+    // the mouse chooses like the D-pad: one card is lit, never two
+    // (only for a real move – a resting mouse under the opening cards changes nothing)
+    b.onpointermove = e => (e.movementX || e.movementY) && document.activeElement !== b && b.focus({ preventScroll: true });
     row.append(b);
   }
   d.querySelector('.cp-hint').textContent = onStart ? 'You can change the console any time at the top – or with L and R on a controller.' : '';

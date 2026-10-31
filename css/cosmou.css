@@ -9524,7 +9524,6 @@ dialog.cpick[open] {
   font-size: 13px;
   opacity: 0.7;
 }
-.cp-card:hover,
 .cp-card:focus-visible,
 .cp-card:focus {
   outline: none;
