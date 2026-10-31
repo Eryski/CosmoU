@@ -199,6 +199,7 @@ async function portableTest() {
       const rec = path.join(T, 'Emu', k, 'started.txt');
       await E(() => {
         chZone = 'games';
+        chAll = false;
         sel = list().find(g => g.kind !== 'app').name;
         render();
       });

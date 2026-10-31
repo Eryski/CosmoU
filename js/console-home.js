@@ -12,7 +12,8 @@ let chOrder = [],
   chZone = 'games',
   chApp = 0,
   // Switch: the "All games" icon after the last twelve games is chosen
-  chAll = false;
+  chAll = false,
+  chAllAt = '';
 const CH_APPS = [
   ['recent', 'Recently played', '#e8485b', 'M12 7v5l3 2M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18Z', () => document.querySelector('nav button[data-v="recent"]').click()],
   ['themes', 'Themes', '#f0a020', 'M12 3a9 9 0 0 0 0 18c1.2 0 2-.8 2-1.8 0-.5-.2-.9-.5-1.2-.3-.3-.5-.7-.5-1.2 0-1 .8-1.8 1.8-1.8H17a4 4 0 0 0 4-4c0-4.4-4-8-9-8ZM7.5 12.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3Zm3-4a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3Zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3Z', () => openSettings('look')],
@@ -74,7 +75,8 @@ function buildCHome(l) {
   box.dataset.cart = p.cart || '';
   let order = chomeOrder(l);
   if (p.home === 'row') order = order.slice(0, 12);
-  else chAll = false;
+  // "All games" stays chosen only while the same game is behind it (another game chosen elsewhere ends it)
+  if (p.home !== 'row' || sel !== chAllAt) chAll = false;
   if (!order.some(x => x.name === sel) && order[0]) sel = order[0].name;
   chOrder = order;
   const i = Math.max(0, order.findIndex(x => x.name === sel));
@@ -241,6 +243,7 @@ function chNav(dir) {
     if (chAll && dir === 'r') return;
     if (!chAll && dir === 'r' && at === last) {
       chAll = true;
+      chAllAt = sel;
       for (const t of $('#swrow').children) t.classList.toggle('on', t.classList.contains('sw-all'));
       blip('move');
       chScroll();
