@@ -321,7 +321,8 @@ setTimeout(() => {
   const sg = await E(async () => (await api.scan()).filter(g => g.sys === 'switch').map(g => [g.name, g.path, g.tid]));
   ok('two Switch games', Array.isArray(sg) && sg.length === 2 && sg.some(g => g[1] === 'melonx:0100000000010000'), sg);
   await E(() => load().then(() => setSystem('switch')));
-  await wait(2500);
+  // (a slow simulator needs a moment for the switch)
+  await waitFor(() => curSys === 'switch' && mode === 'chome' && document.querySelectorAll('#swrow .sw-t').length >= 3, 15000);
   const swl = await E(() => ({ sys: curSys, mode, lay: $('#sw').dataset.lay, tiles: document.querySelectorAll('#swrow .sw-t').length, theme: style }));
   // (apps added earlier in this test are shown with every console, so there can be more than the two games and “All games”)
   ok('Switch Home on iPhone and iPad', swl && swl.sys === 'switch' && swl.mode === 'chome' && swl.lay === 'row' && swl.tiles >= 3, swl);

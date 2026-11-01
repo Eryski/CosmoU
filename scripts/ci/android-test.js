@@ -522,9 +522,24 @@ function tga() {
         const d = uiNodes().find(n => /^downloads?$/i.test(n.text));
         if (d) adb('shell', `input tap ${d.x} ${d.y}`), await wait(1500);
       }
-      await waitText(/cosmou-sea/, 15000);
       await shot('07-picture-picker');
-      await tapText(/cosmou-sea/);
+      // in the grid view a picture has no name on screen: its name is in the description, else tap its thumbnail
+      let hit = null;
+      for (let i = 0; i < 15 && !hit; i++) {
+        adb('shell', 'uiautomator dump /sdcard/ui.xml >/dev/null');
+        const x = adb('shell', 'cat /sdcard/ui.xml');
+        const nodes = [...x.matchAll(/<node [^>]*>/g)].map(m => m[0]);
+        const box = n => {
+          const b = n.match(/bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"/);
+          return b ? [(+b[1] + +b[3]) >> 1, (+b[2] + +b[4]) >> 1] : null;
+        };
+        const named = nodes.find(n => /(text|content-desc)="[^"]*cosmou-sea/.test(n));
+        const thumb = nodes.filter(n => /resource-id="[^"]*(icon_thumb|thumbnail)"/.test(n)).pop();
+        hit = box(named || thumb || '');
+        if (!hit) await wait(1000);
+      }
+      if (!hit) throw new Error('no picture in the picker');
+      adb('shell', `input tap ${hit[0]} ${hit[1]}`);
     } catch (e) {
       ok('picture picker', false, e.message.slice(0, 300));
       await shot('07-picture-picker');
