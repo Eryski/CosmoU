@@ -12,7 +12,7 @@ on:
         required: false
         default: ''
       release_notes:
-        description: Also add the Wii U install notes to the release text (only the first time)
+        description: Write the Wii U part of the release text (replaces the one that is there)
         type: boolean
         default: false
 
@@ -122,7 +122,19 @@ jobs:
         with:
           tag_name: ${{ inputs.to_release }}
           files: out/CosmoU-WiiU-*.wuhb
-          # the first time ("release_notes") the release text gets a short Wii U section (how to install it) at the end;
-          # a file with the same name is replaced; the release text stays as it is
-          body_path: ${{ inputs.release_notes && '.github/wiiu-release-notes.md' || '' }}
-          append_body: ${{ inputs.release_notes }}
+          # a file with the same name is replaced; the release text stays as it is here
+      - name: The Wii U part of the release text
+        if: inputs.release_notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.to_release }}
+        run: |
+          # everything before "## 🎮 CosmoU for Wii U" stays, the Wii U part is written new (or added at the end)
+          gh release view "$TAG" -R "$GITHUB_REPOSITORY" --json body -q .body > old.md
+          python3 - <<'PY'
+          old = open('old.md', encoding='utf-8').read()
+          i = old.find('## 🎮 CosmoU for Wii U')
+          head = (old[:i] if i >= 0 else old).rstrip()
+          open('new.md', 'w', encoding='utf-8').write(head + '\n\n' + open('.github/wiiu-release-notes.md', encoding='utf-8').read())
+          PY
+          gh release edit "$TAG" -R "$GITHUB_REPOSITORY" --notes-file new.md
