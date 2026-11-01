@@ -90,6 +90,16 @@ render = function () {
   }
   return r;
 };
+const _gridSelRw = gridSel;
+gridSel = function (name) {
+  if (!_gridSelRw(name)) return false;
+  try {
+    rwHero();
+  } catch (e) {
+    console.error(e);
+  }
+  return true;
+};
 // the search box kept the older render function: give it this one
 $('#q').oninput = () => render();
 

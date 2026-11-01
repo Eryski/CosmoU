@@ -218,13 +218,8 @@ function list() {
           : az(a, b),
   );
 }
-function render() {
-  // the floating 3D case belongs to the old layout: drop it before anything moves
-  if (typeof hoverOff === 'function') hoverOff();
-  const l = list();
-  if (!cur())
-    sel = (games.slice().sort((a, b) => (plays[b.name] || 0) - (plays[a.name] || 0) || a.name.localeCompare(b.name))[0] || {}).name || '';
-  if (mode !== 'grid' && l.length && !l.some(x => x.name === sel)) sel = l[0].name;
+// the banner above the grid: the chosen game
+function heroFill() {
   const g = cur();
   $('#hero').hidden = !g || mode !== 'grid';
   if (g) {
@@ -233,6 +228,44 @@ function render() {
     $('#ht').textContent = g.name;
     $('#hl').textContent = (plays[g.name] ? 'Recently played' : 'Selected') + ' · ' + g.format;
   }
+}
+// choosing another game in the grid: only the selection and the banner change – the tiles stay
+// (building every tile new made the whole grid blink, like reloading a web page)
+function gridSel(name) {
+  const gr = $('#grid');
+  if (mode !== 'grid' || !gr || gr.hidden) return false;
+  const t = [...gr.querySelectorAll('.tile')].find(x => x.dataset.g === name);
+  if (!t) return false;
+  for (const o of gr.querySelectorAll('.tile.on')) {
+    o.classList.remove('on');
+    const r = o.querySelector('.ring');
+    if (r) r.remove();
+  }
+  t.classList.add('on');
+  const r = document.createElement('div');
+  r.className = 'ring';
+  t.append(r);
+  if (typeof hoverOff === 'function') hoverOff();
+  heroFill();
+  t.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  return true;
+}
+// how many tiles are next to each other in the grid (up and down move by that)
+function gridCols() {
+  const ts = [...document.querySelectorAll('#grid .tile')];
+  if (ts.length < 2) return 1;
+  const top = ts[0].offsetTop;
+  const n = ts.findIndex(t => t.offsetTop !== top);
+  return n < 0 ? ts.length : n;
+}
+function render() {
+  // the floating 3D case belongs to the old layout: drop it before anything moves
+  if (typeof hoverOff === 'function') hoverOff();
+  const l = list();
+  if (!cur())
+    sel = (games.slice().sort((a, b) => (plays[b.name] || 0) - (plays[a.name] || 0) || a.name.localeCompare(b.name))[0] || {}).name || '';
+  if (mode !== 'grid' && l.length && !l.some(x => x.name === sel)) sel = l[0].name;
+  heroFill();
   $('#st').textContent = view === 'recent' ? 'Recently played' : 'Library';
   const nf = l.filter(x => favs.has(x.name)).length;
   $('#count').textContent = l.length + (l.length === 1 ? ' game' : ' games') + (nf && showFilter !== 'fav' ? ` · ${nf} ★` : '');

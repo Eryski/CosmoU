@@ -171,6 +171,10 @@ addEventListener('keydown', e => {
   else if (isHome() && (e.key === 'PageDown' || e.key === 'PageUp')) whTurn(e.key === 'PageDown' ? 1 : -1);
   else if (e.key === 'ArrowRight' || (mode === 'wiiu' && e.key === 'ArrowDown')) step(1);
   else if (e.key === 'ArrowLeft' || (mode === 'wiiu' && e.key === 'ArrowUp')) step(-1);
+  else if (mode === 'grid' && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
+    e.preventDefault();
+    step((e.key === 'ArrowDown' ? 1 : -1) * gridCols());
+  }
   else if (e.key === 'Enter' && e.target === document.body) launch(cur());
 });
 $('#wplay').onclick = () => launch(cur());

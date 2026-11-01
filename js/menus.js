@@ -496,6 +496,16 @@ render = function () {
   }
   if (mode === 'grid' && view === 'recent') recentGroups();
 };
+const _gridSelM = gridSel;
+gridSel = function (name) {
+  if (!_gridSelM(name)) return false;
+  const g = cur();
+  if (g) {
+    coverMeta(g, -1, 0, $('#hmeta'));
+    $('#hl').textContent = plays[g.name] ? 'Continue playing' : 'Selected';
+  }
+  return true;
+};
 // empty library: three steps (Cemu, games folder, play) with their state
 function emptySteps() {
   let box = $('#esteps');

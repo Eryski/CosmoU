@@ -479,6 +479,23 @@ async function waitFor(fn, ms) {
   const back = await E(() => ({ sys: curSys, mode, n: list().filter(g => g.kind !== 'app').length }));
   ok('back to Wii U', back.sys === 'wiiu' && back.mode !== 'chome' && back.n >= 2, back);
 
+  // ---- the grid: moving keeps the tiles (no blinking like a reloaded page), up and down go a row ----
+  {
+    const gs = await E(async () => {
+      document.querySelector('#vt button[data-m="grid"]').click();
+      await new Promise(r => setTimeout(r, 900));
+      const first = document.querySelector('#grid .tile'),
+        i0 = list().findIndex(x => x.name === sel);
+      step(1);
+      await new Promise(r => setTimeout(r, 200));
+      const i1 = list().findIndex(x => x.name === sel);
+      const out = { same: document.querySelector('#grid .tile') === first, moved: i1 === i0 + 1 || list().length < 2, hero: $('#ht').textContent === sel, rings: document.querySelectorAll('#grid .ring').length };
+      document.querySelector('#vt button[data-m="covers"]').click();
+      return out;
+    });
+    ok('grid: moving keeps the tiles (no reload blink)', gs.same && gs.moved && gs.hero && gs.rings === 1, gs);
+  }
+
   // ---- a picture and music for each console (Settings → Appearance), and a theme file with a picture ----
   {
     const dir = path.join(HOME, 'CosmoU-test', 'looks');

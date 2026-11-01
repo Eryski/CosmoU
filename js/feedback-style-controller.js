@@ -204,8 +204,12 @@ function padTick(now) {
           for (const k of ['l', 'r', 'u', 'd']) if (fire[k]) chNav(k);
           if ((fire.pl || fire.pr) && typeof chPage === 'function') chPage(fire.pr ? 1 : -1);
         } else {
-          if (fire.l || (mode !== 'covers' && fire.u)) step(-1);
-          if (fire.r || (mode !== 'covers' && fire.d)) step(1);
+          // (in the grid up and down go a row)
+          const rowStep = mode === 'grid' ? gridCols() : 1;
+          if (fire.l) step(-1);
+          else if (mode !== 'covers' && fire.u) step(-rowStep);
+          if (fire.r) step(1);
+          else if (mode !== 'covers' && fire.d) step(rowStep);
         }
       }
       if (fire.a) mode === 'chome' ? chA() : launch(cur());

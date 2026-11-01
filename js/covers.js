@@ -91,12 +91,14 @@ function coverMeta(g, idx, n, box = $('#cfm')) {
 function step(d) {
   if (mode === 'chome') return chNav(d > 0 ? 'r' : 'l');
   const l = list(),
-    i = l.findIndex(x => x.name === sel),
-    n = Math.max(0, Math.min(l.length - 1, i + d));
+    i = l.findIndex(x => x.name === sel);
+  // a row up or down (grid) past the first or last row: stay
+  if (Math.abs(d) > 1 && (i + d < 0 || i + d > l.length - 1) && !(d > 0 && Math.floor(i / d) < Math.floor((l.length - 1) / d))) return;
+  const n = Math.max(0, Math.min(l.length - 1, i + d));
   if (l[n] && l[n].name !== sel) {
     sel = l[n].name;
     blip('move');
-    render();
+    if (!gridSel(sel)) render();
   }
 }
 function vind() {
