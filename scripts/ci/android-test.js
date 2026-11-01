@@ -529,9 +529,10 @@ function tga() {
         adb('shell', 'uiautomator dump /sdcard/ui.xml >/dev/null');
         const x = adb('shell', 'cat /sdcard/ui.xml');
         const nodes = [...x.matchAll(/<node [^>]*>/g)].map(m => m[0]);
+        // (not the middle: a thumbnail has a "preview" button there)
         const box = n => {
           const b = n.match(/bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"/);
-          return b ? [(+b[1] + +b[3]) >> 1, (+b[2] + +b[4]) >> 1] : null;
+          return b ? [Math.round(+b[1] + (b[3] - b[1]) * 0.18), Math.round(+b[2] + (b[4] - b[2]) * 0.85)] : null;
         };
         const named = nodes.find(n => /(text|content-desc)="[^"]*cosmou-sea/.test(n));
         const thumb = nodes.filter(n => /resource-id="[^"]*(icon_thumb|thumbnail)"/.test(n)).pop();
