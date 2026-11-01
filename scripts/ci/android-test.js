@@ -503,10 +503,13 @@ function tga() {
   at('background picture');
   {
     const png = require('./test-picture')(path.join(os.tmpdir(), 'cosmou-sea.png'));
-    adb('push', png, '/sdcard/Download/cosmou-sea.png');
-    try {
-      adb('shell', 'am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE -d file:///sdcard/Download/cosmou-sea.png >/dev/null');
-    } catch {}
+    // Android's picker opens in the folder used last (the games folder), and in Downloads otherwise: put it in both
+    for (const d of ['/sdcard/Download', '/sdcard/CosmoU-test/Games']) {
+      adb('push', png, d + '/cosmou-sea.png');
+      try {
+        adb('shell', `am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE -d file://${d}/cosmou-sea.png >/dev/null`);
+      } catch {}
+    }
     await E(() => document.querySelectorAll('dialog[open]').forEach(d => d.close()));
     await E(() => {
       window.__look = null;
