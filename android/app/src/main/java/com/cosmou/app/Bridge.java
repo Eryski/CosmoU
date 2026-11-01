@@ -306,7 +306,7 @@ public class Bridge {
             case "themePick":
                 return themePick(id);
             case "themeInstall":
-                return themeInstall(a.getString(0), a.getString(1), a.optString(2, ""));
+                return themeInstall(a.getString(0), a.getString(1), a.optString(2, ""), a.optString(3, ""));
             case "themeExport":
                 return themeExport(id, a.getString(0), a.getString(1));
             case "scanFiles":
@@ -641,7 +641,7 @@ public class Bridge {
 
     // ---------- files from and to the device ----------
     static final Pattern AUDIO = Pattern.compile("(?i).+\\.(mp3|ogg|wav|m4a|flac)$");
-    static final Pattern IMAGE = Pattern.compile("(?i).+\\.(png|jpe?g|webp)$");
+    static final Pattern IMAGE = Pattern.compile("(?i).+\\.(png|jpe?g|webp|gif)$");
 
     Object pickFile(int id, String kind, String destRel) {
         Intent i = new Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE);
@@ -715,7 +715,7 @@ public class Bridge {
             }
             // first pass: theme.json and the names of the music files
             String json = null;
-            List<String> audio = new ArrayList<>();
+            List<String> audio = new ArrayList<>(), pictures = new ArrayList<>();
             try (ZipInputStream z = new ZipInputStream(act.getContentResolver().openInputStream(u))) {
                 ZipEntry e;
                 while ((e = z.getNextEntry()) != null) {
@@ -723,6 +723,7 @@ public class Bridge {
                     String base = new File(e.getName()).getName();
                     if (base.equalsIgnoreCase("theme.json")) json = new String(readAll(z, 64 * 1024), StandardCharsets.UTF_8);
                     else if (AUDIO.matcher(base).matches()) audio.add(e.getName());
+                    else if (IMAGE.matcher(base).matches()) pictures.add(e.getName());
                 }
             } catch (Exception e) {
                 return err("Could not read that file.");
@@ -757,11 +758,39 @@ public class Bridge {
                 m.put("tmp", tmp.getName());
                 o.put("music", m);
             }
+            // its background picture: the file named in "image"
+            String wantPic = "";
+            try {
+                wantPic = new File(new JSONObject(json).optString("image", "")).getName().toLowerCase(Locale.ROOT);
+            } catch (Exception ignored) {
+            }
+            String pic = null;
+            for (String n : pictures) if (!wantPic.isEmpty() && new File(n).getName().toLowerCase(Locale.ROOT).equals(wantPic)) pic = n;
+            if (pic != null) {
+                String ext = pic.substring(pic.lastIndexOf('.')).toLowerCase(Locale.ROOT);
+                File tmp = new File(act.getCacheDir(), "theme-image" + ext);
+                try (ZipInputStream z = new ZipInputStream(act.getContentResolver().openInputStream(u))) {
+                    ZipEntry e;
+                    while ((e = z.getNextEntry()) != null) {
+                        if (!e.getName().equals(pic)) continue;
+                        try (OutputStream out = new FileOutputStream(tmp)) {
+                            copy(z, out, 15L * 1048576);
+                        } catch (IOException big) {
+                            return err("The picture in that theme is too big (15 MB at most).");
+                        }
+                        break;
+                    }
+                }
+                JSONObject m = new JSONObject();
+                m.put("ext", ext);
+                m.put("tmp", tmp.getName());
+                o.put("image", m);
+            }
             return o;
         });
     }
 
-    Object themeInstall(String id, String json, String tmpName) throws Exception {
+    Object themeInstall(String id, String json, String tmpName, String imageTmp) throws Exception {
         if (!id.matches("u-[a-z0-9-]+")) return err("Unknown theme.");
         File dir = file("public/own-themes/" + id);
         if (dir == null) return err("Not allowed.");
@@ -782,6 +811,18 @@ public class Bridge {
                 }
             }
         }
+        if (imageTmp != null && imageTmp.matches("theme-image\\.[a-z0-9]+")) {
+            File tmp = new File(act.getCacheDir(), imageTmp);
+            if (tmp.isFile()) {
+                File to = new File(dir, "background" + imageTmp.substring(imageTmp.lastIndexOf('.')));
+                if (!tmp.renameTo(to)) {
+                    try (InputStream in = new FileInputStream(tmp); OutputStream out = new FileOutputStream(to)) {
+                        copy(in, out, 15L * 1048576);
+                    }
+                    tmp.delete();
+                }
+            }
+        }
         return ok();
     }
 
@@ -794,7 +835,7 @@ public class Bridge {
             File[] files = dir.listFiles();
             if (files != null)
                 for (File f : files) {
-                    if (!f.getName().equals("theme.json") && !f.getName().startsWith("music.")) continue;
+                    if (!f.getName().equals("theme.json") && !f.getName().startsWith("music.") && !f.getName().startsWith("background.")) continue;
                     z.putNextEntry(new ZipEntry(f.getName()));
                     try (InputStream in = new FileInputStream(f)) {
                         copy(in, z, 60L * 1048576);

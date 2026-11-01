@@ -424,6 +424,57 @@ setTimeout(() => {
     zl = 'unzip: ' + e.message;
   }
   ok('theme exported as a zip with theme.json and the song', exp && exp.ok && /theme\.json/.test(zl) && /music\.m4a/.test(zl), [exp, zl.slice(-400)]);
+  // ---- a picture and music for the console on screen, and a theme file with a picture ----
+  at('picture and music');
+  const seaPng = require('./test-picture')(path.join(work, 'sea.png'));
+  answer('pick-file', seaPng);
+  const lkp = await E(async () => {
+    const r = await api.sysLookPick(curSys, 'bg');
+    await loadLooks();
+    const res = r && r.url && (await fetch(r.url));
+    return { sys: curSys, r, status: res && res.status, pic: document.body.classList.contains('has-pic') };
+  });
+  ok('a background picture for this console', lkp && lkp.r && lkp.status === 200 && lkp.pic, lkp);
+  answer('pick-file', path.join(work, 'theme', 'song.m4a'));
+  const lkm = await E(async () => {
+    const r = await api.sysLookPick(curSys, 'music');
+    await loadLooks();
+    const m = await themedMusic(await api.getMusic());
+    return { r, m };
+  });
+  ok('music for this console', lkm && lkm.r && lkm.m && /looks\/[a-z0-9]+\/music\//.test(decodeURIComponent(lkm.m.url)), lkm);
+  await shot('picture-per-console');
+  const lkr = await E(async () => {
+    await lookRemove('bg');
+    await lookRemove('music');
+    return { pic: document.body.classList.contains('has-pic'), looks: await api.sysLooks() };
+  });
+  ok('picture and music removed again', lkr && !lkr.pic && !Object.keys(lkr.looks.bg).length && !Object.keys(lkr.looks.music).length, lkr);
+  fs.copyFileSync(seaPng, path.join(work, 'theme', 'sea.png'));
+  fs.writeFileSync(path.join(work, 'theme', 'theme.json'), JSON.stringify({ name: 'Great Sea', base: 'liquid-glass', image: 'sea.png', music: 'song.m4a' }));
+  fs.rmSync(path.join(work, 'sea.cosmoutheme'), { force: true });
+  cp.execFileSync('zip', ['-q', '-9', path.join(work, 'sea.cosmoutheme'), 'theme.json', 'song.m4a', 'sea.png'], { cwd: path.join(work, 'theme') });
+  answer('pick-theme', path.join(work, 'sea.cosmoutheme'));
+  const timp = await E(async () => {
+    const r = await api.ownThemeImport();
+    const t = (await api.ownThemes()).find(x => x.id === 'u-great-sea');
+    const res = t && t.imageUrl && (await fetch(t.imageUrl));
+    await ownLoad();
+    setTheme('u-great-sea');
+    await new Promise(z => setTimeout(z, 800));
+    return { r, url: t && t.imageUrl, status: res && res.status, cls: document.body.className, pic: document.body.classList.contains('has-pic') };
+  });
+  ok('theme file with a picture on Liquid Glass', timp && timp.r && timp.r.ok && timp.status === 200 && /theme-liquid-glass/.test(timp.cls) && timp.pic, timp);
+  await shot('theme-file-with-picture');
+  const exp2 = await E(() => api.ownThemeExport('u-great-sea'));
+  let zl2 = '';
+  try {
+    zl2 = cp.execFileSync('unzip', ['-l', path.join(work, 'exported', 'great-sea.cosmoutheme')], { encoding: 'utf8' });
+  } catch (e) {
+    zl2 = 'unzip: ' + e.message;
+  }
+  ok('the theme is shared with its picture', exp2 && exp2.ok && /background\.png/.test(zl2), [exp2, zl2.slice(-300)]);
+  await E(() => setTheme('liquid-glass'));
   // settings file: save, then read it back
   const ex = await E(() => api.exportSettings({ style: 'wiiu' }));
   const sf = path.join(work, 'exported', 'cosmou-settings.json');

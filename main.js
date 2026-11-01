@@ -713,6 +713,13 @@ function cleanColors(raw, label, optional) {
   for (const k of ['accent', 'background2']) if (raw[k] != null && raw[k] !== '') c[k] = hexColor(raw[k]) || undefined;
   return c;
 }
+// on Liquid Glass only the selection and accent colors can be changed
+function glassColors(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  const c = {};
+  for (const k of ['selection', 'accent']) if (hexColor(raw[k])) c[k] = hexColor(raw[k]);
+  return Object.keys(c).length ? c : null;
+}
 function cleanTheme(raw) {
   if (!raw || typeof raw !== 'object') return { error: 'theme.json is not a valid theme file.' };
   const name = cleanText(raw.name, 40);
@@ -723,9 +730,11 @@ function cleanTheme(raw) {
     .replace(/^-+|-+$/g, '')
     .slice(0, 30);
   if (!name || !slug) return { error: 'The theme needs a "name" (letters or numbers).' };
-  const colors = cleanColors(raw.colors, 'colors');
-  if (colors.error) return colors;
-  const dark = cleanColors(raw.colorsDark, 'colorsDark', true);
+  // "base": "liquid-glass" = CosmoU's glass look with the theme's picture and music (then colors are optional)
+  const base = oneOf(raw.base, ['none', 'liquid-glass'], 'none');
+  const colors = base === 'liquid-glass' ? glassColors(raw.colors) : cleanColors(raw.colors, 'colors');
+  if (colors && colors.error) return colors;
+  const dark = base === 'liquid-glass' ? null : cleanColors(raw.colorsDark, 'colorsDark', true);
   if (dark && dark.error) return dark;
   const author = cleanText(raw.author, 40),
     inspired = cleanText(raw.inspired, 60);
@@ -736,6 +745,7 @@ function cleanTheme(raw) {
     desc: cleanText(raw.description, 80) || (inspired ? 'Inspired by ' + inspired : 'Theme by ' + (author || 'the community')),
     mode: oneOf(raw.mode, ['both', 'light', 'dark'], 'both'),
     colors,
+    base,
     background: oneOf(
       raw.background,
       [
@@ -766,7 +776,9 @@ function cleanTheme(raw) {
     corners: oneOf(raw.corners, ['square', 'rounded', 'round'], 'rounded'),
   };
   if (dark) t.colorsDark = dark;
+  if (!colors) delete t.colors;
   if (raw.music) t.music = path.basename(String(raw.music)).slice(0, 100);
+  if (raw.image) t.image = path.basename(String(raw.image)).slice(0, 100);
   return { theme: t };
 }
 function readThemePack(file) {
@@ -774,7 +786,7 @@ function readThemePack(file) {
   if (fs.statSync(file).size > 60 * 1024 * 1024) return { error: 'That file is too big for a theme.' };
   if (ext === '.json') {
     if (fs.statSync(file).size > 64 * 1024) return { error: 'That theme.json is too big.' };
-    return { raw: JSON.parse(fs.readFileSync(file, 'utf8')), music: null };
+    return { raw: JSON.parse(fs.readFileSync(file, 'utf8')), music: null, image: null };
   }
   const zip = new AdmZip(file);
   const entries = zip.getEntries().filter(e => !e.isDirectory);
@@ -787,7 +799,15 @@ function readThemePack(file) {
     entries.find(e => want && path.basename(e.entryName).toLowerCase() === want && AUDIO_EXT.test(e.entryName)) ||
     entries.find(e => AUDIO_EXT.test(e.entryName));
   if (m && m.header.size > MAX_THEME_MUSIC) return { error: 'The music file in that theme is too big (40 MB at most).' };
-  return { raw, music: m ? { ext: path.extname(m.entryName).toLowerCase(), data: m.getData() } : null };
+  // its background picture: the file named in "image"
+  const wantPic = raw && raw.image ? path.basename(String(raw.image)).toLowerCase() : '';
+  const p = wantPic && entries.find(e => path.basename(e.entryName).toLowerCase() === wantPic && PICTURE.test(e.entryName));
+  if (p && p.header.size > MAX_PICTURE) return { error: 'The picture in that theme is too big (15 MB at most).' };
+  return {
+    raw,
+    music: m ? { ext: path.extname(m.entryName).toLowerCase(), data: m.getData() } : null,
+    image: p ? { ext: path.extname(p.entryName).toLowerCase(), data: p.getData() } : null,
+  };
 }
 ipcMain.handle('ownThemeImport', async (_, given) => {
   try {
@@ -814,6 +834,10 @@ ipcMain.handle('ownThemeImport', async (_, given) => {
       fs.writeFileSync(path.join(tmp, 'music' + pack.music.ext), pack.music.data);
       t.music = 'music' + pack.music.ext;
     } else delete t.music;
+    if (pack.image) {
+      fs.writeFileSync(path.join(tmp, 'background' + pack.image.ext), pack.image.data);
+      t.image = 'background' + pack.image.ext;
+    } else delete t.image;
     fs.writeFileSync(path.join(tmp, 'theme.json'), JSON.stringify(t, null, 2));
     fs.rmSync(dir, { recursive: true, force: true });
     fs.renameSync(tmp, dir);
@@ -833,7 +857,9 @@ ipcMain.handle('ownThemeList', () => {
       if (!/^u-[a-z0-9-]+$/.test(n)) continue;
       try {
         const c = cleanTheme(JSON.parse(fs.readFileSync(path.join(ownThemesDir(), n, 'theme.json'), 'utf8')));
-        if (c.theme && c.theme.id === n) out.push({ ...c.theme, hasMusic: !!c.theme.music });
+        if (!c.theme || c.theme.id !== n) continue;
+        const pic = c.theme.image && path.join(ownThemesDir(), n, c.theme.image);
+        out.push({ ...c.theme, hasMusic: !!c.theme.music, imageUrl: pic && fs.existsSync(pic) ? fileUrlV(pic) : '' });
       } catch {}
     }
   } catch {}
@@ -862,6 +888,7 @@ ipcMain.handle('ownThemeExport', async (_, id) => {
     const zip = new AdmZip();
     zip.addFile('theme.json', Buffer.from(JSON.stringify(t, null, 2)));
     if (t.music && fs.existsSync(path.join(dir, t.music))) zip.addLocalFile(path.join(dir, t.music));
+    if (t.image && fs.existsSync(path.join(dir, t.image))) zip.addLocalFile(path.join(dir, t.image));
     zip.writeZip(r.filePath);
     return { ok: true, path: r.filePath };
   } catch {
@@ -2335,6 +2362,73 @@ ipcMain.handle('resetMusic', () => {
   try {
     for (const f of fs.readdirSync(musicDir())) if (AUDIO.test(f)) fs.rmSync(path.join(musicDir(), f), { force: true });
   } catch {}
+  return true;
+});
+
+// ---------- A picture and music for each console ----------
+// <userData>/looks/<console>/background.<ext> and music.<ext> (+ name.txt with the music's own file name).
+// Each console shows its picture behind the glass and plays its music; without them the theme's look and music stay.
+const looksDir = () => path.join(app.getPath('userData'), 'looks');
+const PICTURE = /\.(jpe?g|png|webp|gif)$/i;
+const MAX_PICTURE = 15 * 1024 * 1024;
+const lookSys = s => (/^[a-z0-9]{2,12}$/.test(String(s)) ? String(s) : '');
+const fileUrlV = f => pathToFileURL(f).href + '?v=' + Math.round(fs.statSync(f).mtimeMs);
+function lookFiles(dir, re) {
+  try {
+    return fs.readdirSync(dir).filter(n => re.test(n));
+  } catch {
+    return [];
+  }
+}
+ipcMain.handle('sysLooks', () => {
+  const out = { bg: {}, music: {} };
+  let list = [];
+  try {
+    list = fs.readdirSync(looksDir());
+  } catch {}
+  for (const k of list) {
+    if (!lookSys(k)) continue;
+    const d = path.join(looksDir(), k);
+    const b = lookFiles(d, /^background\./i).find(n => PICTURE.test(n));
+    if (b) out.bg[k] = { url: fileUrlV(path.join(d, b)) };
+    const m = lookFiles(d, /^music\./i).find(n => AUDIO.test(n));
+    if (m) {
+      let name = m;
+      try {
+        name = fs.readFileSync(path.join(d, 'name.txt'), 'utf8').trim().slice(0, 100) || m;
+      } catch {}
+      out.music[k] = { url: fileUrlV(path.join(d, m)), name };
+    }
+  }
+  return out;
+});
+ipcMain.handle('sysLookPick', async (_, sys, kind) => {
+  const k = lookSys(sys),
+    pic = kind === 'bg';
+  if (!k) return null;
+  const r = await dialog.showOpenDialog({
+    title: pic ? 'Choose a background picture' : 'Choose the music for this console',
+    filters: pic
+      ? [{ name: 'Pictures', extensions: ['jpg', 'jpeg', 'png', 'webp', 'gif'] }]
+      : [{ name: 'Audio', extensions: ['mp3', 'ogg', 'wav', 'm4a', 'flac'] }],
+    properties: ['openFile'],
+  });
+  const f = !r.canceled && r.filePaths[0];
+  if (!f || !(pic ? PICTURE : AUDIO).test(f)) return null;
+  if (pic && fs.statSync(f).size > MAX_PICTURE) return { error: 'That picture is too big (15 MB at most).' };
+  const d = path.join(looksDir(), k);
+  fs.mkdirSync(d, { recursive: true });
+  for (const n of lookFiles(d, pic ? /^background\./i : /^(music\.|name\.txt$)/i)) fs.rmSync(path.join(d, n), { force: true });
+  const dest = path.join(d, (pic ? 'background' : 'music') + path.extname(f).toLowerCase());
+  fs.copyFileSync(f, dest);
+  if (!pic) fs.writeFileSync(path.join(d, 'name.txt'), path.basename(f));
+  return { url: fileUrlV(dest), name: path.basename(f) };
+});
+ipcMain.handle('sysLookRemove', (_, sys, kind) => {
+  const k = lookSys(sys);
+  if (!k) return false;
+  const d = path.join(looksDir(), k);
+  for (const n of lookFiles(d, kind === 'bg' ? /^background\./i : /^(music\.|name\.txt$)/i)) fs.rmSync(path.join(d, n), { force: true });
   return true;
 });
 

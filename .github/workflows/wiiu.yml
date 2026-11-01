@@ -28,9 +28,20 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: SDL2 for the Wii U
+        shell: bash
         run: |
-          dkp-pacman -Syu --noconfirm --needed wiiu-sdl2 wiiu-sdl2_image wiiu-sdl2_mixer wiiu-sdl2_ttf
-          $DEVKITPRO/portlibs/wiiu/bin/powerpc-eabi-pkg-config --libs SDL2_mixer SDL2_ttf SDL2_image sdl2
+          # devkitPro's package server sometimes drops a download: try a few times
+          ok=0
+          for i in 1 2 3 4; do
+            if dkp-pacman -Syu --noconfirm --needed wiiu-sdl2 wiiu-sdl2_image wiiu-sdl2_mixer wiiu-sdl2_ttf wiiu-curl ppc-zlib > pacman.log 2>&1; then ok=1; break; fi
+            sleep 20
+          done
+          if [ $ok = 0 ]; then tail -15 pacman.log | sed 's/^/::error::/'; exit 1; fi
+          $DEVKITPRO/portlibs/wiiu/bin/powerpc-eabi-pkg-config --libs SDL2_mixer SDL2_ttf SDL2_image sdl2 libcurl zlib
+          $DEVKITPRO/portlibs/wiiu/bin/powerpc-eabi-pkg-config --libs --static libcurl
+
+      - name: Fresh certificates for the shop's downloads
+        run: (curl -sSfL -o /tmp/cacert.pem https://curl.se/ca/cacert.pem && grep -q "BEGIN CERTIFICATE" /tmp/cacert.pem && mv /tmp/cacert.pem wiiu/content/cacert.pem && sed -n 4p wiiu/content/cacert.pem) || echo "keeping the bundled ones"
 
       - name: Build CosmoU.wuhb
         shell: bash
@@ -38,6 +49,8 @@ jobs:
           set -o pipefail
           make -C wiiu -j4 2>&1 | tee build.log || { grep -iE "error|undefined|warning" build.log | head -25 | sed 's/^/::error::/'; tail -8 build.log | sed 's/^/::error::/'; exit 1; }
           ls -la wiiu/CosmoU.wuhb wiiu/CosmoU.rpx
+          # function addresses, so a crash in Cemu can be named
+          $DEVKITPPC/bin/powerpc-eabi-nm -C --numeric-sort wiiu/CosmoU.elf > wiiu/symbols.txt || true
 
       - uses: actions/upload-artifact@v4
         with:
@@ -45,6 +58,28 @@ jobs:
           path: |
             wiiu/CosmoU.wuhb
             wiiu/CosmoU.rpx
+            wiiu/symbols.txt
+
+  # the shop on a PC: the real catalogs, installing into a folder that stands in for the SD card, removing again
+  shop-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Shop test
+        continue-on-error: true
+        env:
+          COSMO_BASE: https://raw.githubusercontent.com/${{ github.repository }}/${{ github.ref_name }}/
+          SHOP_FULL: '1'
+        run: |
+          sudo apt-get update -qq >/dev/null && sudo apt-get install -y -qq libcurl4-openssl-dev zlib1g-dev >/dev/null
+          g++ -std=gnu++17 -O1 -Wall -I wiiu/source wiiu/source/shop.cpp scripts/ci/wiiu-shop-test.cpp -lcurl -lz -o shop-test
+          mkdir -p "$RUNNER_TEMP/shop" "$RUNNER_TEMP/sd"
+          SHOP_ROOT="$RUNNER_TEMP/sd/" ./shop-test "$RUNNER_TEMP/shop"
+      - name: Report the shop test
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/ci/report.js "$RUNNER_TEMP/shop" wiiu-shop
 
   test:
     needs: build
@@ -60,7 +95,7 @@ jobs:
         continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
-        run: bash scripts/ci/wiiu-cemu.sh "$PWD/out/CosmoU.wuhb" "$RUNNER_TEMP/wiiu"
+        run: bash scripts/ci/wiiu-cemu.sh "$PWD/out/CosmoU.wuhb" "$RUNNER_TEMP/wiiu" "https://raw.githubusercontent.com/${{ github.repository }}/${{ github.ref_name }}/"
 
       - name: Report the test
         if: always()
@@ -69,7 +104,7 @@ jobs:
         run: node scripts/ci/report.js "$RUNNER_TEMP/wiiu" wiiu
 
   release:
-    needs: [build, test]
+    needs: [build, test, shop-test]
     if: inputs.to_release != ''
     runs-on: ubuntu-latest
     steps:

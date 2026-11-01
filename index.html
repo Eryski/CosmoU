@@ -54,6 +54,7 @@
       </filter>
     </svg>
     <div class="bg"><i></i><i></i><i></i><canvas id="pt"></canvas></div>
+    <div id="bgpic" aria-hidden="true"></div>
     <div class="page">
       <header>
         <div class="brand">CosmoU<small>Wii U Library</small></div>
@@ -392,6 +393,25 @@
                     ><button class="btn" id="otdel" hidden>Remove</button>
                   </div>
                   <p class="otmsg" id="otmsg" role="status" aria-live="polite"></p>
+                </div>
+                <div class="set lkset" data-k="background picture wallpaper image photo own custom console liquid glass">
+                  <span class="lkpv" id="lkpv" hidden aria-hidden="true"></span>
+                  <div class="lbl">
+                    <strong>Background picture for <span class="lksys">Wii U</span></strong
+                    ><small>Your own picture behind the glass. Each console keeps its own – it looks best with Liquid Glass.</small>
+                  </div>
+                  <div class="acts">
+                    <button class="btn" id="lkbg">Choose picture…</button><button class="btn" id="lkbgdel" hidden>Remove</button>
+                  </div>
+                </div>
+                <div class="set" data-k="music song own custom console menu music per console">
+                  <div class="lbl">
+                    <strong>Music for <span class="lksys">Wii U</span></strong
+                    ><small>Plays while this console is on screen, instead of the theme's music. <b class="lkmuname" id="lkmuname"></b></small>
+                  </div>
+                  <div class="acts">
+                    <button class="btn" id="lkmu">Choose music…</button><button class="btn" id="lkmudel" hidden>Remove</button>
+                  </div>
                 </div>
                 <div class="set" data-k="light dark mode night system windows appearance">
                   <div class="lbl"><strong>Light or dark</strong><small>Follow Windows, or always light or dark</small></div>
@@ -1183,6 +1203,7 @@
     <script src="js/polish.js"></script>
     <script src="js/onboarding.js"></script>
     <script src="js/themes.js"></script>
+    <script src="js/looks.js"></script>
     <script src="js/social.js"></script>
     <script src="js/extras.js"></script>
     <script src="js/tools.js"></script>

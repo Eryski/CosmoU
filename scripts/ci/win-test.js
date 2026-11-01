@@ -170,6 +170,40 @@ async function portableTest() {
     ok('every console’s game found (a Switch update is no game)', Array.isArray(sw) && sw.length === CONSOLES.length && sw.some(g => g[0] === 'switch' && /Update/.test(g[2])), sw);
     await shot('01-start');
 
+    // a picture and music for one console (GameCube here), the others keep theirs
+    {
+      const pic = require('./test-picture')(path.join(os.tmpdir(), 'cosmou-sea.png'));
+      const song = path.join(__dirname, '..', '..', 'assets', 'music', 'themes', 'plaza.ogg');
+      const pickNext = f => app.evaluate(({ dialog }, f) => (dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [f] })), f);
+      await E(() => setSystem('gamecube'));
+      await w.waitForTimeout(1200);
+      await pickNext(pic);
+      await E(() => lookPick('bg'));
+      await pickNext(song);
+      await E(() => lookPick('music'));
+      await w.waitForTimeout(900);
+      const look = () =>
+        E(() => ({
+          sys: curSys,
+          pic: document.body.classList.contains('has-pic'),
+          bg: decodeURIComponent(getComputedStyle($('#bgpic')).backgroundImage).slice(0, 160),
+          music: bgMusic ? decodeURIComponent(bgMusic.src).split('/').slice(-3).join('/') : '',
+        }));
+      const l1 = await look();
+      ok('GameCube: own background picture and music', l1.pic && /looks\/gamecube\/background\.png/.test(l1.bg) && /looks\/gamecube\/music\.ogg/.test(l1.music), l1);
+      await shot('01-picture-per-console');
+      await E(() => setSystem('n64'));
+      await w.waitForTimeout(1500);
+      const l2 = await look();
+      ok('N64 keeps its own look', l2.sys === 'n64' && !l2.pic && !/looks\//.test(l2.music), l2);
+      await E(() => setSystem('gamecube'));
+      await w.waitForTimeout(1500);
+      await E(() => (lookRemove('bg'), lookRemove('music')));
+      await w.waitForTimeout(600);
+      const l3 = await look();
+      ok('picture and music removed again', !l3.pic && !/looks\//.test(l3.music), l3);
+    }
+
     for (const [k, game, emu, lay, want] of CONSOLES) {
       await E(() => document.querySelectorAll('dialog[open]').forEach(d => d.close()));
       await E(s => setSystem(s), k);

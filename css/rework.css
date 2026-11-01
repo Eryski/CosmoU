@@ -756,3 +756,60 @@ body.tv .wbar {
 body.flat :is(.thfb.on, .search .qk.n) {
   color: var(--seltx, var(--indtx, #fff));
 }
+
+/* ===== A picture for each console (js/looks.js): behind the glass, with a soft veil so text stays readable ===== */
+#bgpic {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  display: none;
+  background: center / cover no-repeat;
+}
+#bgpic::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.5),
+    rgba(255, 255, 255, 0.12) 20%,
+    rgba(255, 255, 255, 0.1) 72%,
+    rgba(255, 255, 255, 0.5)
+  );
+}
+html.dark #bgpic::after {
+  background: linear-gradient(180deg, rgba(6, 10, 20, 0.62), rgba(6, 10, 20, 0.26) 22%, rgba(6, 10, 20, 0.26) 70%, rgba(6, 10, 20, 0.66));
+}
+body.has-pic #bgpic {
+  display: block;
+}
+/* the theme's own background steps aside; the Wii U Look's plaza lets the picture through */
+body.has-pic .bg {
+  opacity: 0;
+}
+body.has-pic #wu {
+  background: transparent;
+}
+/* text that sits right on the picture */
+body.has-pic .brand,
+body.has-pic .clock,
+body.has-pic .hero h3 {
+  text-shadow: 0 1px 12px rgba(255, 255, 255, 0.55);
+}
+html.dark body.has-pic .brand,
+html.dark body.has-pic .clock,
+html.dark body.has-pic .hero h3 {
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.55);
+}
+.lkset .lkpv {
+  flex: none;
+  width: 72px;
+  height: 44px;
+  border-radius: var(--r-sm, 8px);
+  background: center / cover no-repeat;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.12);
+}
+.lkmuname {
+  font-weight: 600;
+  color: var(--accent, inherit);
+}

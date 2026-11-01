@@ -212,7 +212,7 @@ final class Bridge {
         case "pickFile": pickFile(str(a, 0), str(a, 1), done)
         case "saveFile": saveFile(str(a, 0), Data(str(a, 2).utf8), done)
         case "themePick": themePick(done)
-        case "themeInstall": done(themeInstall(str(a, 0), str(a, 1), str(a, 2)))
+        case "themeInstall": done(themeInstall(str(a, 0), str(a, 1), str(a, 2), str(a, 3)))
         case "themeExport": themeExport(str(a, 0), str(a, 1), done)
         case "scanTree": done(err("Not on iPhone and iPad."))
         default: done(err("Unknown request: " + name))
@@ -433,7 +433,7 @@ final class Bridge {
 
     // ---------- files from and to the device ----------
     private static let audioExt = ["mp3", "ogg", "wav", "m4a", "flac", "aac"]
-    private static let imageExt = ["png", "jpg", "jpeg", "webp"]
+    private static let imageExt = ["png", "jpg", "jpeg", "webp", "gif"]
 
     private func pickFile(_ kind: String, _ destRel: String, _ done: @escaping (Any?) -> Void) {
         let types: [UTType] = kind == "audio" ? [.audio] : kind == "image" ? [.image] : [.json, .plainText, .data]
@@ -509,11 +509,27 @@ final class Bridge {
                 try? md.write(to: tmp, options: .atomic)
                 o["music"] = ["ext": ext, "tmp": tmp.lastPathComponent]
             }
+            // its background picture: the file named in "image"
+            var wantPic = ""
+            if let j = (try? JSONSerialization.jsonObject(with: jd)) as? [String: Any], let p = j["image"] as? String {
+                wantPic = (p as NSString).lastPathComponent.lowercased()
+            }
+            if !wantPic.isEmpty, let pick = z.entries.first(where: {
+                ($0.name as NSString).lastPathComponent.lowercased() == wantPic && Bridge.imageExt.contains(($0.name as NSString).pathExtension.lowercased())
+            }) {
+                guard let pd = z.data(pick, max: 15 * 1048576) else {
+                    return done(self.err("The picture in that theme is too big (15 MB at most)."))
+                }
+                let ext = "." + (pick.name as NSString).pathExtension.lowercased()
+                let tmp = FileManager.default.temporaryDirectory.appendingPathComponent("theme-image" + ext)
+                try? pd.write(to: tmp, options: .atomic)
+                o["image"] = ["ext": ext, "tmp": tmp.lastPathComponent]
+            }
             done(o)
         }
     }
 
-    private func themeInstall(_ id: String, _ json: String, _ tmpName: String) -> Any {
+    private func themeInstall(_ id: String, _ json: String, _ tmpName: String, _ imageTmp: String) -> Any {
         guard id.range(of: "^u-[a-z0-9-]+$", options: .regularExpression) != nil,
               let dir = file("public/own-themes/" + id) else { return err("Unknown theme.") }
         let fm = FileManager.default
@@ -528,6 +544,12 @@ final class Bridge {
                 try? fm.moveItem(at: tmp, to: dir.appendingPathComponent("music." + tmp.pathExtension))
             }
         }
+        if imageTmp.range(of: "^theme-image\\.[a-z0-9]+$", options: .regularExpression) != nil {
+            let tmp = fm.temporaryDirectory.appendingPathComponent(imageTmp)
+            if fm.fileExists(atPath: tmp.path) {
+                try? fm.moveItem(at: tmp, to: dir.appendingPathComponent("background." + tmp.pathExtension))
+            }
+        }
         return ok()
     }
 
@@ -535,7 +557,7 @@ final class Bridge {
         guard id.range(of: "^u-[a-z0-9-]+$", options: .regularExpression) != nil, let dir = file("public/own-themes/" + id),
               let names = try? FileManager.default.contentsOfDirectory(atPath: dir.path) else { return done(err("Unknown theme.")) }
         let w = Zip.Writer()
-        for n in names.sorted() where n == "theme.json" || n.hasPrefix("music.") {
+        for n in names.sorted() where n == "theme.json" || n.hasPrefix("music.") || n.hasPrefix("background.") {
             if let d = try? Data(contentsOf: dir.appendingPathComponent(n)) { w.add(n, d) }
         }
         saveFile(name, w.finish(), done)

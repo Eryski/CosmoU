@@ -78,6 +78,8 @@ function applySystem(first) {
   }
   if (typeof syncMode === 'function') syncMode();
   if (typeof sysFill === 'function') sysFill();
+  // its own picture (js/looks.js)
+  if (typeof applyBackdrop === 'function') applyBackdrop(), looksUi();
 }
 // all consoles in a small menu (the header button, the console button on the home screens, the Quick Menu)
 function sysMenu(el) {
@@ -118,8 +120,10 @@ function setSystem(k) {
         localStorage.setItem('cosmou.style', t);
       } catch {}
       applyStyle();
-      swapThemeMusic(t);
+      if (typeof swapLookMusic !== 'function') swapThemeMusic(t);
     }
+    // its own music, its theme's music, or your music file
+    if (typeof swapLookMusic === 'function') swapLookMusic();
     render();
   });
 }

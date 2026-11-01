@@ -499,6 +499,48 @@ function tga() {
   const after = await E(() => cur() && cur().name);
   ok('presses after the D-pad', true, await E(() => [window.__cosmoPadCount, typeof step, pad.prev]));
   ok('controller D-pad moves', before !== after, [before, after]);
+  // ---- a background picture for the console on screen, chosen with Android's own picker ----
+  at('background picture');
+  {
+    const png = require('./test-picture')(path.join(os.tmpdir(), 'cosmou-sea.png'));
+    adb('push', png, '/sdcard/Download/cosmou-sea.png');
+    try {
+      adb('shell', 'am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE -d file:///sdcard/Download/cosmou-sea.png >/dev/null');
+    } catch {}
+    await E(() => document.querySelectorAll('dialog[open]').forEach(d => d.close()));
+    await E(() => {
+      window.__look = null;
+      api.sysLookPick(curSys, 'bg').then(r => (window.__look = r));
+    });
+    try {
+      await wait(3000);
+      // the picture is under "Recent" or "Downloads"
+      if (!uiNodes().some(n => /cosmou-sea/.test(n.text))) {
+        const d = uiNodes().find(n => /^downloads?$/i.test(n.text));
+        if (d) adb('shell', `input tap ${d.x} ${d.y}`), await wait(1500);
+      }
+      await waitText(/cosmou-sea/, 15000);
+      await shot('07-picture-picker');
+      await tapText(/cosmou-sea/);
+    } catch (e) {
+      ok('picture picker', false, e.message.slice(0, 300));
+      await shot('07-picture-picker');
+    }
+    await page.waitForTimeout(2500);
+    const lk = await E(async () => {
+      const r = window.__look;
+      await loadLooks();
+      const res = r && r.url && (await fetch(r.url));
+      return { sys: curSys, r, status: res && res.status, pic: document.body.classList.contains('has-pic') };
+    });
+    ok('a background picture for this console', lk && lk.r && lk.status === 200 && lk.pic, lk);
+    await shot('07-picture');
+    const rm = await E(async () => {
+      await lookRemove('bg');
+      return { pic: document.body.classList.contains('has-pic'), looks: await api.sysLooks() };
+    });
+    ok('picture removed again', rm && !rm.pic && !Object.keys(rm.looks.bg || {}).length, rm);
+  }
   await E(() => openSettings('about'));
   await shot('07-about');
   await E(() => document.querySelector('#dlg').close());

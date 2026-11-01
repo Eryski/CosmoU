@@ -205,9 +205,27 @@ function ownPreview(t, c) {
     .map(([k, x]) => `${k}:${x}`)
     .join(';');
 }
+// a theme on Liquid Glass: the glass look stays; its picture shows in the gallery (and behind the glass, js/looks.js)
+const cssUrl = u => 'url("' + String(u).replace(/["\\\n]/g, '') + '")';
+function ownGlassCss(t) {
+  const cls = '.theme-' + t.id,
+    pv = `.pv-${t.id}`;
+  let css =
+    `${pv}{--pbg:${t.imageUrl ? cssUrl(t.imageUrl) + ' center/cover,' : ''}#f7f6f1;--ptop:rgba(255,255,255,.62);` +
+    `--ptops:inset 0 0 0 1px rgba(255,255,255,.9);--pt1:linear-gradient(150deg,#8fe3ee,#36b8cf);--pt2:rgba(255,255,255,.7);` +
+    `--pt3:rgba(255,255,255,.7);--pts:inset 0 3px 3px rgba(255,255,255,.7),0 6px 10px -5px rgba(30,80,120,.45);` +
+    `--pnav:rgba(255,255,255,.66);--pnavs:inset 0 0 0 1px rgba(255,255,255,.95)}`;
+  // its own selection color and font, when it has them
+  const c = t.colors;
+  if (c && c.selection)
+    css += `body${cls}{--act1:${c.selection};--act2:${mixC('#000', c.selection, 20)};--acttx:${onColor(c.selection)};--deep:${c.accent || c.selection};--cyan:${c.accent || c.selection}}`;
+  if (OWN_FONTS[t.font]) css += `body${cls}{--head:${OWN_FONTS[t.font]};font-family:${OWN_FONTS[t.font]}}`;
+  return css;
+}
 function ownCss(list) {
   return list
     .map(t => {
+      if (t.base === 'liquid-glass' || !t.colors) return ownGlassCss(t);
       const cls = '.theme-' + t.id,
         d = t.colorsDark || t.colors;
       return (
@@ -235,8 +253,11 @@ function ownRegister(list, save) {
       author: t.author,
       music: !!(t.music || t.hasMusic),
       own: 1,
-      flat: 1,
-      clock: 'line',
+      // on Liquid Glass: not flat, with its picture behind the glass
+      base: t.base === 'liquid-glass' ? 'liquid-glass' : '',
+      image: t.imageUrl || '',
+      flat: t.base === 'liquid-glass' ? 0 : 1,
+      clock: t.base === 'liquid-glass' ? undefined : 'line',
       brackets: t.selection === 'brackets' ? 1 : 0,
       pix: t.font === 'pixel' ? 1 : 0,
     });
@@ -248,7 +269,7 @@ function ownRegister(list, save) {
 }
 try {
   const cached = JSON.parse(localStorage.getItem('cosmou.ownThemes') || '[]');
-  if (Array.isArray(cached) && cached.length) ownRegister(cached.filter(t => t && /^u-[a-z0-9-]+$/.test(t.id) && t.colors));
+  if (Array.isArray(cached) && cached.length) ownRegister(cached.filter(t => t && /^u-[a-z0-9-]+$/.test(t.id) && (t.colors || t.base === 'liquid-glass')));
 } catch {}
 
 // older versions saved 'glass' or 'classic' as the style
@@ -264,6 +285,8 @@ function applyStyle() {
   const cl = document.body.classList;
   const th = THEMES.find(t => t.id === style) || THEMES[0];
   for (const t of THEMES) cl.toggle('theme-' + t.id, t.id === style);
+  // an own theme built on Liquid Glass (its picture and music on the glass look)
+  if (th.base === 'liquid-glass') cl.add('theme-liquid-glass');
   // Wii U and all flat themes share the opaque, non-glass base
   cl.toggle('classic', style === 'wii-u' || !!th.flat);
   cl.toggle('flat', !!th.flat);
@@ -279,6 +302,7 @@ function applyStyle() {
   });
   wiiClock();
   parade.sync();
+  if (typeof applyBackdrop === 'function') applyBackdrop();
   requestAnimationFrame(() => {
     // during start-up the nav helpers may not exist yet (window.ind is then the #ind element)
     if (typeof ind === 'function') ind();
@@ -328,6 +352,12 @@ const THEME_TUNE = {
 };
 let musicBuiltin = false;
 async function themedMusic(m, id = style) {
+  // the console's own music (Settings → Appearance, js/looks.js) wins over everything
+  const sm = typeof lookOf === 'function' ? lookOf('music') : null;
+  if (sm && sm.url) {
+    musicBuiltin = false;
+    return { url: sm.url, name: sm.name + ' · ' + (typeof SYS !== 'undefined' && SYS[curSys] ? SYS[curSys].name : 'this console') };
+  }
   musicBuiltin = !!(m && m.builtin);
   if (!musicBuiltin || !window.api) return m;
   const t = await api.themeMusic(id);
@@ -465,7 +495,7 @@ async function ownLoad() {
   if (!window.api || !api.ownThemes) return;
   const list = await api.ownThemes();
   const sig = l =>
-    JSON.stringify(l.map(t => [t.id, t.name, t.colors, t.colorsDark, t.background, t.selection, t.font, t.corners, !!t.music]));
+    JSON.stringify(l.map(t => [t.id, t.name, t.colors, t.colorsDark, t.background, t.selection, t.font, t.corners, !!t.music, t.base, t.imageUrl]));
   const have = THEMES.filter(t => t.own).length;
   if (sig(list) !== sig(JSON.parse(localStorage.getItem('cosmou.ownThemes') || '[]')) || have !== list.length) {
     ownRegister(list, true);
@@ -488,13 +518,14 @@ $('#otadd').onclick = async () => {
   if (r.error) return otMsg(r.error, true);
   await ownLoad();
   setTheme(r.theme.id);
+  const pic = r.theme.image ? (r.hasMusic ? ', its picture' : ' with its picture') : '';
   otMsg(
     `Added “${r.theme.name}”` +
       (r.hasMusic
         ? musicBuiltin
-          ? ' with its music.'
-          : ' – its music is not used while your own music file is set (Sound & Music).'
-        : '.'),
+          ? pic + (pic ? ' and its music.' : ' with its music.')
+          : pic + ' – its music is not used while your own music file is set (Sound & Music).'
+        : pic + '.'),
   );
 };
 $('#otshare').onclick = async () => {

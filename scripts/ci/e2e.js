@@ -479,6 +479,72 @@ async function waitFor(fn, ms) {
   const back = await E(() => ({ sys: curSys, mode, n: list().filter(g => g.kind !== 'app').length }));
   ok('back to Wii U', back.sys === 'wiiu' && back.mode !== 'chome' && back.n >= 2, back);
 
+  // ---- a picture and music for each console (Settings → Appearance), and a theme file with a picture ----
+  {
+    const dir = path.join(HOME, 'CosmoU-test', 'looks');
+    fs.mkdirSync(dir, { recursive: true });
+    const pic = require('./test-picture')(path.join(dir, 'sea.png'));
+    const song = path.join(__dirname, '..', '..', 'assets', 'music', 'themes', 'plaza.ogg');
+    const pickNext = f => app.evaluate(({ dialog }, f) => (dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [f] })), f);
+    const look = () =>
+      E(() => ({
+        sys: curSys,
+        pic: document.body.classList.contains('has-pic'),
+        bg: getComputedStyle($('#bgpic')).backgroundImage.slice(0, 120),
+        music: bgMusic ? decodeURIComponent(bgMusic.src).split('/').slice(-3).join('/') : '',
+      }));
+    await pickNext(pic);
+    await E(() => lookPick('bg'));
+    await pickNext(song);
+    await E(() => lookPick('music'));
+    await w.waitForTimeout(900);
+    const l1 = await look();
+    ok('Wii U: own background picture and music', l1.pic && /looks\/wiiu\/background\.png/.test(l1.bg) && /looks\/wiiu\/music\.ogg/.test(l1.music), l1);
+    await shot('picture-per-console');
+    await E(() => setSystem('switch'));
+    await w.waitForTimeout(1600);
+    const l2 = await look();
+    ok('Switch keeps its own look (no picture, its theme music)', l2.sys === 'switch' && !l2.pic && !/looks\//.test(l2.music), l2);
+    await E(() => setSystem('wiiu'));
+    await w.waitForTimeout(1600);
+    const l3 = await look();
+    ok('back on the Wii U: its picture and music again', l3.sys === 'wiiu' && l3.pic && /looks\/wiiu\/music/.test(l3.music), l3);
+    // a theme file: Liquid Glass with a picture and a song
+    const tdir = path.join(dir, 'theme');
+    fs.mkdirSync(tdir, { recursive: true });
+    fs.copyFileSync(pic, path.join(tdir, 'sea.png'));
+    fs.copyFileSync(song, path.join(tdir, 'song.ogg'));
+    fs.writeFileSync(path.join(tdir, 'theme.json'), JSON.stringify({ name: 'Great Sea', base: 'liquid-glass', image: 'sea.png', music: 'song.ogg', colors: { selection: '#ff7a3d' } }));
+    const tf = path.join(dir, 'GreatSea.cosmoutheme');
+    fs.rmSync(tf, { force: true });
+    sh('zip', ['-q', '-j', tf, path.join(tdir, 'theme.json'), path.join(tdir, 'sea.png'), path.join(tdir, 'song.ogg')]);
+    await E(() => (lookRemove('bg'), lookRemove('music')));
+    const imp = await E(f => api.ownThemeImport(f), tf);
+    await E(async () => {
+      await ownLoad();
+      setTheme('u-great-sea');
+    });
+    await w.waitForTimeout(1200);
+    const l4 = await E(() => ({
+      cls: document.body.className,
+      pic: document.body.classList.contains('has-pic'),
+      bg: getComputedStyle($('#bgpic')).backgroundImage.slice(0, 120),
+      music: musicName,
+    }));
+    ok(
+      'theme file with a picture on Liquid Glass',
+      imp && imp.ok && imp.theme.image === 'background.png' && /theme-liquid-glass/.test(l4.cls) && l4.pic && /own-themes\/u-great-sea\/background\.png/.test(l4.bg),
+      { imp, l4 },
+    );
+    await shot('theme-file-with-picture');
+    const outFile = path.join(dir, 'export.cosmoutheme');
+    await app.evaluate(({ dialog }, f) => (dialog.showSaveDialog = async () => ({ canceled: false, filePath: f })), outFile);
+    const ex = await E(() => api.ownThemeExport('u-great-sea'));
+    const zl = sh('unzip', ['-l', outFile]);
+    ok('the theme is shared with its picture', ex && ex.ok && /background\.png/.test(zl) && /music\.ogg/.test(zl), zl.slice(-300));
+    await E(() => setTheme('liquid-glass'));
+  }
+
   // ---- every console its own look: Wii channels, N64 cartridges; games start in their emulator ----
   for (const [k, lay, cls, emuOut, want] of [
     ['wii', 'channels', '.wch', 'wii-started.txt', /^-b\n-e\n.*Super Mario Galaxy \(USA\)\.rvz/],

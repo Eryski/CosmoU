@@ -515,6 +515,7 @@
 
   // ---------- music ----------
   const AUDIO = /\.(mp3|ogg|wav|m4a|flac)$/i;
+  const PICTURE = /\.(jpe?g|png|webp|gif)$/i;
   // theme songs: .ogg, on iPhone and iPad as .m4a (made from the same songs when the app is built)
   const THEME_MUSIC = new Set((sync('assets', 'www/assets/music/themes') || []).filter(f => /\.(ogg|m4a)$/i.test(f)));
   function getMusic() {
@@ -559,6 +560,13 @@
   }
   const BACKGROUNDS =
     'plain gradient stars grid dots stripes scanlines waves bubbles towers tiles haze facets bokeh fog lcd xmb xmbdust xmbnight'.split(' ');
+  // on Liquid Glass only the selection and accent colors can be changed
+  function glassColors(raw) {
+    if (!raw || typeof raw !== 'object') return null;
+    const c = {};
+    for (const k of ['selection', 'accent']) if (hexColor(raw[k])) c[k] = hexColor(raw[k]);
+    return Object.keys(c).length ? c : null;
+  }
   function cleanTheme(raw) {
     if (!raw || typeof raw !== 'object') return { error: 'theme.json is not a valid theme file.' };
     const name = cleanText(raw.name, 40);
@@ -569,9 +577,11 @@
       .replace(/^-+|-+$/g, '')
       .slice(0, 30);
     if (!name || !slug) return { error: 'The theme needs a "name" (letters or numbers).' };
-    const colors = cleanColors(raw.colors, 'colors');
-    if (colors.error) return colors;
-    const dark = cleanColors(raw.colorsDark, 'colorsDark', true);
+    // "base": "liquid-glass" = CosmoU's glass look with the theme's picture and music (then colors are optional)
+    const base = oneOf(raw.base, ['none', 'liquid-glass'], 'none');
+    const colors = base === 'liquid-glass' ? glassColors(raw.colors) : cleanColors(raw.colors, 'colors');
+    if (colors && colors.error) return colors;
+    const dark = base === 'liquid-glass' ? null : cleanColors(raw.colorsDark, 'colorsDark', true);
     if (dark && dark.error) return dark;
     const author = cleanText(raw.author, 40),
       inspired = cleanText(raw.inspired, 60);
@@ -582,13 +592,16 @@
       desc: cleanText(raw.description, 80) || (inspired ? 'Inspired by ' + inspired : 'Theme by ' + (author || 'the community')),
       mode: oneOf(raw.mode, ['both', 'light', 'dark'], 'both'),
       colors,
+      base,
       background: oneOf(raw.background, BACKGROUNDS, 'plain'),
       selection: oneOf(raw.selection, ['glow', 'outline', 'brackets'], 'glow'),
       font: oneOf(raw.font, ['normal', 'rounded', 'pixel', 'mono', 'serif'], 'normal'),
       corners: oneOf(raw.corners, ['square', 'rounded', 'round'], 'rounded'),
     };
     if (dark) t.colorsDark = dark;
+    if (!colors) delete t.colors;
     if (raw.music) t.music = String(raw.music).split(/[\\/]/).pop().slice(0, 100);
+    if (raw.image) t.image = String(raw.image).split(/[\\/]/).pop().slice(0, 100);
     return { theme: t };
   }
   async function ownThemeImport() {
@@ -606,7 +619,9 @@
     const t = c.theme;
     if (p.music) t.music = 'music' + p.music.ext;
     else delete t.music;
-    const r = await call('themeInstall', t.id, JSON.stringify(t, null, 2), p.music ? p.music.tmp : '');
+    if (p.image) t.image = 'background' + p.image.ext;
+    else delete t.image;
+    const r = await call('themeInstall', t.id, JSON.stringify(t, null, 2), p.music ? p.music.tmp : '', p.image ? p.image.tmp : '');
     return r && r.ok ? { ok: true, theme: t, hasMusic: !!p.music } : { error: 'Could not save the theme.' };
   }
   function ownThemes() {
@@ -615,7 +630,9 @@
       if (!/^u-[a-z0-9-]+$/.test(n)) continue;
       try {
         const c = cleanTheme(JSON.parse(sync('read', 'public/own-themes/' + n + '/theme.json')));
-        if (c.theme && c.theme.id === n) out.push({ ...c.theme, hasMusic: !!c.theme.music });
+        if (!c.theme || c.theme.id !== n) continue;
+        const pic = c.theme.image && (sync('list', 'public/own-themes/' + n) || []).includes(c.theme.image);
+        out.push({ ...c.theme, hasMusic: !!c.theme.music, imageUrl: pic ? pubUrl('own-themes/' + n + '/' + c.theme.image) : '' });
       } catch {}
     }
     return out;
@@ -799,6 +816,35 @@
       return true;
     },
     openMusicFolder: async () => {},
+    // a picture and music for each console (public/looks/<console>/bg and …/music)
+    sysLooks: async () => {
+      const out = { bg: {}, music: {} };
+      for (const k of sync('list', 'public/looks') || []) {
+        if (!/^[a-z0-9]{2,12}$/.test(k)) continue;
+        const b = (sync('list', 'public/looks/' + k + '/bg') || []).filter(n => PICTURE.test(n)).sort().pop();
+        if (b) out.bg[k] = { url: pubUrl('looks/' + k + '/bg/' + b) };
+        const m = (sync('list', 'public/looks/' + k + '/music') || []).find(n => AUDIO.test(n));
+        if (m) out.music[k] = { url: pubUrl('looks/' + k + '/music/' + m), name: m };
+      }
+      return out;
+    },
+    sysLookPick: async (sys, kind) => {
+      if (!/^[a-z0-9]{2,12}$/.test(String(sys))) return null;
+      const pic = kind === 'bg',
+        dir = 'public/looks/' + sys + (pic ? '/bg' : '/music');
+      const r = await call('pickFile', pic ? 'image' : 'audio', dir);
+      if (!r || !r.rel) return null;
+      const name = r.rel.split('/').pop();
+      // only the newest picture stays (the music folder keeps one file by itself)
+      if (pic) for (const n of sync('list', dir) || []) if (n !== name) sync('remove', dir + '/' + n);
+      return { url: pubUrl(r.rel.replace(/^public\//, '')), name: r.name || name };
+    },
+    sysLookRemove: async (sys, kind) => {
+      if (!/^[a-z0-9]{2,12}$/.test(String(sys))) return false;
+      const dir = 'public/looks/' + sys + (kind === 'bg' ? '/bg' : '/music');
+      for (const n of sync('list', dir) || []) sync('remove', dir + '/' + n);
+      return true;
+    },
     // own themes
     ownThemes: async () => ownThemes(),
     ownThemeImport: async () => ownThemeImport(),
