@@ -1,4 +1,6 @@
-## 🧪 CosmoU {version} – Beta {beta}
+## 🧪 CosmoU {name} Beta
+
+<sub>Version {version} · build {commit}</sub>
 
 Thanks for testing! 💙 Please don't share this file. Report bugs **[here](../../issues/new/choose)** or in `#🐞-bug-reports` on Discord.
 
@@ -10,5 +12,3 @@ Thanks for testing! 💙 Please don't share this file. Report bugs **[here](../.
 - Does the Quick Menu work well with your controller (open the menus, add a picture, go back)?
 - Do the pictures change when you switch consoles – and stay the same console's pictures?
 - Anything that looks wrong behind the glass (text hard to read, picture cut badly)?
-
-<sub>Build {commit}</sub>
