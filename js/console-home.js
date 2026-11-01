@@ -255,6 +255,25 @@ function chNav(dir) {
     per = chPer(),
     i = Math.max(0, chOrder.findIndex(x => x.name === sel));
   let j = i;
+  // pages (3DS, Wii): at the right edge of a row the next page comes, in the same row from the left
+  // (and at the left edge the page before), like on the console – not every game of the page in between
+  if (per && cols && (dir === 'r' || dir === 'l')) {
+    const page = Math.floor(i / per),
+      row = Math.floor((i % per) / cols),
+      col = i % cols,
+      edge = dir === 'r' ? col === cols - 1 || i === n - 1 : col === 0;
+    if (edge) {
+      const p2 = page + (dir === 'r' ? 1 : -1);
+      if (p2 < 0 || p2 * per >= n) return;
+      // the same row on that page, or its last row when that page is shorter
+      let t = p2 * per + row * cols + (dir === 'r' ? 0 : cols - 1);
+      while (t >= n && t - cols >= p2 * per) t -= cols;
+      j = Math.min(n - 1, t);
+      blip('page');
+      chSel(chOrder[j].name);
+      return;
+    }
+  }
   if (dir === 'l') j = i - 1;
   else if (dir === 'r') j = i + 1;
   else if (dir === 'u') {
@@ -276,6 +295,24 @@ function chNav(dir) {
     blip('move');
     chSel(chOrder[j].name);
   }
+}
+// the right stick (and Page Up / Page Down): straight to the next or the page before, at the same place on it;
+// without pages (Switch, shelves, discs) six games on
+function chPage(d) {
+  if (chZone === 'apps' || chAll) return;
+  const n = chOrder.length,
+    per = chPer(),
+    i = Math.max(0, chOrder.findIndex(x => x.name === sel));
+  if (!n) return;
+  let j;
+  if (per) {
+    const p2 = Math.floor(i / per) + d;
+    if (p2 < 0 || p2 * per >= n) return;
+    j = Math.min(n - 1, p2 * per + (i % per));
+  } else j = Math.max(0, Math.min(n - 1, i + d * 6));
+  if (j === i) return;
+  blip(per ? 'page' : 'move');
+  chSel(chOrder[j].name);
 }
 // A / Enter: start the game, or press the chosen round button
 function chA() {

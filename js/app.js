@@ -157,6 +157,9 @@ addEventListener('keydown', e => {
     if (d) {
       e.preventDefault();
       chNav(d);
+    } else if (e.key === 'PageDown' || e.key === 'PageUp') {
+      e.preventDefault();
+      chPage(e.key === 'PageDown' ? 1 : -1);
     } else if (e.key === 'Enter' && (e.target === document.body || e.target.closest('#sw'))) {
       e.preventDefault();
       chA();

@@ -135,7 +135,8 @@ function padTick(now) {
   }
   const b = i => !!(gp0.buttons[i] && gp0.buttons[i].pressed),
     ax = gp0.axes[0] || 0,
-    ay = gp0.axes[1] || 0;
+    ay = gp0.axes[1] || 0,
+    rx = gp0.axes[2] || 0;
   const s = {
     l: b(14) || ax < -0.55,
     r: b(15) || ax > 0.55,
@@ -151,6 +152,9 @@ function padTick(now) {
     rb: b(5),
     hm: b(16),
     r3: b(11),
+    // the right stick to the side: a page on (console home screens)
+    pl: rx < -0.6,
+    pr: rx > 0.6,
   };
   const hit = k => {
     if (!s[k]) {
@@ -198,6 +202,7 @@ function padTick(now) {
       } else {
         if (mode === 'chome') {
           for (const k of ['l', 'r', 'u', 'd']) if (fire[k]) chNav(k);
+          if ((fire.pl || fire.pr) && typeof chPage === 'function') chPage(fire.pr ? 1 : -1);
         } else {
           if (fire.l || (mode !== 'covers' && fire.u)) step(-1);
           if (fire.r || (mode !== 'covers' && fire.d)) step(1);
