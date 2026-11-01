@@ -524,7 +524,8 @@ function tga() {
       }
       await shot('07-picture-picker');
       // in the grid view a picture has no name on screen: its name is in the description, else tap its thumbnail
-      let hit = null;
+      let hit = null,
+        listed = false;
       for (let i = 0; i < 15 && !hit; i++) {
         adb('shell', 'uiautomator dump /sdcard/ui.xml >/dev/null');
         const x = adb('shell', 'cat /sdcard/ui.xml');
@@ -535,8 +536,21 @@ function tga() {
           return b ? [Math.round(+b[1] + (b[3] - b[1]) * 0.18), Math.round(+b[2] + (b[4] - b[2]) * 0.85)] : null;
         };
         const named = nodes.find(n => /(text|content-desc)="[^"]*cosmou-sea/.test(n));
+        // no name on screen: switch the picker to its list view once (then every file shows its name)
+        const listBtn = !named && !listed && nodes.find(n => /content-desc="[^"]*list view/i.test(n));
+        if (listBtn) {
+          listed = true;
+          const b = listBtn.match(/bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"/);
+          adb('shell', `input tap ${(+b[1] + +b[3]) >> 1} ${(+b[2] + +b[4]) >> 1}`);
+          await wait(1500);
+          continue;
+        }
         const thumb = nodes.filter(n => /resource-id="[^"]*(icon_thumb|thumbnail)"/.test(n)).pop();
-        hit = box(named || thumb || '');
+        const mid = n => {
+          const b = n.match(/bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"/);
+          return b ? [(+b[1] + +b[3]) >> 1, (+b[2] + +b[4]) >> 1] : null;
+        };
+        hit = named ? mid(named) : box(thumb || '');
         if (!hit) await wait(1000);
       }
       if (!hit) throw new Error('no picture in the picker');
