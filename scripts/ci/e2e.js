@@ -501,6 +501,20 @@ async function waitFor(fn, ms) {
     const l1 = await look();
     ok('Wii U: own background picture and music', l1.pic && /looks\/wiiu\/background-\d+\.png/.test(l1.bg) && /looks\/wiiu\/music\.ogg/.test(l1.music), l1);
     await shot('picture-per-console');
+    // the Wii U Look in its Home Menu layout shows the picture too (its own background steps aside)
+    const wh = await E(async () => {
+      document.querySelector('#vt button[data-m="wiiu"]').click();
+      await new Promise(r => setTimeout(r, 600));
+      const was = wuView;
+      wuView = 'home';
+      render();
+      await new Promise(r => setTimeout(r, 700));
+      const out = { home: isHome(), bg: getComputedStyle($('#whome')).backgroundImage, color: getComputedStyle($('#whome')).backgroundColor };
+      wuView = was;
+      document.querySelector('#vt button[data-m="covers"]').click();
+      return out;
+    });
+    ok('Wii U Look (Home Menu layout) shows the picture', wh.home && wh.bg === 'none' && /rgba\(0, 0, 0, 0\)|transparent/.test(wh.color), wh);
     await E(() => setSystem('switch'));
     await w.waitForTimeout(1600);
     const l2 = await look();

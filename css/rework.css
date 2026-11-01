@@ -787,8 +787,14 @@ body.has-pic #bgpic {
 body.has-pic .bg {
   opacity: 0;
 }
-body.has-pic #wu {
-  background: transparent;
+body.has-pic #wu,
+body.has-pic.wuhome #whome {
+  background: transparent !important;
+}
+/* the Home Menu layout's floating shapes would lie on the picture */
+body.has-pic.wuhome #whome::before,
+body.has-pic.wuhome #whome::after {
+  display: none !important;
 }
 /* text that sits right on the picture */
 body.has-pic .brand,
