@@ -3,9 +3,10 @@
 A theme is one file. Anyone can add it in CosmoU, and it can bring its own menu music and background picture.
 
 ## Just a picture and music for a console
-You don't need a theme file for that: in CosmoU open **Settings → Appearance** and use **Background picture for …** and
-**Music for …**. Every console (Wii U, Switch, 3DS …) keeps its own picture and music; switch to a console first, then
-choose them. The picture lies behind the glass – it looks best with the **Liquid Glass** theme.
+You don't need a theme file for that: open the **Quick Menu** (Home / Guide button, or Q) → **Sound** → **Pictures · …**
+and **Music · …**, or **Settings → Appearance**. Every console (Wii U, Switch, 3DS …) keeps its own pictures and music;
+switch to a console first, then choose them. Add several pictures and a new one comes each time you go to that console.
+The pictures lie behind the glass – they look best with the **Liquid Glass** theme.
 
 ## Add a theme
 1. Download a theme file (it ends with `.cosmoutheme`).

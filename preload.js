@@ -44,7 +44,7 @@ contextBridge.exposeInMainWorld('api', {
   resetMusic: () => r.invoke('resetMusic'),
   sysLooks: () => r.invoke('sysLooks'),
   sysLookPick: (sys, kind) => r.invoke('sysLookPick', sys, kind),
-  sysLookRemove: (sys, kind) => r.invoke('sysLookRemove', sys, kind),
+  sysLookRemove: (sys, kind, name) => r.invoke('sysLookRemove', sys, kind, name),
   themeMusic: id => r.invoke('themeMusic', id),
   ownThemes: () => r.invoke('ownThemeList'),
   ownThemeImport: file => r.invoke('ownThemeImport', file),

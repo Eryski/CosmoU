@@ -110,6 +110,11 @@ function quickBuild() {
   }
   sw(snd, 'music', '#f29a3c', 'Menu music', musicOn, musicOn ? String(musicName || 'On').replace(/ · .*$/, '') : 'Off', () => $('#mt').click());
   sw(snd, 'sound', '#e57ac0', 'UI sounds', qOn('#uis'), qOn('#uis') ? 'Clicks and moves' : 'Off', () => $('#uis').click());
+  // this console's own pictures and music (js/looks.js): a small menu to add, change or remove them
+  if (typeof lookPicMenu === 'function' && window.api && api.sysLooks) {
+    qmRow(snd, 'picture', '#2fa0e0', 'Pictures · ' + lookSysName(), lookPicsText(), e => lookPicMenu(e.currentTarget));
+    qmRow(snd, 'music', '#7a5cf0', 'Music · ' + lookSysName(), lookMusicText(), e => lookMusicMenu(e.currentTarget));
+  }
   // light / dark and the music volume
   document.querySelectorAll('#qmlook button').forEach(b => b.classList.toggle('on', b.dataset.t === theme));
   const v = Math.round(musicVol() * 100);

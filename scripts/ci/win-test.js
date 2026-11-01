@@ -190,7 +190,7 @@ async function portableTest() {
           music: bgMusic ? decodeURIComponent(bgMusic.src).split('/').slice(-3).join('/') : '',
         }));
       const l1 = await look();
-      ok('GameCube: own background picture and music', l1.pic && /looks\/gamecube\/background\.png/.test(l1.bg) && /looks\/gamecube\/music\.ogg/.test(l1.music), l1);
+      ok('GameCube: own background picture and music', l1.pic && /looks\/gamecube\/background-\d+\.png/.test(l1.bg) && /looks\/gamecube\/music\.ogg/.test(l1.music), l1);
       await shot('01-picture-per-console');
       await E(() => setSystem('n64'));
       await w.waitForTimeout(1500);

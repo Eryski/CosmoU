@@ -397,11 +397,12 @@
                 <div class="set lkset" data-k="background picture wallpaper image photo own custom console liquid glass">
                   <span class="lkpv" id="lkpv" hidden aria-hidden="true"></span>
                   <div class="lbl">
-                    <strong>Background picture for <span class="lksys">Wii U</span></strong
-                    ><small>Your own picture behind the glass. Each console keeps its own – it looks best with Liquid Glass.</small>
+                    <strong>Background pictures for <span class="lksys">Wii U</span></strong
+                    ><small><span id="lkbginfo"></span>Your own pictures behind the glass. Each console keeps its own – it looks best with Liquid Glass.</small>
                   </div>
                   <div class="acts">
-                    <button class="btn" id="lkbg">Choose picture…</button><button class="btn" id="lkbgdel" hidden>Remove</button>
+                    <button class="btn" id="lkbg">Choose picture…</button><button class="btn" id="lkbgnext" hidden>Next</button
+                    ><button class="btn" id="lkbgdel" hidden>Remove</button>
                   </div>
                 </div>
                 <div class="set" data-k="music song own custom console menu music per console">
@@ -620,6 +621,20 @@
               <div class="grp" id="c_about"></div>
               <h3 class="sh">What’s new in this version</h3>
               <div class="grp wnew" data-k="whats new changelog version news features">
+                <div class="wn">
+                  <i>🎮</i
+                  ><span
+                    ><b>Pictures and music in the Quick Menu</b
+                    ><small>Quick Menu → Sound: the pictures and music of the console you're on, right from the controller</small></span
+                  >
+                </div>
+                <div class="wn">
+                  <i>🖼️</i
+                  ><span
+                    ><b>A new picture on every visit</b
+                    ><small>Add several pictures to a console – the next one comes each time you go there</small></span
+                  >
+                </div>
                 <div class="wn">
                   <i>🏝️</i
                   ><span
@@ -1224,7 +1239,6 @@
     <script src="js/polish.js"></script>
     <script src="js/onboarding.js"></script>
     <script src="js/themes.js"></script>
-    <script src="js/looks.js"></script>
     <script src="js/social.js"></script>
     <script src="js/extras.js"></script>
     <script src="js/tools.js"></script>
@@ -1232,6 +1246,7 @@
     <script src="js/console-pick.js"></script>
     <script src="js/details-ui.js"></script>
     <script src="js/quick.js"></script>
+    <script src="js/looks.js"></script>
     <script src="js/app.js"></script>
     <script src="js/rework.js"></script>
   </body>

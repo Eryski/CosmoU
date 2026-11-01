@@ -105,6 +105,8 @@ function setSystem(k) {
     try {
       localStorage.setItem('cosmou.system', k);
     } catch {}
+    // with several pictures: the next one on every visit (js/looks.js)
+    if (typeof bgAdvance === 'function') bgAdvance(k);
     const v = lsSys('viewMode');
     mode = SYS[k].views.includes(v) ? v : SYS[k].home;
     try {

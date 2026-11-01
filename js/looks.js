@@ -1,12 +1,42 @@
-// CosmoU – a picture and music for each console (Settings → Appearance).
-// Every console (Wii U, Switch, 3DS …) can have its own background picture and its own menu music. The picture lies
-// behind the glass (best with Liquid Glass) with a soft veil so text stays readable; the music plays instead of the
-// theme's music while that console is on screen. The files live in CosmoU's own folder (main.js / mobile-api.js).
+// CosmoU – pictures and music for each console (Settings → Appearance, and the Quick Menu).
+// Every console (Wii U, Switch, 3DS …) can have its own background pictures and its own menu music. With more than
+// one picture, the next one comes each time you go to that console (and at every start). The picture lies behind
+// the glass (best with Liquid Glass) with a soft veil so text stays readable; the music plays instead of the theme's
+// music while that console is on screen. The files live in CosmoU's own folder (main.js / mobile-api.js).
 let sysLooks = { bg: {}, music: {} };
-// this console's picture or music (or null)
+const lookSysNow = () => (typeof curSys !== 'undefined' ? curSys : 'wiiu');
+const lookSysName = () => (typeof SYS !== 'undefined' && SYS[lookSysNow()] ? SYS[lookSysNow()].name : 'Wii U');
+const cssPic = u => 'url("' + String(u).replace(/["\\\n]/g, '') + '")';
+// this console's music, or its pictures (a list), or null
 function lookOf(kind, k) {
-  const sys = k || (typeof curSys !== 'undefined' ? curSys : 'wiiu');
-  return ((sysLooks && sysLooks[kind]) || {})[sys] || null;
+  return ((sysLooks && sysLooks[kind]) || {})[k || lookSysNow()] || null;
+}
+function lookPics(k) {
+  const b = lookOf('bg', k);
+  return b ? b.list || [b] : [];
+}
+// which of the pictures is on screen (it moves on with every visit)
+function lookIx(k) {
+  let i = 0;
+  try {
+    i = +localStorage.getItem('cosmou.bgIx.' + (k || lookSysNow())) || 0;
+  } catch {}
+  const n = lookPics(k).length;
+  return n ? ((i % n) + n) % n : 0;
+}
+function lookSetIx(i, k) {
+  try {
+    localStorage.setItem('cosmou.bgIx.' + (k || lookSysNow()), String(i));
+  } catch {}
+}
+function lookPic(k) {
+  const l = lookPics(k);
+  return l.length ? l[lookIx(k)] : null;
+}
+// going to a console: its next picture
+function bgAdvance(k) {
+  const n = lookPics(k).length;
+  if (n > 1) lookSetIx(lookIx(k) + 1, k);
 }
 // an own theme with a picture shows it when the console has none of its own
 function themePicture() {
@@ -16,9 +46,9 @@ function themePicture() {
 function applyBackdrop() {
   const el = $('#bgpic');
   if (!el) return;
-  const b = lookOf('bg') || themePicture();
+  const b = lookPic() || themePicture();
   document.body.classList.toggle('has-pic', !!b);
-  el.style.backgroundImage = b ? 'url("' + String(b.url).replace(/["\\]/g, '\\$&') + '")' : '';
+  el.style.backgroundImage = b ? cssPic(b.url) : '';
 }
 // the music this console should play now: its own, else your music file, else the theme's (themes.js themedMusic)
 async function swapLookMusic() {
@@ -45,20 +75,33 @@ async function swapLookMusic() {
     old ? 340 : 0,
   );
 }
+// a short line about the pictures and the music (Settings and the Quick Menu)
+function lookPicsText() {
+  const n = lookPics().length;
+  return !n ? 'None – the theme’s look' : n === 1 ? '1 picture' : n + ' pictures · a new one each visit';
+}
+function lookMusicText() {
+  const m = lookOf('music');
+  return m ? m.name : 'The theme’s music';
+}
 function looksUi() {
-  const name = typeof SYS !== 'undefined' && SYS[curSys] ? SYS[curSys].name : 'Wii U';
-  document.querySelectorAll('.lksys').forEach(e => (e.textContent = name));
-  const b = lookOf('bg'),
-    m = lookOf('music');
+  document.querySelectorAll('.lksys').forEach(e => (e.textContent = lookSysName()));
   if (!$('#lkbg')) return;
-  $('#lkbgdel').hidden = !b;
+  const n = lookPics().length,
+    p = lookPic(),
+    m = lookOf('music');
+  $('#lkbg').textContent = n ? 'Add picture…' : 'Choose picture…';
+  $('#lkbgnext').hidden = n < 2;
+  $('#lkbgdel').hidden = !n;
+  $('#lkbgdel').textContent = n > 1 ? 'Remove this one' : 'Remove';
+  $('#lkbginfo').textContent = n > 1 ? n + ' pictures – a new one each time you come to this console. ' : '';
   $('#lkmudel').hidden = !m;
-  $('#lkbg').textContent = b ? 'Change picture…' : 'Choose picture…';
   $('#lkmu').textContent = m ? 'Change music…' : 'Choose music…';
   $('#lkmuname').textContent = m ? '♪ ' + m.name : '';
-  $('#lkpv').hidden = !b;
-  if (b) $('#lkpv').style.backgroundImage = 'url("' + String(b.url).replace(/["\\]/g, '\\$&') + '")';
+  $('#lkpv').hidden = !p;
+  if (p) $('#lkpv').style.backgroundImage = cssPic(p.url);
 }
+let looksLoaded = false;
 async function loadLooks() {
   if (!window.api || !api.sysLooks) return;
   try {
@@ -66,42 +109,114 @@ async function loadLooks() {
   } catch {
     sysLooks = { bg: {}, music: {} };
   }
+  // a start of CosmoU counts as going to the console
+  if (!looksLoaded) bgAdvance();
+  looksLoaded = true;
   applyBackdrop();
   looksUi();
   // music that started before this list was there
   if (lookOf('music') && bgMusic) swapLookMusic();
 }
+function lookChanged() {
+  looksUi();
+  if (typeof quickBuild === 'function' && $('#qmdlg') && $('#qmdlg').open) quickBuild();
+}
 async function lookPick(kind) {
   if (!need()) return;
-  const r = await api.sysLookPick(curSys, kind);
+  const k = lookSysNow();
+  const r = await api.sysLookPick(k, kind);
   if (!r) return;
   if (r.error) return toast(r.error, 6000);
-  sysLooks[kind] = { ...(sysLooks[kind] || {}), [curSys]: { url: r.url, name: r.name } };
   blip('open');
-  looksUi();
   if (kind === 'bg') {
+    // the new picture is shown right away
+    await loadLooks();
+    const i = lookPics(k).findIndex(x => x.name === r.name);
+    if (i >= 0) lookSetIx(i, k);
     applyBackdrop();
-    toast(style === 'liquid-glass' || style.startsWith('u-') ? '✓ Your picture for ' + SYS[curSys].name : '✓ Picture set – it looks best with the Liquid Glass theme');
+    lookChanged();
+    const n = lookPics(k).length;
+    toast(
+      n > 1
+        ? '✓ ' + n + ' pictures for ' + lookSysName() + ' – a new one each time you come back'
+        : style === 'liquid-glass' || style.startsWith('u-')
+          ? '✓ Your picture for ' + lookSysName()
+          : '✓ Picture set – it looks best with the Liquid Glass theme',
+    );
   } else {
+    sysLooks.music = { ...(sysLooks.music || {}), [k]: { url: r.url, name: r.name } };
     musicOn = true;
     try {
       localStorage.setItem('cosmou.music', 'true');
     } catch {}
     await swapLookMusic();
-    toast('✓ Music for ' + SYS[curSys].name + ': ' + r.name);
+    lookChanged();
+    toast('✓ Music for ' + lookSysName() + ': ' + r.name);
   }
 }
-async function lookRemove(kind) {
-  if (!need()) return;
-  await api.sysLookRemove(curSys, kind);
-  if (sysLooks[kind]) delete sysLooks[kind][curSys];
-  looksUi();
-  if (kind === 'bg') applyBackdrop();
-  else await swapLookMusic();
-  toast(kind === 'bg' ? '✓ Picture removed' : '✓ Back to the theme music');
+// the next picture now
+function lookNext() {
+  if (lookPics().length < 2) return;
+  bgAdvance();
+  blip('move');
+  applyBackdrop();
+  lookChanged();
 }
+// kind 'bg': the picture on screen (all = every picture of this console); 'music': the music
+async function lookRemove(kind, all) {
+  if (!need()) return;
+  const k = lookSysNow(),
+    p = kind === 'bg' && !all ? lookPic() : null;
+  await api.sysLookRemove(k, kind, p && p.name ? p.name : undefined);
+  if (kind === 'bg') {
+    await loadLooks();
+    applyBackdrop();
+  } else {
+    if (sysLooks.music) delete sysLooks.music[k];
+    await swapLookMusic();
+  }
+  lookChanged();
+  toast(kind === 'bg' ? (lookPics().length ? '✓ Picture removed' : '✓ No picture any more') : '✓ Back to the theme music');
+}
+// the Quick Menu rows open a small menu with these (the controller works in it like in every window)
+function lookPicMenu(anchor) {
+  const n = lookPics().length;
+  openMenu(
+    anchor,
+    [
+      { label: n ? 'Add a picture…' : 'Choose a picture…', icon: 'picture', fn: () => lookPick('bg') },
+      n > 1 && { label: 'Next picture', icon: 'next', fn: () => lookNext() },
+      n && { label: n > 1 ? 'Remove this picture' : 'Remove the picture', icon: 'trash', danger: true, fn: () => lookRemove('bg') },
+      n > 1 && { label: 'Remove all ' + n + ' pictures', icon: 'trash', danger: true, fn: () => lookRemove('bg', true) },
+    ],
+    { title: 'Pictures · ' + lookSysName(), sub: lookPicsText() },
+  );
+}
+function lookMusicMenu(anchor) {
+  const m = lookOf('music');
+  openMenu(
+    anchor,
+    [
+      { label: m ? 'Change the music…' : 'Choose music…', icon: 'note', fn: () => lookPick('music') },
+      m && { label: 'Back to the theme music', icon: 'trash', danger: true, fn: () => lookRemove('music') },
+    ],
+    { title: 'Music · ' + lookSysName(), sub: lookMusicText() },
+  );
+}
+// icons for those menus
+if (typeof MI !== 'undefined') {
+  MI.picture =
+    '<svg viewBox="0 0 32 32"><rect x="4" y="6" width="24" height="20" rx="3.5" fill="none" stroke="#fff" stroke-width="2.8"/><circle cx="21" cy="12.5" r="2.6" fill="#fff"/><path d="m6 24 7-8 5 5 3-3 5 6z" fill="#fff"/></svg>';
+  MI.next = '<svg viewBox="0 0 32 32"><path d="M8 7v18l12-9zM22 7h3.5v18H22z" fill="#fff"/></svg>';
+  MI.trash =
+    '<svg viewBox="0 0 32 32"><path d="M6 9h20M13 9V6h6v3M8.5 9l1.3 16a2 2 0 0 0 2 1.9h8.4a2 2 0 0 0 2-1.9L23.5 9" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  MI.note = '<svg viewBox="0 0 32 32"><path fill="#fff" d="M12 6.5 26 4v16.2a4 4 0 1 1-2.5-3.7V9.6l-9 1.7v11.9a4 4 0 1 1-2.5-3.7z"/></svg>';
+}
+if (typeof MCOL !== 'undefined') Object.assign(MCOL, { picture: '#2fa0e0', next: '#16b3d9', trash: '#e0564f', note: '#f29a3c' });
+if (typeof QI !== 'undefined') QI.picture = MI.picture;
 if ($('#lkbg')) {
   $('#lkbg').onclick = () => lookPick('bg');
+  $('#lkbgnext').onclick = () => lookNext();
   $('#lkbgdel').onclick = () => lookRemove('bg');
   $('#lkmu').onclick = () => lookPick('music');
   $('#lkmudel').onclick = () => lookRemove('music');

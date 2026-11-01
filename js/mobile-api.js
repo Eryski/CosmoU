@@ -821,8 +821,11 @@
       const out = { bg: {}, music: {} };
       for (const k of sync('list', 'public/looks') || []) {
         if (!/^[a-z0-9]{2,12}$/.test(k)) continue;
-        const b = (sync('list', 'public/looks/' + k + '/bg') || []).filter(n => PICTURE.test(n)).sort().pop();
-        if (b) out.bg[k] = { url: pubUrl('looks/' + k + '/bg/' + b) };
+        const pics = (sync('list', 'public/looks/' + k + '/bg') || []).filter(n => PICTURE.test(n)).sort();
+        if (pics.length) {
+          const list = pics.map(n => ({ url: pubUrl('looks/' + k + '/bg/' + n), name: n }));
+          out.bg[k] = { url: list[0].url, list };
+        }
         const m = (sync('list', 'public/looks/' + k + '/music') || []).find(n => AUDIO.test(n));
         if (m) out.music[k] = { url: pubUrl('looks/' + k + '/music/' + m), name: m };
       }
@@ -832,17 +835,18 @@
       if (!/^[a-z0-9]{2,12}$/.test(String(sys))) return null;
       const pic = kind === 'bg',
         dir = 'public/looks/' + sys + (pic ? '/bg' : '/music');
+      // pictures are added (up to 30), the music folder keeps one file by itself
+      if (pic && (sync('list', dir) || []).length >= 30) return { error: 'That console already has 30 pictures – remove one first.' };
       const r = await call('pickFile', pic ? 'image' : 'audio', dir);
       if (!r || !r.rel) return null;
       const name = r.rel.split('/').pop();
-      // only the newest picture stays (the music folder keeps one file by itself)
-      if (pic) for (const n of sync('list', dir) || []) if (n !== name) sync('remove', dir + '/' + n);
-      return { url: pubUrl(r.rel.replace(/^public\//, '')), name: r.name || name };
+      return { url: pubUrl(r.rel.replace(/^public\//, '')), name: pic ? name : r.name || name };
     },
-    sysLookRemove: async (sys, kind) => {
+    sysLookRemove: async (sys, kind, name) => {
       if (!/^[a-z0-9]{2,12}$/.test(String(sys))) return false;
       const dir = 'public/looks/' + sys + (kind === 'bg' ? '/bg' : '/music');
-      for (const n of sync('list', dir) || []) sync('remove', dir + '/' + n);
+      const one = kind === 'bg' && typeof name === 'string' && /^[\w.() -]+$/.test(name) ? name : '';
+      for (const n of sync('list', dir) || []) if (!one || n === one) sync('remove', dir + '/' + n);
       return true;
     },
     // own themes

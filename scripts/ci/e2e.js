@@ -499,7 +499,7 @@ async function waitFor(fn, ms) {
     await E(() => lookPick('music'));
     await w.waitForTimeout(900);
     const l1 = await look();
-    ok('Wii U: own background picture and music', l1.pic && /looks\/wiiu\/background\.png/.test(l1.bg) && /looks\/wiiu\/music\.ogg/.test(l1.music), l1);
+    ok('Wii U: own background picture and music', l1.pic && /looks\/wiiu\/background-\d+\.png/.test(l1.bg) && /looks\/wiiu\/music\.ogg/.test(l1.music), l1);
     await shot('picture-per-console');
     await E(() => setSystem('switch'));
     await w.waitForTimeout(1600);

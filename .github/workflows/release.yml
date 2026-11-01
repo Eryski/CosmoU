@@ -20,6 +20,10 @@ on:
         description: Which builds to make (windows, linux, mac, android, ios – empty = all)
         required: false
         default: ''
+      beta:
+        description: A beta for the testers (name like beta-0.13.2-1) – its files go only to the private CosmoU-Beta repository
+        required: false
+        default: ''
 
 permissions:
   contents: write
@@ -513,3 +517,30 @@ jobs:
         with:
           tag_name: ${{ github.event_name == 'release' && github.event.release.tag_name || inputs.to_release }}
           files: dist/CosmoU-iOS-*.ipa
+
+  # a beta (input "beta", e.g. beta-0.13.2-1): the same builds and tests as a release, but the files go only to the
+  # private CosmoU-Beta repository, as a pre-release. The public releases and CosmoU's update check stay untouched.
+  # Needs the secret BETA_TOKEN (a GitHub token that may write the contents of Eryski/CosmoU-Beta).
+  beta-release:
+    needs: [windows, linux, mac, android-test, ios-test]
+    if: always() && github.event_name == 'workflow_dispatch' && inputs.beta != '' && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: art
+      - name: Pre-release in CosmoU-Beta
+        env:
+          GH_TOKEN: ${{ secrets.BETA_TOKEN }}
+          TAG: ${{ inputs.beta }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then echo "::error::The secret BETA_TOKEN is missing (Settings → Secrets and variables → Actions)."; exit 1; fi
+          VERSION=$(node -p "require('./package.json').version")
+          N=$(echo "$TAG" | sed -E 's/.*-([0-9]+)$/\1/')
+          mapfile -t FILES < <(find art -type f \( -name 'CosmoU-Windows-*.exe' -o -name 'CosmoU-macOS-*.dmg' -o -name 'CosmoU-Linux-*' -o -name 'CosmoU-Android-*.apk' -o -name 'CosmoU-iOS-*.ipa' \) | sort)
+          printf '%s\n' "${FILES[@]}"
+          [ ${#FILES[@]} -gt 0 ] || { echo "::error::no files"; exit 1; }
+          sed -e "s/{version}/$VERSION/g" -e "s/{beta}/$N/g" -e "s/{commit}/${GITHUB_SHA:0:7}/g" .github/beta-notes.md > notes.md
+          gh release delete "$TAG" -R Eryski/CosmoU-Beta --yes --cleanup-tag 2>/dev/null || true
+          gh release create "$TAG" -R Eryski/CosmoU-Beta --prerelease --title "CosmoU $VERSION – Beta $N" --notes-file notes.md "${FILES[@]}"

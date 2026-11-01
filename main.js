@@ -2389,8 +2389,14 @@ ipcMain.handle('sysLooks', () => {
   for (const k of list) {
     if (!lookSys(k)) continue;
     const d = path.join(looksDir(), k);
-    const b = lookFiles(d, /^background\./i).find(n => PICTURE.test(n));
-    if (b) out.bg[k] = { url: fileUrlV(path.join(d, b)) };
+    // one or more pictures (a new one each time you come to that console)
+    const pics = lookFiles(d, /^background[-.]/i)
+      .filter(n => PICTURE.test(n))
+      .sort();
+    if (pics.length) {
+      const list = pics.map(n => ({ url: fileUrlV(path.join(d, n)), name: n }));
+      out.bg[k] = { url: list[0].url, list };
+    }
     const m = lookFiles(d, /^music\./i).find(n => AUDIO.test(n));
     if (m) {
       let name = m;
@@ -2418,17 +2424,22 @@ ipcMain.handle('sysLookPick', async (_, sys, kind) => {
   if (pic && fs.statSync(f).size > MAX_PICTURE) return { error: 'That picture is too big (15 MB at most).' };
   const d = path.join(looksDir(), k);
   fs.mkdirSync(d, { recursive: true });
-  for (const n of lookFiles(d, pic ? /^background\./i : /^(music\.|name\.txt$)/i)) fs.rmSync(path.join(d, n), { force: true });
-  const dest = path.join(d, (pic ? 'background' : 'music') + path.extname(f).toLowerCase());
+  // pictures are added (up to 30); the music is replaced
+  if (pic && lookFiles(d, /^background[-.]/i).length >= 30) return { error: 'That console already has 30 pictures – remove one first.' };
+  if (!pic) for (const n of lookFiles(d, /^(music\.|name\.txt$)/i)) fs.rmSync(path.join(d, n), { force: true });
+  const dest = path.join(d, (pic ? 'background-' + Date.now() : 'music') + path.extname(f).toLowerCase());
   fs.copyFileSync(f, dest);
   if (!pic) fs.writeFileSync(path.join(d, 'name.txt'), path.basename(f));
-  return { url: fileUrlV(dest), name: path.basename(f) };
+  return { url: fileUrlV(dest), name: pic ? path.basename(dest) : path.basename(f) };
 });
-ipcMain.handle('sysLookRemove', (_, sys, kind) => {
+// a picture by its name (only that one), all pictures (no name) or the music
+ipcMain.handle('sysLookRemove', (_, sys, kind, name) => {
   const k = lookSys(sys);
   if (!k) return false;
   const d = path.join(looksDir(), k);
-  for (const n of lookFiles(d, kind === 'bg' ? /^background\./i : /^(music\.|name\.txt$)/i)) fs.rmSync(path.join(d, n), { force: true });
+  const one = kind === 'bg' && typeof name === 'string' && /^background[-.][\w.-]*$/i.test(name) ? name : '';
+  for (const n of lookFiles(d, kind === 'bg' ? /^background[-.]/i : /^(music\.|name\.txt$)/i))
+    if (!one || n === one) fs.rmSync(path.join(d, n), { force: true });
   return true;
 });
 
