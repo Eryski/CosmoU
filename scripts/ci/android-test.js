@@ -523,38 +523,36 @@ function tga() {
         if (d) adb('shell', `input tap ${d.x} ${d.y}`), await wait(1500);
       }
       await shot('07-picture-picker');
-      // in the grid view a picture has no name on screen: its name is in the description, else tap its thumbnail
-      let hit = null,
-        listed = false;
-      for (let i = 0; i < 15 && !hit; i++) {
+      // the picture: by its name (list view), else its thumbnail (grid view: no name on screen, and a preview
+      // button in its middle). A few places are tried until CosmoU has the picture; "Open with" is closed again,
+      // and a selection mode (Android 11) is confirmed with "Select".
+      let box = null;
+      for (let i = 0; i < 15 && !box; i++) {
         adb('shell', 'uiautomator dump /sdcard/ui.xml >/dev/null');
-        const x = adb('shell', 'cat /sdcard/ui.xml');
-        const nodes = [...x.matchAll(/<node [^>]*>/g)].map(m => m[0]);
-        // (not the middle: a thumbnail has a "preview" button there)
-        const box = n => {
-          const b = n.match(/bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"/);
-          return b ? [Math.round(+b[1] + (b[3] - b[1]) * 0.18), Math.round(+b[2] + (b[4] - b[2]) * 0.85)] : null;
-        };
-        const named = nodes.find(n => /(text|content-desc)="[^"]*cosmou-sea/.test(n));
-        // no name on screen: switch the picker to its list view once (then every file shows its name)
-        const listBtn = !named && !listed && nodes.find(n => /content-desc="[^"]*list view/i.test(n));
-        if (listBtn) {
-          listed = true;
-          const b = listBtn.match(/bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"/);
-          adb('shell', `input tap ${(+b[1] + +b[3]) >> 1} ${(+b[2] + +b[4]) >> 1}`);
-          await wait(1500);
-          continue;
-        }
-        const thumb = nodes.filter(n => /resource-id="[^"]*(icon_thumb|thumbnail)"/.test(n)).pop();
-        const mid = n => {
-          const b = n.match(/bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"/);
-          return b ? [(+b[1] + +b[3]) >> 1, (+b[2] + +b[4]) >> 1] : null;
-        };
-        hit = named ? mid(named) : box(thumb || '');
-        if (!hit) await wait(1000);
+        const nodes = [...adb('shell', 'cat /sdcard/ui.xml').matchAll(/<node [^>]*>/g)].map(m => m[0]);
+        const n = nodes.find(n => /text="[^"]*cosmou-sea/.test(n)) || nodes.filter(n => /resource-id="[^"]*(icon_thumb|thumbnail)"/.test(n)).pop();
+        const b = n && n.match(/bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"/);
+        if (b) box = b.slice(1).map(Number);
+        else await wait(1000);
       }
-      if (!hit) throw new Error('no picture in the picker');
-      adb('shell', `input tap ${hit[0]} ${hit[1]}`);
+      if (!box) throw new Error('no picture in the picker');
+      const got = () => E(() => !!window.__look);
+      for (const [fx, fy] of [[0.82, 0.82], [0.18, 0.18], [0.18, 0.85], [0.82, 0.18]]) {
+        adb('shell', `input tap ${Math.round(box[0] + (box[2] - box[0]) * fx)} ${Math.round(box[1] + (box[3] - box[1]) * fy)}`);
+        await wait(2200);
+        if (await got()) break;
+        const t = uiNodes().map(x => x.text);
+        if (t.some(x => /^open with$/i.test(x))) {
+          adb('shell', 'input keyevent 4');
+          await wait(1200);
+        }
+        const selBtn = uiNodes().find(x => /^select$/i.test(x.text));
+        if (selBtn) {
+          adb('shell', `input tap ${selBtn.x} ${selBtn.y}`);
+          await wait(2200);
+          if (await got()) break;
+        }
+      }
     } catch (e) {
       ok('picture picker', false, e.message.slice(0, 300));
       await shot('07-picture-picker');
