@@ -388,7 +388,7 @@ function tga() {
   const saved = picked2 && (await E(a => api.appSave({ path: a.path, name: 'Test app' }), picked2));
   ok('app added', saved && saved.ok, saved);
   const apps = await E(async () => (await api.scan()).filter(g => g.kind === 'app').map(g => [g.name, g.cover.split('/').pop()]));
-  ok('app in the library with its icon', Array.isArray(apps) && apps.length === 1 && /\.png$/.test(apps[0][1]), apps);
+  ok('app in the library with its icon', Array.isArray(apps) && apps.length === 1 && /\.png(\?v=\d+)?$/.test(apps[0][1]), apps);
 
   at('other consoles');
   // ---- Nintendo 64: its games folder with Android's folder picker, the stand-in as its emulator app ----

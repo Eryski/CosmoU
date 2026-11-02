@@ -225,6 +225,7 @@ async function portableTest() {
       ok('an added app shows up only on its console (GameCube)', on.gamecube && on.gamecube.includes('Test Port') && !on.n64.length && !on.switch.length, on);
       const winInfo = () => {
         const q = `
+$ProgressPreference = 'SilentlyContinue'
 Add-Type @'
 using System; using System.Runtime.InteropServices;
 public static class TW {
@@ -256,7 +257,14 @@ $s = [System.Windows.Forms.Screen]::FromHandle($h).Bounds
         wi = winInfo();
         return wi && wi.full;
       }, 40000);
-      ok('the app opens in full screen (Window: Full screen)', wi && wi.full, { started: started && started.ok, wi, log: log.join('').split('\n').filter(l => /^app /.test(l)).slice(-5) });
+      let seen = '';
+      if (!(wi && wi.full))
+        try {
+          seen = cp.execFileSync('powershell.exe', ['-NoProfile', '-Command', "$ProgressPreference='SilentlyContinue'; Get-Process | ? MainWindowTitle | % { $_.Id.ToString() + ' ' + $_.ProcessName + ': ' + $_.MainWindowTitle }; Get-CimInstance Win32_Process -Filter \"Name='powershell.exe'\" | % { $_.ProcessId.ToString() + ' < ' + $_.ParentProcessId + ' ' + $_.CommandLine.Substring(0, [Math]::Min(90, $_.CommandLine.Length)) }"], { encoding: 'utf8', timeout: 30000 });
+        } catch (e) {
+          seen = String(e.message).slice(0, 300);
+        }
+      ok('the app opens in full screen (Window: Full screen)', wi && wi.full, { started: started && started.ok, wi, log: log.join('').split('\n').filter(l => /app /.test(l)).slice(-6), seen: seen.slice(0, 1500) });
       if (wi && wi.pid)
         try {
           process.kill(wi.pid);

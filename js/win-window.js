@@ -24,12 +24,18 @@ public static class CosmoWin {
   [DllImport("user32.dll")] static extern IntPtr MonitorFromWindow(IntPtr h, uint f);
   [DllImport("user32.dll")] static extern bool GetMonitorInfo(IntPtr m, ref MONITORINFO mi);
   [DllImport("user32.dll")] static extern bool SetForegroundWindow(IntPtr h);
+  [DllImport("user32.dll", CharSet = CharSet.Unicode)] static extern int GetClassName(IntPtr h, StringBuilder s, int n);
+  [DllImport("user32.dll", CharSet = CharSet.Unicode)] static extern int GetWindowText(IntPtr h, StringBuilder s, int n);
+  public static string Name(long hw) { var b = new StringBuilder(256); GetWindowText(new IntPtr(hw), b, 256); var c = new StringBuilder(256); GetClassName(new IntPtr(hw), c, 256); return b + " [" + c + "]"; }
   // the visible top-level windows (no tool windows, no owned popups) with their process
   public static List<long[]> Windows() {
     var l = new List<long[]>();
     EnumWindows((h, p) => {
       if (!IsWindowVisible(h) || GetWindow(h, 4) != IntPtr.Zero) return true;
       if ((GetWindowLong(h, -20) & 0x80) != 0) return true;
+      // console windows (a port's log window) are not the game
+      var c = new StringBuilder(64); GetClassName(h, c, 64);
+      if (c.ToString() == "ConsoleWindowClass" || c.ToString() == "CASCADIA_HOSTING_WINDOW_CLASS" || c.ToString() == "PseudoConsoleWindow") return true;
       uint pid; GetWindowThreadProcessId(h, out pid);
       l.Add(new long[] { h.ToInt64(), pid });
       return true;
@@ -64,11 +70,12 @@ public static class CosmoWin {
 
 // the watcher: arguments come in through the environment, never into the script text
 const PS = `
+$ProgressPreference = 'SilentlyContinue'
+try { Add-Type -TypeDefinition $env:COSMOU_WIN_SRC -ErrorAction Stop } catch { Write-Output ('cannot watch: ' + $_); exit }
 $ErrorActionPreference = 'SilentlyContinue'
-Add-Type -TypeDefinition $env:COSMOU_WIN_SRC
 $root = [uint32]$env:COSMOU_WIN_PID; $dir = $env:COSMOU_WIN_DIR; $mode = $env:COSMOU_WIN_MODE
 $before = @{}; foreach ($w in [CosmoWin]::Windows()) { $before[$w[0]] = 1 }
-$done = @{}; $end = (Get-Date).AddSeconds(45)
+$done = @{}; $end = (Get-Date).AddSeconds(45); Write-Output ('watching ' + $root + ' ' + $mode)
 while ((Get-Date) -lt $end) {
   $procs = @(Get-CimInstance Win32_Process -Property ProcessId,ParentProcessId,ExecutablePath)
   $mine = @{}; if ($root) { $mine[$root] = 1 }
@@ -78,7 +85,7 @@ while ((Get-Date) -lt $end) {
     $h = $w[0]
     if ($before.ContainsKey($h) -or -not $mine.ContainsKey([uint32]$w[1]) -or -not [CosmoWin]::Big($h)) { continue }
     # a game often sizes its window again right after it opens: for a few seconds CosmoU puts it back
-    if (-not $done.ContainsKey($h)) { $done[$h] = Get-Date; [CosmoWin]::Apply($h, $mode); Write-Output ('window ' + $h + ' ' + $mode) }
+    if (-not $done.ContainsKey($h)) { $done[$h] = Get-Date; [CosmoWin]::Apply($h, $mode); Write-Output ('window ' + [CosmoWin]::Name($h) + ' ' + $mode) }
     elseif ($mode -eq 'full' -and ((Get-Date) - $done[$h]).TotalSeconds -lt 8 -and -not [CosmoWin]::Fills($h)) { [CosmoWin]::Apply($h, $mode) }
   }
   Start-Sleep -Milliseconds 600
