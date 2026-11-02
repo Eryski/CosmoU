@@ -583,6 +583,31 @@ async function waitFor(fn, ms) {
     await w.waitForTimeout(600);
   }
 
+  // ---- the right stick scrolls Settings (like Nintendo's menus) ----
+  {
+    const st = await E(async () => {
+      const real = navigator.getGamepads.bind(navigator);
+      let ry = 0;
+      const p = { id: 'stand-in pad', index: 0, connected: true, mapping: 'standard', buttons: Array.from({ length: 17 }, () => ({ pressed: false, value: 0 })), get axes() { return [0, 0, 0, ry]; } };
+      navigator.getGamepads = () => [p];
+      const ev = new Event('gamepadconnected');
+      ev.gamepad = p;
+      dispatchEvent(ev);
+      openSettings();
+      await new Promise(r => setTimeout(r, 800));
+      const box = padScrollBox($('#dlg')),
+        t0 = box ? box.scrollTop : -1;
+      ry = 1;
+      await new Promise(r => setTimeout(r, 800));
+      ry = 0;
+      const t1 = box ? box.scrollTop : -1;
+      navigator.getGamepads = real;
+      $('#dlg').close();
+      return { box: box && box.id, t0, t1 };
+    });
+    ok('the right stick scrolls Settings', st.box && st.t1 > st.t0 + 60, st);
+  }
+
   // ---- every console on one page (the last card when choosing a console); favorites from every console ----
   {
     const ev = await E(async () => {

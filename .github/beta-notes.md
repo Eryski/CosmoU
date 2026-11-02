@@ -25,6 +25,8 @@ Thanks for testing! 💙 Please don't share this file. Report bugs **[here](../.
 - **Long names in the Grid:** no half-cut third line any more; the chosen (or pointed at) game's long name rolls through on one line.
 - **DS covers** (Grid and DS Menu) show the whole box instead of cutting off its edges.
 - **Ports with a log window (cmd):** the game's window comes to the front – keyboard and controller go to the game, the log window steps aside, and Window: Full screen works for them too.
+- **Box art after adding or changing a cover:** shows right away on the 3D case too (it needed a restart before).
+- **🕹️ Right stick scrolls** Settings and every other window (and the Grid), like in Nintendo's menus.
 - **Mouse:** the arrow stays an arrow over text (the text cursor only shows where you can type).
 - **Covers for N64, Wii, NES …** come from libretro's archive on GitHub when their server is down.
 - **Grid:** moving with the controller or the arrow keys no longer makes the whole grid blink like a reloaded page – and up / down go a row.

@@ -30,8 +30,9 @@ function buildCovers(l) {
       e.ondblclick = () => {
         if (sel === x.name) launch(cur());
       };
+      // (the game as it is now: a cover found or chosen later is in the newest list, not in this first one)
       e.onpointerenter = () => {
-        if (e.classList.contains('mid')) hoverCase(e, x);
+        if (e.classList.contains('mid')) hoverCase(e, games.find(g => g.name === e.dataset.g) || x);
       };
       e.onpointerleave = hoverOff;
       row.append(e);

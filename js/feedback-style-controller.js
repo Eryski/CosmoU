@@ -127,6 +127,28 @@ function padPress(d) {
   else a.click();
 }
 addEventListener('pointermove', () => document.body.classList.remove('padnav'), { passive: true });
+// the part of a window that scrolls: around the button in focus, else the biggest scrolling part (Settings' pages)
+function padScrollBox(d) {
+  const ok = el => el && el.scrollHeight > el.clientHeight + 2 && /(auto|scroll)/.test(getComputedStyle(el).overflowY);
+  for (let el = document.activeElement; el && el !== d && d.contains(el); el = el.parentElement) if (ok(el)) return el;
+  return [...d.querySelectorAll('*')].filter(ok).sort((x, y) => y.clientHeight - x.clientHeight)[0] || (ok(d) ? d : null);
+}
+// the right stick up and down scrolls, like in Nintendo's menus: in a window (Settings …) and in the Grid
+function padScroll(open, ry, now) {
+  const dt = Math.min(0.05, Math.max(0, (now - (pad.sT || now)) / 1000));
+  pad.sT = now;
+  if (Math.abs(ry) < 0.22) return;
+  const key = open ? open.id + '|' + (document.activeElement && document.activeElement.id) : 'grid';
+  if (pad.sKey !== key || !pad.sBox || !pad.sBox.isConnected) {
+    pad.sKey = key;
+    pad.sBox = open ? padScrollBox(open) : mode === 'grid' ? $('#grid') : null;
+  }
+  if (!pad.sBox) return;
+  // faster the further the stick goes, up to about two screens a second
+  const v = Math.sign(ry) * Math.pow((Math.abs(ry) - 0.22) / 0.78, 1.6) * Math.max(900, pad.sBox.clientHeight * 2);
+  pad.sBox.scrollTop += v * dt;
+  document.body.classList.add('padnav');
+}
 function padTick(now) {
   const gp0 = [...(navigator.getGamepads ? navigator.getGamepads() : [])].find(Boolean);
   if (!gp0) {
@@ -183,6 +205,8 @@ function padTick(now) {
     pad.dlg = open;
     pad.moved = false;
   }
+  if (!busy && (open || mode === 'grid')) padScroll(open, gp0.axes[3] || 0, now);
+  else pad.sT = now;
   if (!busy && fire.hm && typeof openQuick === 'function') openQuick();
   else if (!busy) {
     if (open) {
