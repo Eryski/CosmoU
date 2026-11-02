@@ -889,3 +889,37 @@ body.clean[data-mode='covers'] #cft {
   -webkit-backdrop-filter: blur(14px) saturate(1.4);
   box-shadow: 0 6px 22px rgba(0, 0, 0, 0.18);
 }
+
+/* ===== An app, not a web page: the arrow over text (the text cursor only where you type) ===== */
+body {
+  cursor: default;
+  -webkit-user-select: none;
+  user-select: none;
+}
+input,
+textarea,
+[contenteditable],
+pre,
+code,
+.selectable {
+  -webkit-user-select: text;
+  user-select: text;
+}
+input:not([type='range']):not([type='checkbox']):not([type='radio']),
+textarea,
+[contenteditable] {
+  cursor: text;
+}
+/* the name at the top left opens CosmoU's folder */
+.brand.brand-link {
+  cursor: pointer;
+  border-radius: 12px;
+  transition: opacity 0.2s;
+}
+.brand.brand-link:hover {
+  opacity: 0.78;
+}
+.brand.brand-link:focus-visible {
+  outline: 2px solid var(--accent, #12b4cc);
+  outline-offset: 4px;
+}

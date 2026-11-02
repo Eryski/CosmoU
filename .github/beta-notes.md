@@ -12,9 +12,12 @@ Thanks for testing! 💙 Please don't share this file. Report bugs **[here](../.
 - **🧹 Clean view** – hold **LT + RT** (or press **H**, or Quick Menu → Look): in Covers only the games stay, small at the bottom with the name above them – your background is free.
 - **➕ Add an app** right from the Quick Menu (Sound column).
 - The pictures menu stays open on **Next / Previous picture**, so you can skip through to your favourite.
+- **📂 Click “CosmoU” at the top left** to open the CosmoU folder (settings, covers, music, pictures, themes – `CosmoU-data` next to the portable .exe).
 
 ### Fixed
 - **Wii U Look (Home Menu layout)** shows your picture behind the tiles now.
+- **Mouse:** the arrow stays an arrow over text (the text cursor only shows where you can type).
+- **Covers for N64, Wii, NES …** come from libretro's archive on GitHub when their server is down.
 - **Grid:** moving with the controller or the arrow keys no longer makes the whole grid blink like a reloaded page – and up / down go a row.
 
 ### Please check

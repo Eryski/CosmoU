@@ -1103,6 +1103,8 @@ function installCemuDmg(dmg) {
     } catch {}
   }
 }
+// CosmoU's own folder (settings, covers, music, pictures, themes, saves; CosmoU-data next to the portable .exe)
+ipcMain.handle('dataFolder', () => shell.openPath(app.getPath('userData')));
 ipcMain.handle('musicFolder', () => {
   const d = path.join(app.getPath('userData'), 'music');
   fs.mkdirSync(d, { recursive: true });

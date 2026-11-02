@@ -139,3 +139,27 @@ if (typeof QI !== 'undefined') {
     '<svg viewBox="0 0 32 32"><path d="M3 16s5-8.5 13-8.5S29 16 29 16s-5 8.5-13 8.5S3 16 3 16z" fill="none" stroke="#fff" stroke-width="2.8" stroke-linejoin="round"/><circle cx="16" cy="16" r="4" fill="#fff"/></svg>';
   QI.plus = '<svg viewBox="0 0 32 32"><path d="M16 6v20M6 16h20" stroke="#fff" stroke-width="3.6" stroke-linecap="round"/></svg>';
 }
+
+// ---------- the name at the top left: CosmoU's own folder ----------
+// (settings, covers, music, pictures, themes and saves – CosmoU-data next to the portable .exe)
+{
+  const b = document.querySelector('.brand');
+  if (b && window.api && api.openDataFolder) {
+    b.classList.add('brand-link');
+    b.title = 'Open the CosmoU folder';
+    b.tabIndex = 0;
+    b.setAttribute('role', 'button');
+    const go = () => {
+      blip('open');
+      api.openDataFolder();
+      toast('📂 The CosmoU folder: settings, covers, music, pictures and themes', 3000);
+    };
+    b.addEventListener('click', go);
+    b.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        go();
+      }
+    });
+  }
+}

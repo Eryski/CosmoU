@@ -496,6 +496,19 @@ async function waitFor(fn, ms) {
     ok('grid: moving keeps the tiles (no reload blink)', gs.same && gs.moved && gs.hero && gs.rings === 1, gs);
   }
 
+  // ---- an app, not a web page: the arrow over text; the name at the top left opens CosmoU's folder ----
+  {
+    await app.evaluate(({ shell }) => {
+      global.__opened = null;
+      shell.openPath = async p => ((global.__opened = p), '');
+    });
+    const cu = await E(() => ({ text: getComputedStyle(document.querySelector('.brand small')).cursor, title: getComputedStyle($('#st')).cursor, search: getComputedStyle($('#q')).cursor }));
+    await E(() => document.querySelector('.brand').click());
+    await w.waitForTimeout(400);
+    const opened = await app.evaluate(() => global.__opened);
+    ok('the arrow over text, and “CosmoU” opens its folder', cu.title === 'default' && cu.search === 'text' && /CosmoU/.test(String(opened)), { cu, opened });
+  }
+
   // ---- your order (RT / Move): a game lifted and moved two places on; the clean view ----
   {
     const mv = await E(async () => {
@@ -639,8 +652,8 @@ async function waitFor(fn, ms) {
   await waitFor(async () => {
     arts = await E(async () => (await api.scan()).filter(g => g.sys && g.sys !== 'wiiu').map(g => [g.sys, g.name, (g.cover || '').split('/').pop()]));
     return Array.isArray(arts) && arts.some(x => x[0] === 'n64' && /Super Mario 64/.test(x[1]) && x[2]) && arts.some(x => x[0] === 'switch' && /Odyssey/.test(x[1]) && x[2]);
-  }, 60000);
-  if (!(Array.isArray(arts) && arts.some(x => x[0] === 'switch' && x[2]))) ok('cover log', true, log.join('').split('\n').filter(l => /cover/.test(l)).slice(-12).join('\n'));
+  }, 120000);
+  if (!(Array.isArray(arts) && arts.some(x => x[0] === 'switch' && x[2]) && arts.some(x => x[0] === 'n64' && x[2]))) ok('cover log', true, log.join('').split('\n').filter(l => /cover/.test(l)).slice(-20).join('\n'));
   ok('covers: Switch from the eShop, N64 from libretro', Array.isArray(arts) && arts.some(x => x[0] === 'n64' && /Super Mario 64/.test(x[1]) && x[2]) && arts.some(x => x[0] === 'switch' && /Odyssey/.test(x[1]) && x[2]), arts);
   await E(() => load());
   await w.waitForTimeout(1500);

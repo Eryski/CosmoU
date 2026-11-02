@@ -42,6 +42,7 @@ contextBridge.exposeInMainWorld('api', {
   setSetupDone: v => r.invoke('setSetupDone', v),
   pickMusic: () => r.invoke('pickMusic'),
   resetMusic: () => r.invoke('resetMusic'),
+  openDataFolder: () => r.invoke('dataFolder'),
   sysLooks: () => r.invoke('sysLooks'),
   sysLookPick: (sys, kind) => r.invoke('sysLookPick', sys, kind),
   sysLookRemove: (sys, kind, name) => r.invoke('sysLookRemove', sys, kind, name),
