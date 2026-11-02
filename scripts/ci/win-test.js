@@ -208,7 +208,7 @@ async function portableTest() {
     {
       const ps = path.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe');
       const form =
-        '-NoProfile -Command "Add-Type -A System.Windows.Forms; $f = New-Object Windows.Forms.Form; $f.Text = \'CosmoU test app\'; $f.Width = 640; $f.Height = 480; $f.StartPosition = \'CenterScreen\'; [void]$f.ShowDialog()"';
+        '-NoProfile -Command "Add-Type -A System.Windows.Forms; $f = New-Object Windows.Forms.Form; $f.Text = \'CosmoU test app\'; $f.Width = 640; $f.Height = 480; $f.StartPosition = \'CenterScreen\'; [System.Windows.Forms.Application]::Run($f)"';
       const r = await E(a => api.appSave(a), { path: ps, name: 'Test Port', args: form, sys: 'gamecube', win: 'full' });
       await E(() => load());
       await w.waitForTimeout(1200);
