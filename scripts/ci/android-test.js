@@ -564,6 +564,8 @@ function tga() {
       const r = window.__look;
       await loadLooks();
       const res = r && r.url && (await fetch(r.url));
+      // the picture shows once it is loaded and decoded
+      for (let i = 0; i < 30 && !document.body.classList.contains('has-pic'); i++) await new Promise(ok => setTimeout(ok, 200));
       return { sys: curSys, r, status: res && res.status, pic: document.body.classList.contains('has-pic') };
     });
     const sdk = +(await sh('getprop ro.build.version.sdk')) || 0;

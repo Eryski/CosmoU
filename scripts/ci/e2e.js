@@ -496,10 +496,12 @@ async function waitFor(fn, ms) {
     ok('grid: moving keeps the tiles (no reload blink)', gs.same && gs.moved && gs.hero && gs.rings === 1, gs);
     // the banner stays at the top while the games scroll; a name never shows a cut third line
     const pin = await E(async () => {
-      for (let i = 0; i < 10 && document.body.dataset.mode !== 'grid'; i++) {
-        document.querySelector('#vt button[data-m="grid"]').click();
-        await new Promise(r => setTimeout(r, 500));
-      }
+      // (the view change before this one finishes first; then straight into the Grid, without the animation)
+      await new Promise(r => setTimeout(r, 1200));
+      mode = 'grid';
+      syncMode();
+      render();
+      await new Promise(r => setTimeout(r, 400));
       const gr = $('#grid'),
         b = gr.querySelector('.tile b'),
         cs = b && getComputedStyle(b);
@@ -514,7 +516,9 @@ async function waitFor(fn, ms) {
         border: cs && cs.borderTopWidth,
       };
       gr.scrollTop = 0;
-      document.querySelector('#vt button[data-m="covers"]').click();
+      mode = 'covers';
+      syncMode();
+      render();
       return out;
     });
     ok('grid: the banner stays at the top, the games scroll below it', pin.own === 'auto' && pin.heroTop >= 0 && pin.page === 0 && pin.pad === '0px' && pin.border === '7px', pin);

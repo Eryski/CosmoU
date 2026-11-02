@@ -433,6 +433,8 @@ setTimeout(() => {
     const r = await api.sysLookPick(curSys, 'bg');
     await loadLooks();
     const res = r && r.url && (await fetch(r.url));
+    // the picture shows once it is loaded and decoded
+    for (let i = 0; i < 30 && !document.body.classList.contains('has-pic'); i++) await new Promise(z => setTimeout(z, 200));
     return { sys: curSys, r, status: res && res.status, pic: document.body.classList.contains('has-pic') };
   });
   ok('a background picture for this console', lkp && lkp.r && lkp.status === 200 && lkp.pic, lkp);
@@ -463,6 +465,7 @@ setTimeout(() => {
     await ownLoad();
     setTheme('u-great-sea');
     await new Promise(z => setTimeout(z, 800));
+    for (let i = 0; i < 30 && !document.body.classList.contains('has-pic'); i++) await new Promise(z => setTimeout(z, 200));
     return { r, url: t && t.imageUrl, status: res && res.status, cls: document.body.className, pic: document.body.classList.contains('has-pic') };
   });
   ok('theme file with a picture on Liquid Glass', timp && timp.r && timp.r.ok && timp.status === 200 && /theme-liquid-glass/.test(timp.cls) && timp.pic, timp);
