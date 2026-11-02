@@ -187,16 +187,30 @@ try {
   const f = JSON.parse(localStorage.getItem('cosmou.favs') || '[]');
   if (Array.isArray(f)) favs = new Set(f.filter(x => typeof x === 'string'));
   const so = localStorage.getItem('cosmou.sort');
-  if (['az', 'za', 'recent', 'most'].includes(so)) sortMode = so;
+  if (['az', 'za', 'recent', 'most', 'own'].includes(so)) sortMode = so;
   const sh = localStorage.getItem('cosmou.show');
   if (['all', 'fav', 'wiiu', 'apps'].includes(sh)) showFilter = sh;
 } catch {}
 const isFav = name => favs.has(name);
-const SORT_LABEL = { az: 'A–Z', za: 'Z–A', recent: 'Recent', most: 'Most played' },
+const SORT_LABEL = { az: 'A–Z', za: 'Z–A', recent: 'Recent', most: 'Most played', own: 'Your order' },
   SHOW_LABEL = { all: 'All games', fav: 'Favorites', wiiu: 'Wii U games', apps: 'Other apps' };
 // seconds played (Daily Log) – 0 when the log isn't loaded yet
 const secOf = name =>
   (typeof playLog === 'object' && playLog && playLog.playtime && playLog.playtime[name] && playLog.playtime[name].sec) || 0;
+// your own order of the games, for the console on screen
+function ownOrder() {
+  try {
+    const v = JSON.parse(localStorage.getItem('cosmou.order.' + (typeof curSys === 'string' ? curSys : 'wiiu')) || '[]');
+    return Array.isArray(v) ? v.filter(x => typeof x === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+function setOwnOrder(names) {
+  try {
+    localStorage.setItem('cosmou.order.' + (typeof curSys === 'string' ? curSys : 'wiiu'), JSON.stringify(names.slice(0, 5000)));
+  } catch {}
+}
 function list() {
   const q = $('#q').value.trim().toLowerCase();
   let l = games.filter(g => g.name.toLowerCase().includes(q) || (g.tid && String(g.tid).toLowerCase().includes(q)));
@@ -208,6 +222,12 @@ function list() {
   else if (showFilter === 'apps') l = l.filter(g => g.kind === 'app');
   const by = view === 'recent' ? 'recent' : sortMode,
     az = (a, b) => a.name.localeCompare(b.name);
+  // your own order (js/order.js): the games you placed first, the others after them A–Z
+  if (by === 'own') {
+    const ix = new Map(ownOrder().map((n, i) => [n, i]));
+    const at = g => (ix.has(g.name) ? ix.get(g.name) : 1e9);
+    return l.sort((a, b) => at(a) - at(b) || az(a, b));
+  }
   return l.sort((a, b) =>
     by === 'recent'
       ? (plays[b.name] || 0) - (plays[a.name] || 0) || az(a, b)

@@ -819,3 +819,73 @@ html.dark body.has-pic .hero h3 {
   font-weight: 600;
   color: var(--accent, inherit);
 }
+
+/* ===== Your order (js/order.js): the lifted game floats a little and shows arrows ===== */
+body.moving .cc.mid,
+body.moving #grid .tile.on {
+  animation: lift 1.2s ease-in-out infinite alternate;
+}
+body.moving .cc.mid::after,
+body.moving #grid .tile.on::after {
+  content: '↔';
+  position: absolute;
+  left: 50%;
+  top: -18px;
+  transform: translateX(-50%);
+  padding: 2px 12px;
+  border-radius: 99px;
+  font: 700 18px/1.4 system-ui, sans-serif;
+  color: var(--on-accent, #fff);
+  background: var(--accent, #12b4cc);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+  z-index: 5;
+}
+@keyframes lift {
+  to {
+    translate: 0 -10px;
+  }
+}
+
+/* ===== Clean view (js/order.js): in Covers only the games, small at the bottom, the name above them ===== */
+body.clean[data-mode='covers'] header,
+body.clean[data-mode='covers'] nav.glass,
+body.clean[data-mode='covers'] .tvbar,
+body.clean[data-mode='covers'] #prev,
+body.clean[data-mode='covers'] #next,
+body.clean[data-mode='covers'] .cfmeta .dots,
+body.clean[data-mode='covers'] #cfm,
+body.clean[data-mode='covers'] .cfmeta .acts,
+body.clean[data-mode='covers'] .cf::before {
+  display: none !important;
+}
+body.clean[data-mode='covers'] .cf {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 3vh;
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
+  z-index: 3;
+}
+body.clean[data-mode='covers'] .cfwrap {
+  width: 100%;
+  height: clamp(120px, 21vh, 210px);
+  --s: clamp(96px, 16vh, 168px);
+}
+body.clean[data-mode='covers'] .cc {
+  -webkit-box-reflect: unset;
+}
+body.clean[data-mode='covers'] .cfmeta {
+  margin: 0 0 1vh;
+  padding: 0;
+}
+body.clean[data-mode='covers'] #cft {
+  font-size: clamp(20px, 3.2vh, 30px);
+  padding: 6px 22px;
+  border-radius: 99px;
+  background: color-mix(in srgb, var(--card, #fff) 55%, transparent);
+  backdrop-filter: blur(14px) saturate(1.4);
+  -webkit-backdrop-filter: blur(14px) saturate(1.4);
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.18);
+}

@@ -113,9 +113,10 @@ function openMenu(anchor, items, opts = {}) {
       c.textContent = '✓';
       b.append(c);
     }
+    // stay: the menu stays open (for example to go through the pictures one by one)
     b.onclick = () => {
-      m.close();
-      if (!it.keep) blip('open');
+      if (!it.stay) m.close();
+      if (!it.keep && !it.stay) blip('open');
       it.fn && it.fn();
     };
     box.append(b);
@@ -221,6 +222,7 @@ function sortMenu(anchor) {
       { label: 'Name Z–A', icon: 'za', on: sortMode === 'za', fn: () => setSort('za') },
       { label: 'Recently played', icon: 'clock', on: sortMode === 'recent', fn: () => setSort('recent') },
       { label: 'Most played', icon: 'most', on: sortMode === 'most', sub: 'Uses the Daily Log', fn: () => setSort('most') },
+      { label: 'Your order', icon: 'all', on: sortMode === 'own', sub: 'RT (or “Move” in a game’s menu) moves a game', fn: () => setSort('own') },
       '-',
       { head: 'Show' },
       { label: 'All games', icon: 'all', on: showFilter === 'all', hint: String(n('all')), fn: () => setShow('all') },
@@ -272,6 +274,8 @@ function gameMenu(g, at) {
       '-',
       cemuGame(g) && !IS_MOBILE && { label: 'Graphic packs', icon: 'packs', hint: 'G', fn: pick(() => openPacks(g)) },
       app && { label: 'Edit app', icon: 'edit', fn: pick(() => openApp(g)) },
+      typeof orderStart === 'function' &&
+        (mode === 'covers' || mode === 'grid') && { label: 'Move', icon: 'all', hint: 'RT', sub: 'Change its place in your order', fn: pick(() => orderStart()) },
       g.path && !IS_MOBILE && { label: 'Show in folder', icon: 'folder', fn: () => need() && api.showInFolder(g.path) },
       cemuGame(g) && !IS_MOBILE && { label: 'Add to Steam', icon: 'steam', fn: pick(() => openSteam(g)) },
       {

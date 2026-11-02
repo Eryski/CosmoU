@@ -496,6 +496,32 @@ async function waitFor(fn, ms) {
     ok('grid: moving keeps the tiles (no reload blink)', gs.same && gs.moved && gs.hero && gs.rings === 1, gs);
   }
 
+  // ---- your order (RT / Move): a game lifted and moved two places on; the clean view ----
+  {
+    const mv = await E(async () => {
+      document.querySelector('#vt button[data-m="covers"]').click();
+      setSort('az');
+      await new Promise(r => setTimeout(r, 500));
+      const before = list().map(x => x.name);
+      if (before.length < 4) return { skip: before.length };
+      sel = before[1];
+      render();
+      orderStart();
+      step(1);
+      step(1);
+      orderEnd();
+      const after = list().map(x => x.name);
+      const out = { sort: sortMode, at: after.indexOf(before[1]), saved: ownOrder()[3] === before[1] };
+      toggleClean(true);
+      await new Promise(r => setTimeout(r, 400));
+      out.clean = document.body.classList.contains('clean') && getComputedStyle(document.querySelector('header')).display === 'none' && !!$('#cft').textContent;
+      toggleClean(false);
+      setSort('az');
+      return out;
+    });
+    ok('your order: a game moved two places, and the clean view', mv.skip || (mv.sort === 'own' && mv.at === 3 && mv.saved && mv.clean), mv);
+  }
+
   // ---- a picture and music for each console (Settings → Appearance), and a theme file with a picture ----
   {
     const dir = path.join(HOME, 'CosmoU-test', 'looks');

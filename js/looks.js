@@ -154,10 +154,11 @@ async function lookPick(kind) {
     toast('✓ Music for ' + lookSysName() + ': ' + r.name);
   }
 }
-// the next picture now
-function lookNext() {
+// the next (or the previous) picture now
+function lookNext(d = 1) {
   if (lookPics().length < 2) return;
-  bgAdvance();
+  if (d < 0) lookSetIx(lookIx() - 1);
+  else bgAdvance();
   blip('move');
   applyBackdrop();
   lookChanged();
@@ -185,7 +186,8 @@ function lookPicMenu(anchor) {
     anchor,
     [
       { label: n ? 'Add a picture…' : 'Choose a picture…', icon: 'picture', fn: () => lookPick('bg') },
-      n > 1 && { label: 'Next picture', icon: 'next', fn: () => lookNext() },
+      n > 1 && { label: 'Next picture', icon: 'next', stay: true, fn: () => lookNext() },
+      n > 1 && { label: 'Previous picture', icon: 'prev', stay: true, fn: () => lookNext(-1) },
       n && { label: n > 1 ? 'Remove this picture' : 'Remove the picture', icon: 'trash', danger: true, fn: () => lookRemove('bg') },
       n > 1 && { label: 'Remove all ' + n + ' pictures', icon: 'trash', danger: true, fn: () => lookRemove('bg', true) },
     ],
@@ -208,11 +210,12 @@ if (typeof MI !== 'undefined') {
   MI.picture =
     '<svg viewBox="0 0 32 32"><rect x="4" y="6" width="24" height="20" rx="3.5" fill="none" stroke="#fff" stroke-width="2.8"/><circle cx="21" cy="12.5" r="2.6" fill="#fff"/><path d="m6 24 7-8 5 5 3-3 5 6z" fill="#fff"/></svg>';
   MI.next = '<svg viewBox="0 0 32 32"><path d="M8 7v18l12-9zM22 7h3.5v18H22z" fill="#fff"/></svg>';
+  MI.prev = '<svg viewBox="0 0 32 32"><path d="M24 7v18L12 16zM10 7H6.5v18H10z" fill="#fff"/></svg>';
   MI.trash =
     '<svg viewBox="0 0 32 32"><path d="M6 9h20M13 9V6h6v3M8.5 9l1.3 16a2 2 0 0 0 2 1.9h8.4a2 2 0 0 0 2-1.9L23.5 9" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   MI.note = '<svg viewBox="0 0 32 32"><path fill="#fff" d="M12 6.5 26 4v16.2a4 4 0 1 1-2.5-3.7V9.6l-9 1.7v11.9a4 4 0 1 1-2.5-3.7z"/></svg>';
 }
-if (typeof MCOL !== 'undefined') Object.assign(MCOL, { picture: '#2fa0e0', next: '#16b3d9', trash: '#e0564f', note: '#f29a3c' });
+if (typeof MCOL !== 'undefined') Object.assign(MCOL, { picture: '#2fa0e0', next: '#16b3d9', prev: '#16b3d9', trash: '#e0564f', note: '#f29a3c' });
 if (typeof QI !== 'undefined') QI.picture = MI.picture;
 if ($('#lkbg')) {
   $('#lkbg').onclick = () => lookPick('bg');

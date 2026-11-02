@@ -152,6 +152,9 @@ function padTick(now) {
     rb: b(5),
     hm: b(16),
     r3: b(11),
+    // the triggers: RT moves a game (your order), holding LT and RT switches the clean view
+    lt: b(6),
+    rt: b(7),
     // the right stick to the side: a page on (console home screens)
     pl: rx < -0.6,
     pr: rx > 0.6,
@@ -195,7 +198,20 @@ function padTick(now) {
           launch(cur());
         } else padPress(open);
       }
+    } else if (typeof orderMove === 'string' && orderMove) {
+      // your order: a game is lifted – the D-pad moves it, A, B or RT put it down (js/order.js)
+      const rowStep = mode === 'grid' ? gridCols() : 1;
+      if (fire.a || fire.b || fire.rt) orderEnd();
+      else {
+        if (fire.l) step(-1);
+        else if (mode === 'grid' && fire.u) step(-rowStep);
+        if (fire.r) step(1);
+        else if (mode === 'grid' && fire.d) step(rowStep);
+      }
     } else {
+      // RT: lift the chosen game to move it (Covers and Grid); LT + RT held: the clean view (js/order.js)
+      if (fire.rt && !s.lt && typeof orderStart === 'function' && (mode === 'covers' || mode === 'grid')) orderStart();
+      if (typeof cleanHold === 'function') cleanHold(s.lt && s.rt, now);
       if (isHome()) {
         for (const k of ['l', 'r', 'u', 'd']) if (fire[k]) homeStep(k);
         if (fire.lb || fire.rb) whTurn(fire.rb ? 1 : -1);
