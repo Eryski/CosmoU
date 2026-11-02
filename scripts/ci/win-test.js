@@ -247,7 +247,7 @@ public static class TW {
 }
 '@
 Add-Type -A System.Windows.Forms
-$h = [TW]::FindWindow($null, 'CosmoU test app')
+$h = [TW]::FindWindow([NullString]::Value, 'CosmoU test app')
 if ($h -eq [IntPtr]::Zero) { 'null'; exit }
 $r = New-Object TW+R; [void][TW]::GetWindowRect($h, [ref]$r)
 [uint32]$p = 0; [void][TW]::GetWindowThreadProcessId($h, [ref]$p)
@@ -278,10 +278,9 @@ $s = [System.Windows.Forms.Screen]::FromHandle($h).Bounds
         seen = fs.readFileSync(path.join(pdir, 'error.txt'), 'utf8') + seen;
       } catch {}
       ok('the app opens in full screen (Window: Full screen)', wi && wi.full, { started: started && started.ok, wi, log: log.join('').split('\n').filter(l => /app /.test(l)).slice(-6), seen: seen.slice(0, 1500) });
-      if (wi && wi.pid)
-        try {
-          process.kill(wi.pid);
-        } catch {}
+      try {
+        cp.execFileSync('taskkill', ['/F', '/IM', 'TestPort.exe'], { stdio: 'ignore' });
+      } catch {}
       await E(id => api.appRemove(id), r && r.id);
       await E(() => load());
       await w.waitForTimeout(800);

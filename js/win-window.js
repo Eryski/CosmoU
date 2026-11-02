@@ -2,7 +2,7 @@
 // itself always opens in a small window. After the start, a small hidden PowerShell watches for 45 seconds which
 // new windows the app opens (its own process, the processes it starts, and programs from its folder – a game's
 // launcher often starts the real game) and makes each new big window maximized, or full screen without a border
-// on its monitor. Windows that were open before the start are never touched.
+// on its monitor. Programs that were already running before the start are never touched.
 const { spawn } = require('child_process');
 
 const SRC = String.raw`
@@ -74,16 +74,17 @@ $ProgressPreference = 'SilentlyContinue'
 try { Add-Type -TypeDefinition $env:COSMOU_WIN_SRC -ErrorAction Stop } catch { Write-Output ('cannot watch: ' + $_); exit }
 $ErrorActionPreference = 'SilentlyContinue'
 $root = [uint32]$env:COSMOU_WIN_PID; $dir = $env:COSMOU_WIN_DIR; $mode = $env:COSMOU_WIN_MODE
-$before = @{}; foreach ($w in [CosmoWin]::Windows()) { $before[$w[0]] = 1 }
+# programs from the app's folder count when they started with it or after it (not one that was already running)
+$since = [DateTimeOffset]::FromUnixTimeMilliseconds([int64]$env:COSMOU_WIN_AT).LocalDateTime.AddSeconds(-3)
 $done = @{}; $end = (Get-Date).AddSeconds(45); Write-Output ('watching ' + $root + ' ' + $mode)
 while ((Get-Date) -lt $end) {
-  $procs = @(Get-CimInstance Win32_Process -Property ProcessId,ParentProcessId,ExecutablePath)
+  $procs = @(Get-CimInstance Win32_Process -Property ProcessId,ParentProcessId,ExecutablePath,CreationDate)
   $mine = @{}; if ($root) { $mine[$root] = 1 }
   do { $more = $false; foreach ($p in $procs) { if ($mine.ContainsKey([uint32]$p.ParentProcessId) -and -not $mine.ContainsKey([uint32]$p.ProcessId)) { $mine[[uint32]$p.ProcessId] = 1; $more = $true } } } while ($more)
-  if ($dir) { foreach ($p in $procs) { if ($p.ExecutablePath -and $p.ExecutablePath.StartsWith($dir, [StringComparison]::OrdinalIgnoreCase)) { $mine[[uint32]$p.ProcessId] = 1 } } }
+  if ($dir) { foreach ($p in $procs) { if ($p.ExecutablePath -and $p.CreationDate -ge $since -and $p.ExecutablePath.StartsWith($dir, [StringComparison]::OrdinalIgnoreCase)) { $mine[[uint32]$p.ProcessId] = 1 } } }
   foreach ($w in [CosmoWin]::Windows()) {
     $h = $w[0]
-    if ($before.ContainsKey($h) -or -not $mine.ContainsKey([uint32]$w[1]) -or -not [CosmoWin]::Big($h)) { continue }
+    if (-not $mine.ContainsKey([uint32]$w[1]) -or -not [CosmoWin]::Big($h)) { continue }
     # a game often sizes its window again right after it opens: for a few seconds CosmoU puts it back
     if (-not $done.ContainsKey($h)) { $done[$h] = Get-Date; [CosmoWin]::Apply($h, $mode); Write-Output ('window ' + [CosmoWin]::Name($h) + ' ' + $mode) }
     elseif ($mode -eq 'full' -and ((Get-Date) - $done[$h]).TotalSeconds -lt 8 -and -not [CosmoWin]::Fills($h)) { [CosmoWin]::Apply($h, $mode) }
@@ -102,7 +103,7 @@ function windowMode(mode, pid, dir, log) {
     const ps = spawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden', '-EncodedCommand', Buffer.from(PS, 'utf16le').toString('base64')], {
       windowsHide: true,
       stdio: ['ignore', 'pipe', 'ignore'],
-      env: { ...process.env, COSMOU_WIN_SRC: SRC, COSMOU_WIN_PID: String(pid || 0), COSMOU_WIN_DIR: own, COSMOU_WIN_MODE: mode },
+      env: { ...process.env, COSMOU_WIN_SRC: SRC, COSMOU_WIN_PID: String(pid || 0), COSMOU_WIN_DIR: own, COSMOU_WIN_MODE: mode, COSMOU_WIN_AT: String(Date.now()) },
     });
     ps.on('error', () => {});
     if (log) ps.stdout.on('data', d => log(String(d).trim()));
