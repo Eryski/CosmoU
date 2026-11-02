@@ -497,11 +497,15 @@ async function waitFor(fn, ms) {
     // the banner stays at the top while the games scroll; a name never shows a cut third line
     const pin = await E(async () => {
       // (the view change before this one finishes first; then straight into the Grid, without the animation)
-      await new Promise(r => setTimeout(r, 1200));
-      mode = 'grid';
-      syncMode();
-      render();
-      await new Promise(r => setTimeout(r, 400));
+      // (a slow computer may still finish the earlier change after this: then the Grid is set again)
+      for (let i = 0; i < 12; i++) {
+        await new Promise(r => setTimeout(r, 500));
+        if (document.body.dataset.mode === 'grid' && i > 1) break;
+        mode = 'grid';
+        syncMode();
+        render();
+      }
+      await new Promise(r => setTimeout(r, 300));
       const gr = $('#grid'),
         b = gr.querySelector('.tile b'),
         cs = b && getComputedStyle(b);
