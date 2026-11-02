@@ -509,6 +509,48 @@ async function waitFor(fn, ms) {
     ok('the arrow over text, and “CosmoU” opens its folder', cu.title === 'default' && cu.search === 'text' && /CosmoU/.test(String(opened)), { cu, opened });
   }
 
+  // ---- an added app belongs to the console on screen; a new cover shows right away ----
+  {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cosmou-app-'));
+    const prog = path.join(dir, 'port.sh');
+    fs.writeFileSync(prog, '#!/bin/sh\nexit 0\n', { mode: 0o755 });
+    const p1 = require('./test-picture')(path.join(dir, 'one.png'), 64, 64),
+      p2 = require('./test-picture')(path.join(dir, 'two.png'), 96, 96);
+    const av = await E(() => sysAvail());
+    const r = await E(a => api.appSave(a), { path: prog, name: 'Test Port', sys: av[0], coverFile: p1 });
+    await E(() => load());
+    await w.waitForTimeout(800);
+    const where = () =>
+      E(() => {
+        const was = curSys,
+          o = {};
+        for (const k of sysAvail()) {
+          curSys = k;
+          o[k] = list().filter(g => g.name === 'Test Port').map(g => g.cover.split('/').pop());
+        }
+        curSys = was;
+        return o;
+      });
+    const w1 = await where();
+    const only = Object.entries(w1).every(([k, v]) => (k === av[0] ? v.length === 1 : !v.length));
+    ok('an added app shows up only on its console', r && r.ok && (av.length < 2 || only), { av, w1 });
+    await new Promise(res => setTimeout(res, 20));
+    await E(a => api.appSave(a), { id: r.id, path: prog, name: 'Test Port', sys: av[0], coverFile: p2 });
+    await E(() => load());
+    await w.waitForTimeout(800);
+    const w2 = await where();
+    const c1 = (w1[av[0]] || [])[0],
+      c2 = (w2[av[0]] || [])[0];
+    ok('a new cover for an app shows right away (a new address for the picture)', c1 && c2 && c1 !== c2 && c1.split('?')[0] === c2.split('?')[0], [c1, c2]);
+    await E(a => api.appSave(a), { id: r.id, path: prog, name: 'Test Port', sys: 'all' });
+    await E(() => load());
+    const w3 = await where();
+    ok('“Every console” puts it on each one', Object.values(w3).every(v => v.length === 1), w3);
+    await E(id => api.appRemove(id), r.id);
+    await E(() => load());
+    await w.waitForTimeout(600);
+  }
+
   // ---- your order (RT / Move): a game lifted and moved two places on; the clean view ----
   {
     const mv = await E(async () => {

@@ -12,10 +12,13 @@ Thanks for testing! 💙 Please don't share this file. Report bugs **[here](../.
 - **🧹 Clean view** – hold **LT + RT** (or press **H**, or Quick Menu → Look): in Covers only the games stay, small at the bottom with the name above them – your background is free.
 - **➕ Add an app** right from the Quick Menu (Sound column).
 - The pictures menu stays open on **Next / Previous picture**, so you can skip through to your favourite.
+- **🪟 Apps in full screen (Windows)** – Edit app → **Window**: *Maximized* or *Full screen*. For PC ports and games that always open in a small window: CosmoU makes the game's window full screen (also when a launcher starts the game).
 - **📂 Click “CosmoU” at the top left** to open the CosmoU folder (settings, covers, music, pictures, themes – `CosmoU-data` next to the portable .exe).
 
 ### Fixed
 - **Wii U Look (Home Menu layout)** shows your picture behind the tiles now.
+- **Apps on every console:** a new app now goes only to the console you're on (Edit app → **Console** to move it, or *Every console*). Apps added before keep showing everywhere until you choose a console for them.
+- **Changing an app's cover:** the new cover shows right away – no more deleting the old one in the covers folder.
 - **Mouse:** the arrow stays an arrow over text (the text cursor only shows where you can type).
 - **Covers for N64, Wii, NES …** come from libretro's archive on GitHub when their server is down.
 - **Grid:** moving with the controller or the arrow keys no longer makes the whole grid blink like a reloaded page – and up / down go a row.
@@ -23,4 +26,5 @@ Thanks for testing! 💙 Please don't share this file. Report bugs **[here](../.
 ### Please check
 - Does the Quick Menu work well with your controller (open the menus, add a picture, go back)?
 - Do the pictures change when you switch consoles – and stay the same console's pictures?
+- Your PC ports with **Window: Full screen** – does the game fill the screen, and does it still work after alt-tab?
 - Anything that looks wrong behind the glass (text hard to read, picture cut badly)?

@@ -469,7 +469,8 @@
         kind: 'app',
         args: '',
         format: 'App · ' + (IOS ? SYSTEM : 'Android'),
-        cover: a.cover ? pubUrl(a.cover) : '',
+        appSys: a.sys || 'all',
+        cover: a.cover ? pubUrl(a.cover) + '?v=' + (a.coverAt || 0) : '',
       });
     }
     return list.sort((x, y) => x.name.localeCompare(y.name));
@@ -889,7 +890,8 @@
         apps = [...(s.customApps || [])];
       const id = typeof a.id === 'string' && apps.some(x => x.id === a.id) ? a.id : Math.random().toString(16).slice(2, 14).padEnd(12, '0');
       const old = apps.find(x => x.id === id) || {};
-      let cover = old.cover || '';
+      let cover = old.cover || '',
+        coverAt = old.coverAt || 0;
       const pick =
         typeof a.coverFile === 'string' && /^public\/covers-apps\/[^/]+\.(png|jpe?g|webp)$/i.test(a.coverFile) ? a.coverFile : '';
       if (pick) {
@@ -897,6 +899,7 @@
         if (cover && cover !== to) sync('remove', 'public/' + cover);
         sync('move', pick, 'public/' + to);
         cover = to;
+        coverAt = Date.now();
       } else if (!cover && !IOS) {
         const icon = 'covers-apps/' + id + '.png';
         if (sync('appIcon', pkgOf(a.path), 'public/' + icon)) cover = icon;
@@ -910,6 +913,8 @@
         path: a.path,
         args: '',
         cover,
+        coverAt,
+        sys: a.sys === 'all' || (typeof a.sys === 'string' && Object.prototype.hasOwnProperty.call(window.SYSDATA.SYSTEMS, a.sys)) ? a.sys : old.sys || 'all',
       };
       const i = apps.findIndex(x => x.id === id);
       if (i >= 0) apps[i] = entry;
@@ -926,7 +931,7 @@
     },
     appGet: async id => {
       const a = (read().customApps || []).find(x => x.id === id);
-      return a ? { ...a, coverUrl: a.cover ? pubUrl(a.cover) : '' } : null;
+      return a ? { ...a, sys: a.sys || 'all', coverUrl: a.cover ? pubUrl(a.cover) + '?v=' + (a.coverAt || 0) : '' } : null;
     },
     // help and updates
     feedbackInfo: async () => {

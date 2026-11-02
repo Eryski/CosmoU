@@ -622,6 +622,13 @@
               <h3 class="sh">What’s new in this version</h3>
               <div class="grp wnew" data-k="whats new changelog version news features">
                 <div class="wn">
+                  <i>🪟</i
+                  ><span
+                    ><b>Apps on their own console, in full screen</b
+                    ><small>A new app goes to the console you're on; on Windows a PC port can open maximized or in full screen</small></span
+                  >
+                </div>
+                <div class="wn">
                   <i>🎮</i
                   ><span
                     ><b>Pictures and music in the Quick Menu</b
@@ -859,7 +866,7 @@
         <div class="hd">
           <h2 id="apt">Add app</h2>
           <p class="hint" style="margin: 8px 0 0">
-            Add another emulator or a PC game. It shows up in your library next to your Wii U games.
+            Add another emulator, a PC game or a PC port. It shows up in your library on the console you choose.
           </p>
         </div>
         <div class="bd">
@@ -871,6 +878,18 @@
             <div class="set">
               <div class="lbl"><strong>Name</strong><small>Shown in your library</small></div>
               <input class="sel" id="app_n" maxlength="60" style="width: 240px" />
+            </div>
+            <div class="set">
+              <div class="lbl"><strong>Console</strong><small>Where it shows up in your library</small></div>
+              <select class="sel" id="app_sys" style="width: 240px"></select>
+            </div>
+            <div class="set" id="app_winrow" hidden>
+              <div class="lbl"><strong>Window</strong><small id="app_winh">For apps that always open in a small window</small></div>
+              <select class="sel" id="app_win" style="width: 240px">
+                <option value="">As the app opens it</option>
+                <option value="max">Maximized</option>
+                <option value="full">Full screen</option>
+              </select>
             </div>
             <div class="set">
               <div class="lbl"><strong>Launch options</strong><small>Optional, for example -fullscreen</small></div>

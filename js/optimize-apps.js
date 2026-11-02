@@ -62,8 +62,10 @@ async function openApp(g) {
   appEd = {};
   if (g && g.appId && window.api) {
     const a = await api.appGet(g.appId);
-    if (a) appEd = { id: a.id, path: a.path, name: a.name, args: a.args, coverUrl: a.coverUrl };
+    if (a) appEd = { id: a.id, path: a.path, name: a.name, args: a.args, coverUrl: a.coverUrl, sys: a.sys || 'all', win: a.win || '' };
   }
+  // a new app belongs to the console on screen
+  if (!appEd.id) appEd.sys = typeof curSys === 'string' ? curSys : 'wiiu';
   $('#apt').textContent = appEd.id ? 'Edit app' : 'Add app';
   $('#app_rm').hidden = !appEd.id;
   appUi();
@@ -73,6 +75,22 @@ function appUi() {
   $('#app_p').textContent = appEd.path || 'No program chosen';
   $('#app_n').value = appEd.name || '';
   $('#app_a').value = appEd.args || '';
+  // the consoles you have, and "every console"
+  const ss = $('#app_sys');
+  if (ss) {
+    const have = typeof sysAvail === 'function' ? sysAvail() : ['wiiu'];
+    const keys = [...have, ...(appEd.sys && appEd.sys !== 'all' && !have.includes(appEd.sys) ? [appEd.sys] : [])];
+    ss.replaceChildren(
+      ...keys.map(k => new Option(typeof SYS !== 'undefined' && SYS[k] ? SYS[k].name : k, k)),
+      new Option('Every console', 'all'),
+    );
+    ss.value = appEd.sys || 'all';
+  }
+  // maximized or full screen: on Windows
+  if ($('#app_winrow')) {
+    $('#app_winrow').hidden = !(window.api && api.platform === 'win32');
+    $('#app_win').value = appEd.win || '';
+  }
   $('#app_c').textContent = appEd.coverFile
     ? appEd.coverFile.split(/[\\/]/).pop()
     : appEd.coverUrl
@@ -82,6 +100,8 @@ function appUi() {
 const appKeep = () => {
   appEd.name = $('#app_n').value;
   appEd.args = $('#app_a').value;
+  if ($('#app_sys') && $('#app_sys').value) appEd.sys = $('#app_sys').value;
+  if ($('#app_win') && !$('#app_winrow').hidden) appEd.win = $('#app_win').value;
 };
 $('#app_pick').onclick = async () => {
   if (!need()) return;
@@ -113,7 +133,11 @@ $('#app_s').onclick = async () => {
   $('#appdlg').close();
   if ($('#det').open) $('#det').close();
   await load();
-  toast('Saved to your library.');
+  toast(
+    appEd.sys && appEd.sys !== 'all' && typeof SYS !== 'undefined' && SYS[appEd.sys]
+      ? 'Saved to your library – on ' + SYS[appEd.sys].name + '.'
+      : 'Saved to your library – on every console.',
+  );
 };
 $('#app_rm').onclick = async () => {
   if (!need() || !appEd.id) return;

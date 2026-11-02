@@ -214,8 +214,9 @@ function setOwnOrder(names) {
 function list() {
   const q = $('#q').value.trim().toLowerCase();
   let l = games.filter(g => g.name.toLowerCase().includes(q) || (g.tid && String(g.tid).toLowerCase().includes(q)));
-  // only the games of the system on screen (other apps show everywhere)
-  if (typeof curSys === 'string') l = l.filter(g => g.kind === 'app' || sysOf(g) === curSys);
+  // only the games of the system on screen, and the apps added to it (or to every console)
+  if (typeof curSys === 'string')
+    l = l.filter(g => (g.kind === 'app' ? !g.appSys || g.appSys === 'all' || g.appSys === curSys : sysOf(g) === curSys));
   if (view === 'recent') l = l.filter(g => plays[g.name]);
   if (showFilter === 'fav') l = l.filter(g => favs.has(g.name));
   else if (showFilter === 'wiiu') l = l.filter(g => g.kind !== 'app');

@@ -7,6 +7,7 @@ const https = require('https'),
   crypto = require('crypto'),
   AdmZip = require('adm-zip');
 const P = require('./platform');
+const WW = require('./js/win-window.js');
 
 // ---------- portable mode ----------
 // The Windows portable .exe keeps everything (settings, covers, music, themes, saves, a downloaded Cemu) in a
@@ -1899,11 +1900,16 @@ function withApps(list) {
       kind: 'app',
       args: a.args || '',
       format: 'App' + (path.extname(a.path) ? ' · ' + path.extname(a.path).slice(1).toUpperCase() : ''),
-      cover: a.cover && fs.existsSync(a.cover) ? pathToFileURL(a.cover).href : '',
+      // the console it belongs to ('all' = every console, like apps added before 0.13.2)
+      appSys: a.sys || 'all',
+      cover: appCoverUrl(a),
     });
   }
   return list.sort((x, y) => x.name.localeCompare(y.name));
 }
+// a new cover keeps the same file name: the number after it makes the window load the new picture
+const appCoverUrl = a => (a.cover && fs.existsSync(a.cover) ? pathToFileURL(a.cover).href + '?v=' + (a.coverAt || 0) : '');
+const APP_WIN = ['', 'max', 'full'];
 function splitArgs(s) {
   return (String(s || '').match(/"[^"]*"|\S+/g) || []).map(x => x.replace(/^"(.*)"$/, '$1'));
 }
@@ -1917,9 +1923,11 @@ function launchApp(id) {
     const child = spawn(cmd[0], cmd[1], { detached: true, stdio: 'ignore', cwd: path.dirname(a.path), env: P.childEnv(a.path) });
     child.on('error', () => {});
     child.unref();
+    if (a.win) WW.windowMode(a.win, child.pid, path.dirname(a.path), l => process.env.COSMOU_DEBUG && console.error('app ' + l));
     return { ok: true, note: 'app', child };
   }
   shell.openPath(a.path);
+  if (a.win) WW.windowMode(a.win, 0, path.dirname(a.path));
   return { ok: true, note: 'app' };
 }
 // ---------- Other systems: CosmoU takes on the look of the console you play ----------
@@ -2239,7 +2247,8 @@ ipcMain.handle('appSave', (_, a) => {
     apps = [...(s.customApps || [])];
   const id = typeof a.id === 'string' && apps.some(x => x.id === a.id) ? a.id : crypto.randomBytes(6).toString('hex');
   const old = apps.find(x => x.id === id) || {};
-  let cover = old.cover || '';
+  let cover = old.cover || '',
+    coverAt = old.coverAt || 0;
   if (typeof a.coverFile === 'string' && /\.(png|jpe?g|webp)$/i.test(a.coverFile) && fs.existsSync(a.coverFile)) {
     fs.mkdirSync(appsDir(), { recursive: true });
     for (const f of fs.readdirSync(appsDir()))
@@ -2249,6 +2258,7 @@ ipcMain.handle('appSave', (_, a) => {
         } catch {}
     cover = path.join(appsDir(), id + path.extname(a.coverFile).toLowerCase());
     fs.copyFileSync(a.coverFile, cover);
+    coverAt = Date.now();
   }
   const entry = {
     id,
@@ -2259,6 +2269,9 @@ ipcMain.handle('appSave', (_, a) => {
     path: a.path,
     args: String(a.args || '').slice(0, 300),
     cover,
+    coverAt,
+    sys: a.sys === 'all' || (typeof a.sys === 'string' && Object.prototype.hasOwnProperty.call(SYSTEMS, a.sys)) ? a.sys : old.sys || 'all',
+    win: APP_WIN.includes(a.win) ? a.win : old.win || '',
   };
   const i = apps.findIndex(x => x.id === id);
   if (i >= 0) apps[i] = entry;
@@ -2278,7 +2291,7 @@ ipcMain.handle('appRemove', (_, id) => {
 });
 ipcMain.handle('appGet', (_, id) => {
   const a = (read().customApps || []).find(x => x.id === id);
-  return a ? { ...a, coverUrl: a.cover && fs.existsSync(a.cover) ? pathToFileURL(a.cover).href : '' } : null;
+  return a ? { ...a, sys: a.sys || 'all', win: a.win || '', coverUrl: appCoverUrl(a) } : null;
 });
 
 ipcMain.handle('openDiscord', () => shell.openExternal('https://discord.gg/BZry7jGjr7'));

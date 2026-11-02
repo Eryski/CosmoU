@@ -204,6 +204,68 @@ async function portableTest() {
       ok('picture and music removed again', !l3.pic && !/looks\//.test(l3.music), l3);
     }
 
+    // a PC port that always opens in a small window: added to one console, started in full screen by CosmoU
+    {
+      const ps = path.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe');
+      const form =
+        '-NoProfile -Command "Add-Type -A System.Windows.Forms; $f = New-Object Windows.Forms.Form; $f.Text = \'CosmoU test app\'; $f.Width = 640; $f.Height = 480; $f.StartPosition = \'CenterScreen\'; [void]$f.ShowDialog()"';
+      const r = await E(a => api.appSave(a), { path: ps, name: 'Test Port', args: form, sys: 'gamecube', win: 'full' });
+      await E(() => load());
+      await w.waitForTimeout(1200);
+      const on = await E(() => {
+        const was = curSys,
+          o = {};
+        for (const k of ['gamecube', 'n64', 'switch']) {
+          curSys = k;
+          o[k] = list().filter(g => g.kind === 'app').map(g => g.name);
+        }
+        curSys = was;
+        return o;
+      });
+      ok('an added app shows up only on its console (GameCube)', on.gamecube && on.gamecube.includes('Test Port') && !on.n64.length && !on.switch.length, on);
+      const winInfo = () => {
+        const q = `
+Add-Type @'
+using System; using System.Runtime.InteropServices;
+public static class TW {
+  [StructLayout(LayoutKind.Sequential)] public struct R { public int L, T, Rt, B; }
+  [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern IntPtr FindWindow(string c, string t);
+  [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr h, out R r);
+  [DllImport("user32.dll")] public static extern int GetWindowLong(IntPtr h, int i);
+  [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr h, out uint p);
+}
+'@
+Add-Type -A System.Windows.Forms
+$h = [TW]::FindWindow($null, 'CosmoU test app')
+if ($h -eq [IntPtr]::Zero) { 'null'; exit }
+$r = New-Object TW+R; [void][TW]::GetWindowRect($h, [ref]$r)
+[uint32]$p = 0; [void][TW]::GetWindowThreadProcessId($h, [ref]$p)
+$s = [System.Windows.Forms.Screen]::FromHandle($h).Bounds
+@{ l = $r.L; t = $r.T; r = $r.Rt; b = $r.B; sx = $s.X; sy = $s.Y; sw = $s.Width; sh = $s.Height; caption = (([TW]::GetWindowLong($h, -16) -band 0xC00000) -ne 0); pid = $p } | ConvertTo-Json -Compress`;
+        try {
+          const o = JSON.parse(cp.execFileSync('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-EncodedCommand', Buffer.from(q, 'utf16le').toString('base64')], { encoding: 'utf8', timeout: 30000 }).trim());
+          if (o) o.full = o.l <= o.sx && o.t <= o.sy && o.r >= o.sx + o.sw && o.b >= o.sy + o.sh && !o.caption;
+          return o;
+        } catch (e) {
+          return { err: String(e.message).slice(0, 200) };
+        }
+      };
+      const started = await E(id => api.play({ appId: id, name: 'Test Port' }), r && r.id);
+      let wi = null;
+      await waitFor(() => {
+        wi = winInfo();
+        return wi && wi.full;
+      }, 40000);
+      ok('the app opens in full screen (Window: Full screen)', wi && wi.full, { started: started && started.ok, wi, log: log.join('').split('\n').filter(l => /^app /.test(l)).slice(-5) });
+      if (wi && wi.pid)
+        try {
+          process.kill(wi.pid);
+        } catch {}
+      await E(id => api.appRemove(id), r && r.id);
+      await E(() => load());
+      await w.waitForTimeout(800);
+    }
+
     for (const [k, game, emu, lay, want] of CONSOLES) {
       await E(() => document.querySelectorAll('dialog[open]').forEach(d => d.close()));
       await E(s => setSystem(s), k);
