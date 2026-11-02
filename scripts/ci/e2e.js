@@ -494,6 +494,30 @@ async function waitFor(fn, ms) {
       return out;
     });
     ok('grid: moving keeps the tiles (no reload blink)', gs.same && gs.moved && gs.hero && gs.rings === 1, gs);
+    // the banner stays at the top while the games scroll; a name never shows a cut third line
+    const pin = await E(async () => {
+      for (let i = 0; i < 10 && document.body.dataset.mode !== 'grid'; i++) {
+        document.querySelector('#vt button[data-m="grid"]').click();
+        await new Promise(r => setTimeout(r, 500));
+      }
+      const gr = $('#grid'),
+        b = gr.querySelector('.tile b'),
+        cs = b && getComputedStyle(b);
+      gr.scrollTop = gr.scrollHeight;
+      await new Promise(r => setTimeout(r, 200));
+      const out = {
+        own: getComputedStyle(gr).overflowY,
+        dm: document.body.dataset.mode,
+        heroTop: Math.round($('#hero').getBoundingClientRect().top),
+        page: document.querySelector('.page').scrollTop,
+        pad: cs && cs.paddingTop,
+        border: cs && cs.borderTopWidth,
+      };
+      gr.scrollTop = 0;
+      document.querySelector('#vt button[data-m="covers"]').click();
+      return out;
+    });
+    ok('grid: the banner stays at the top, the games scroll below it', pin.own === 'auto' && pin.heroTop >= 0 && pin.page === 0 && pin.pad === '0px' && pin.border === '7px', pin);
   }
 
   // ---- an app, not a web page: the arrow over text; the name at the top left opens CosmoU's folder ----

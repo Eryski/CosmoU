@@ -923,3 +923,77 @@ textarea,
   outline: 2px solid var(--accent, #12b4cc);
   outline-offset: 4px;
 }
+
+/* ---- Grid names: never a third line peeking out; a long name rolls through on the chosen game (Eduard) ---- */
+/* the space above and below the name is a clear border, not padding, so the clipped third line can't show in it */
+.tile b {
+  padding: 0 14px;
+  border: solid transparent;
+  border-width: 7px 0;
+  line-height: 1.3;
+}
+.tile b > span {
+  display: inline;
+}
+.tile b.roll {
+  display: flex;
+  align-items: center;
+  height: calc(2lh);
+  white-space: nowrap;
+  -webkit-line-clamp: none;
+}
+.tile b.roll > span {
+  display: inline-block;
+  animation: nameroll var(--rollt, 6s) ease-in-out infinite alternate;
+}
+@keyframes nameroll {
+  0%,
+  18% {
+    transform: translateX(0);
+  }
+  82%,
+  100% {
+    transform: translateX(var(--roll, 0));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tile b.roll > span {
+    animation: none;
+  }
+}
+
+/* ---- Grid: the banner stays at the top, only the games scroll below it (Eduard) ---- */
+@media (min-height: 560px) {
+  body[data-mode='grid'] .page {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding-bottom: 0;
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+  body[data-mode='grid'] .page > * {
+    flex: none;
+  }
+  body[data-mode='grid'] #grid {
+    flex: 1 1 auto;
+    min-height: 0;
+    align-content: start;
+    overflow-x: hidden;
+    overflow-y: auto;
+    /* room for the lifted tile, its ring and its glow – the games fade out at both edges */
+    margin: -14px calc(-1 * clamp(18px, 4vw, 44px)) 0;
+    padding: 22px clamp(18px, 4vw, 44px) 170px;
+    /* the chosen game is moved into view above the floating bar, not under it */
+    scroll-padding: 26px 0 180px;
+    -webkit-mask-image: linear-gradient(transparent, #000 22px, #000 calc(100% - 150px), rgba(0, 0, 0, 0.15) calc(100% - 60px), transparent);
+    mask-image: linear-gradient(transparent, #000 22px, #000 calc(100% - 150px), rgba(0, 0, 0, 0.15) calc(100% - 60px), transparent);
+  }
+}
+
+/* ---- covers that are nearly square (a DS box): the whole box shows, the narrow rest is the cover itself, dimmed ---- */
+.art.fit {
+  background-size: contain, cover, cover !important;
+  background-repeat: no-repeat !important;
+  background-position: center !important;
+}

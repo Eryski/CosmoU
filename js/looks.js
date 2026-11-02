@@ -43,12 +43,52 @@ function themePicture() {
   const t = typeof THEMES !== 'undefined' && THEMES.find(x => x.id === style && x.own && x.image);
   return t ? { url: t.image } : null;
 }
-function applyBackdrop() {
+// A picture is shown once it is loaded and decoded: from a slow (external) drive a big picture can take a moment,
+// and until then the last picture (or the theme's own background) stays – never a black screen.
+const bdReady = new Map();
+let bdWant = '';
+function bdLoad(url) {
+  if (!bdReady.has(url)) {
+    const im = new Image();
+    im.decoding = 'async';
+    im.src = url;
+    const p = (im.decode ? im.decode() : new Promise((ok, no) => ((im.onload = ok), (im.onerror = no))))
+      .then(() => im)
+      .catch(() => null);
+    // the Image stays referenced, so Chromium keeps it decoded for the next visit
+    bdReady.set(url, p);
+  }
+  return bdReady.get(url);
+}
+function bdShow(url) {
   const el = $('#bgpic');
   if (!el) return;
+  document.body.classList.toggle('has-pic', !!url);
+  el.style.backgroundImage = url ? cssPic(url) : '';
+}
+function applyBackdrop() {
+  if (!$('#bgpic')) return;
   const b = lookPic() || themePicture();
-  document.body.classList.toggle('has-pic', !!b);
-  el.style.backgroundImage = b ? cssPic(b.url) : '';
+  const url = b ? b.url : '';
+  bdWant = url;
+  if (!url) return bdShow('');
+  bdLoad(url).then(() => {
+    if (bdWant === url) bdShow(url);
+  });
+  bdAhead();
+}
+// the picture each console shows on its next visit is loaded ahead, while CosmoU is idle
+function bdAhead() {
+  const run = () => {
+    for (const k of Object.keys((sysLooks && sysLooks.bg) || {})) {
+      const l = lookPics(k);
+      if (!l.length) continue;
+      const i = lookIx(k);
+      for (const j of new Set([i, (i + 1) % l.length])) bdLoad(l[j].url);
+    }
+  };
+  if (window.requestIdleCallback) requestIdleCallback(run, { timeout: 4000 });
+  else setTimeout(run, 1500);
 }
 // the music this console should play now: its own, else your music file, else the theme's (themes.js themedMusic)
 async function swapLookMusic() {

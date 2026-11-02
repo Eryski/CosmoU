@@ -219,7 +219,11 @@ async function portableTest() {
       } catch (e) {
         ok('test port built', false, String(e.stdout || e.message).slice(0, 400));
       }
-      const r = await E(a => api.appSave(a), { path: port, name: 'Test Port', sys: 'gamecube', win: 'full' });
+      // added as a shortcut (.lnk) from another folder, like a "CosmoU apps" folder full of shortcuts
+      const lnk = path.join(T, 'Shortcuts', 'Test Port.lnk');
+      fs.mkdirSync(path.dirname(lnk), { recursive: true });
+      await app.evaluate(({ shell }, [l, t, d]) => shell.writeShortcutLink(l, 'create', { target: t, cwd: d }), [lnk, port, pdir]);
+      const r = await E(a => api.appSave(a), { path: lnk, name: 'Test Port', sys: 'gamecube', win: 'full' });
       await E(() => load());
       await w.waitForTimeout(1200);
       const on = await E(() => {
@@ -277,7 +281,7 @@ $s = [System.Windows.Forms.Screen]::FromHandle($h).Bounds
       try {
         seen = fs.readFileSync(path.join(pdir, 'error.txt'), 'utf8') + seen;
       } catch {}
-      ok('the app opens in full screen (Window: Full screen)', wi && wi.full, { started: started && started.ok, wi, log: log.join('').split('\n').filter(l => /app /.test(l)).slice(-6), seen: seen.slice(0, 1500) });
+      ok('the app (a shortcut) opens in full screen (Window: Full screen)', wi && wi.full, { started: started && started.ok, wi, log: log.join('').split('\n').filter(l => /app /.test(l)).slice(-6), seen: seen.slice(0, 1500) });
       try {
         cp.execFileSync('taskkill', ['/F', '/IM', 'TestPort.exe'], { stdio: 'ignore' });
       } catch {}

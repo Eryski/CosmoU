@@ -111,12 +111,35 @@ function sample(g) {
   };
   i.src = g.cover;
 }
+// A cover that is almost square but not quite (a DS box is a bit wider than tall) lost its edges in a square box.
+// Such a cover is shown whole; the thin rest above and below (or left and right) is the same cover, bigger and dimmed.
+// Covers far from square (a Wii U or Wii case, an N64 box) keep filling the box as before.
+const coverShape = new Map();
+function coverFit(el, url) {
+  const use = r => {
+    if (!r || el.style.backgroundImage.indexOf(url) < 0) return;
+    const d = r > 1 ? r : 1 / r;
+    if (d < 1.04 || d > 1.3) return;
+    const u = `url("${url}")`;
+    el.style.backgroundImage = `${u}, linear-gradient(rgba(0,0,0,.22),rgba(0,0,0,.22)), ${u}`;
+    el.classList.add('fit');
+  };
+  if (coverShape.has(url)) return use(coverShape.get(url));
+  const im = new Image();
+  im.onload = () => {
+    coverShape.set(url, im.naturalWidth && im.naturalHeight ? im.naturalWidth / im.naturalHeight : 0);
+    use(coverShape.get(url));
+  };
+  im.src = url;
+}
 function paint(el, g, initials = true) {
   el.replaceChildren();
   el.style.background = '';
   el.style.backgroundImage = '';
+  el.classList.remove('fit');
   if (g.cover) {
     el.style.backgroundImage = `url("${g.cover}")`;
+    if (initials) coverFit(el, g.cover);
     return;
   }
   const h = hue(g.name);
@@ -266,6 +289,8 @@ function gridSel(name) {
   const r = document.createElement('div');
   r.className = 'ring';
   t.append(r);
+  for (const o of gr.querySelectorAll('b.roll')) if (!o.closest('.tile.on')) nameRoll(o.closest('.tile'), false);
+  nameRoll(t, true);
   if (typeof hoverOff === 'function') hoverOff();
   heroFill();
   t.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
@@ -351,13 +376,16 @@ function render() {
       t.style.setProperty('--rx', '0deg');
       t.style.setProperty('--ry', '0deg');
       hoverOff();
+      if (!t.classList.contains('on')) nameRoll(t, false);
     };
-    t.onpointerenter = () => hoverCase(t, x);
+    t.onpointerenter = () => (hoverCase(t, x), nameRoll(t, true));
     const a = document.createElement('div');
     a.className = 'art';
     paint(a, x);
-    const b = document.createElement('b');
-    b.textContent = x.name;
+    const b = document.createElement('b'),
+      bs = document.createElement('span');
+    bs.textContent = x.name;
+    b.append(bs);
     t.append(a, b);
     if (favs.has(x.name)) {
       const f = document.createElement('i');
@@ -374,4 +402,20 @@ function render() {
     t.onclick = () => openDetail(x);
     gr.append(t);
   });
+  const on = gr.querySelector('.tile.on');
+  if (on) requestAnimationFrame(() => nameRoll(on, true));
+}
+// a long name that doesn't fit in its two lines: on the chosen (or pointed at) game it rolls through on one line
+function nameRoll(t, on) {
+  const b = t && t.querySelector('b'),
+    sp = b && b.firstElementChild;
+  if (!sp) return;
+  b.classList.remove('roll');
+  b.style.removeProperty('--roll');
+  if (!on || b.scrollHeight <= b.clientHeight + 2) return;
+  b.classList.add('roll');
+  const over = sp.scrollWidth - b.clientWidth + 6;
+  if (over <= 0) return b.classList.remove('roll');
+  b.style.setProperty('--roll', -over + 'px');
+  b.style.setProperty('--rollt', (2.6 + over / 45).toFixed(1) + 's');
 }

@@ -1913,17 +1913,31 @@ const APP_WIN = ['', 'max', 'full'];
 function splitArgs(s) {
   return (String(s || '').match(/"[^"]*"|\S+/g) || []).map(x => x.replace(/^"(.*)"$/, '$1'));
 }
+// the program a .lnk points to (null when it points to something else, like a folder or a store app)
+function shortcutOf(p) {
+  try {
+    const l = shell.readShortcutLink(p);
+    return l && l.target && /\.exe$/i.test(l.target) && fs.existsSync(l.target) ? l : null;
+  } catch {
+    return null;
+  }
+}
 function launchApp(id) {
   const a = (read().customApps || []).find(x => x.id === id);
   if (!a) return { ok: false, error: 'This app isn’t in your library anymore.' };
   if (!fs.existsSync(a.path))
     return { ok: false, error: 'The program file no longer exists. Edit the entry to choose it again.' };
-  const cmd = P.appCommand(a.path, splitArgs(a.args));
+  // a Windows shortcut (.lnk) to a program: CosmoU starts the program itself, with the shortcut's options and folder,
+  // so the launch options and Window (maximized / full screen) work for it too
+  const lnk = P.IS_WIN && /\.lnk$/i.test(a.path) ? shortcutOf(a.path) : null;
+  const exe = lnk ? lnk.target : a.path,
+    cwd = (lnk && lnk.cwd && fs.existsSync(lnk.cwd) && lnk.cwd) || path.dirname(exe);
+  const cmd = P.appCommand(exe, [...(lnk ? splitArgs(lnk.args) : []), ...splitArgs(a.args)]);
   if (cmd) {
-    const child = spawn(cmd[0], cmd[1], { detached: true, stdio: 'ignore', cwd: path.dirname(a.path), env: P.childEnv(a.path) });
+    const child = spawn(cmd[0], cmd[1], { detached: true, stdio: 'ignore', cwd, env: P.childEnv(exe) });
     child.on('error', () => {});
     child.unref();
-    if (a.win) WW.windowMode(a.win, child.pid, path.dirname(a.path), l => process.env.COSMOU_DEBUG && console.error('app ' + l));
+    if (a.win) WW.windowMode(a.win, child.pid, path.dirname(exe), l => process.env.COSMOU_DEBUG && console.error('app ' + l));
     return { ok: true, note: 'app', child };
   }
   shell.openPath(a.path);
