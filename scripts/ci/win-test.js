@@ -206,10 +206,20 @@ async function portableTest() {
 
     // a PC port that always opens in a small window: added to one console, started in full screen by CosmoU
     {
-      const ps = path.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe');
-      const form =
-        '-NoProfile -Command "Add-Type -A System.Windows.Forms; $f = New-Object Windows.Forms.Form; $f.Text = \'CosmoU test app\'; $f.Width = 640; $f.Height = 480; $f.StartPosition = \'CenterScreen\'; [System.Windows.Forms.Application]::Run($f)"';
-      const r = await E(a => api.appSave(a), { path: ps, name: 'Test Port', args: form, sys: 'gamecube', win: 'full' });
+      // a tiny Windows program with a 640×480 window, built here with the C# compiler that comes with Windows
+      const pdir = path.join(T, 'PC Ports', 'Test Port'),
+        port = path.join(pdir, 'TestPort.exe');
+      fs.mkdirSync(pdir, { recursive: true });
+      write(
+        path.join(pdir, 'port.cs'),
+        'using System;using System.IO;using System.Windows.Forms;class P{[STAThread]static void Main(){try{var f=new Form();f.Text="CosmoU test app";f.Width=640;f.Height=480;f.StartPosition=FormStartPosition.CenterScreen;Application.Run(f);}catch(Exception e){File.WriteAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"error.txt"),e.ToString());}}}',
+      );
+      try {
+        cp.execFileSync(path.join(process.env.SystemRoot || 'C:\\Windows', 'Microsoft.NET', 'Framework64', 'v4.0.30319', 'csc.exe'), ['-nologo', '-target:winexe', '-r:System.Windows.Forms.dll', '-out:' + port, path.join(pdir, 'port.cs')], { encoding: 'utf8' });
+      } catch (e) {
+        ok('test port built', false, String(e.stdout || e.message).slice(0, 400));
+      }
+      const r = await E(a => api.appSave(a), { path: port, name: 'Test Port', sys: 'gamecube', win: 'full' });
       await E(() => load());
       await w.waitForTimeout(1200);
       const on = await E(() => {
@@ -264,6 +274,9 @@ $s = [System.Windows.Forms.Screen]::FromHandle($h).Bounds
         } catch (e) {
           seen = String(e.message).slice(0, 300);
         }
+      try {
+        seen = fs.readFileSync(path.join(pdir, 'error.txt'), 'utf8') + seen;
+      } catch {}
       ok('the app opens in full screen (Window: Full screen)', wi && wi.full, { started: started && started.ok, wi, log: log.join('').split('\n').filter(l => /app /.test(l)).slice(-6), seen: seen.slice(0, 1500) });
       if (wi && wi.pid)
         try {
