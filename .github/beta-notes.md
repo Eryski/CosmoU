@@ -13,6 +13,7 @@ Thanks for testing! 💙 Please don't share this file. Report bugs **[here](../.
 - **➕ Add an app** right from the Quick Menu (Sound column).
 - The pictures menu stays open on **Next / Previous picture**, so you can skip through to your favourite.
 - **🪟 Apps in full screen (Windows)** – Edit app → **Window**: *Maximized* or *Full screen*. For PC ports and games that always open in a small window: CosmoU makes the game's window full screen (also when a launcher starts the game, and for a shortcut (.lnk) to the game – its launch options work then too).
+- **🌐 Every console on one page** – the last card when choosing a console (or Sort & filter → **Every console**): the games of all your consoles together, in the look of the console you're on. **Favorites** now show the favorites of every console.
 - **📂 Click “CosmoU” at the top left** to open the CosmoU folder (settings, covers, music, pictures, themes – `CosmoU-data` next to the portable .exe).
 
 ### Fixed
@@ -23,6 +24,7 @@ Thanks for testing! 💙 Please don't share this file. Report bugs **[here](../.
 - **Grid:** the big banner stays at the top while you scroll down with the controller – only the games scroll.
 - **Long names in the Grid:** no half-cut third line any more; the chosen (or pointed at) game's long name rolls through on one line.
 - **DS covers** (Grid and DS Menu) show the whole box instead of cutting off its edges.
+- **Ports with a log window (cmd):** the game's window comes to the front – keyboard and controller go to the game, the log window steps aside, and Window: Full screen works for them too.
 - **Mouse:** the arrow stays an arrow over text (the text cursor only shows where you can type).
 - **Covers for N64, Wii, NES …** come from libretro's archive on GitHub when their server is down.
 - **Grid:** moving with the controller or the arrow keys no longer makes the whole grid blink like a reloaded page – and up / down go a row.

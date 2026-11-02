@@ -2,7 +2,8 @@
 // itself always opens in a small window. After the start, a small hidden PowerShell watches for 45 seconds which
 // new windows the app opens (its own process, the processes it starts, and programs from its folder – a game's
 // launcher often starts the real game) and makes each new big window maximized, or full screen without a border
-// on its monitor. Programs that were already running before the start are never touched.
+// on its monitor – and in front, with the keyboard and the controller, while the app's log window (a console) steps
+// aside. Programs that were already running before the start are never touched.
 const { spawn } = require('child_process');
 
 const SRC = String.raw`
@@ -24,6 +25,26 @@ public static class CosmoWin {
   [DllImport("user32.dll")] static extern IntPtr MonitorFromWindow(IntPtr h, uint f);
   [DllImport("user32.dll")] static extern bool GetMonitorInfo(IntPtr m, ref MONITORINFO mi);
   [DllImport("user32.dll")] static extern bool SetForegroundWindow(IntPtr h);
+  [DllImport("user32.dll")] static extern IntPtr GetForegroundWindow();
+  [DllImport("kernel32.dll")] static extern uint GetCurrentThreadId();
+  [DllImport("user32.dll")] static extern bool AttachThreadInput(uint a, uint b, bool on);
+  [DllImport("user32.dll")] static extern bool BringWindowToTop(IntPtr h);
+  [DllImport("user32.dll")] static extern void keybd_event(byte vk, byte scan, uint flags, UIntPtr extra);
+  // the game gets the keyboard and the controller: Windows lets a helper in the background hand over the focus only
+  // while it shares the input of the window in front (or right after it sent a key: F24, which nothing uses)
+  public static bool Front(long hw) {
+    IntPtr h = new IntPtr(hw);
+    if (GetForegroundWindow() == h) return true;
+    uint pid; uint fg = GetWindowThreadProcessId(GetForegroundWindow(), out pid), me = GetCurrentThreadId();
+    bool att = fg != 0 && fg != me && AttachThreadInput(me, fg, true);
+    BringWindowToTop(h); SetForegroundWindow(h);
+    if (att) AttachThreadInput(me, fg, false);
+    if (GetForegroundWindow() != h) { keybd_event(0x87, 0, 0, UIntPtr.Zero); keybd_event(0x87, 0, 2, UIntPtr.Zero); BringWindowToTop(h); SetForegroundWindow(h); }
+    return GetForegroundWindow() == h;
+  }
+  public static bool IsFront(long hw) { return GetForegroundWindow() == new IntPtr(hw); }
+  // a log window goes down to the task bar, without taking the focus
+  public static void Down(long hw) { ShowWindow(new IntPtr(hw), 7); }
   [DllImport("user32.dll", CharSet = CharSet.Unicode)] static extern int GetClassName(IntPtr h, StringBuilder s, int n);
   [DllImport("user32.dll", CharSet = CharSet.Unicode)] static extern int GetWindowText(IntPtr h, StringBuilder s, int n);
   public static string Name(long hw) { var b = new StringBuilder(256); GetWindowText(new IntPtr(hw), b, 256); var c = new StringBuilder(256); GetClassName(new IntPtr(hw), c, 256); return b + " [" + c + "]"; }
@@ -33,11 +54,11 @@ public static class CosmoWin {
     EnumWindows((h, p) => {
       if (!IsWindowVisible(h) || GetWindow(h, 4) != IntPtr.Zero) return true;
       if ((GetWindowLong(h, -20) & 0x80) != 0) return true;
-      // console windows (a port's log window) are not the game
+      // console windows (a port's log window) are not the game: they are marked
       var c = new StringBuilder(64); GetClassName(h, c, 64);
-      if (c.ToString() == "ConsoleWindowClass" || c.ToString() == "CASCADIA_HOSTING_WINDOW_CLASS" || c.ToString() == "PseudoConsoleWindow") return true;
+      bool con = c.ToString() == "ConsoleWindowClass" || c.ToString() == "CASCADIA_HOSTING_WINDOW_CLASS" || c.ToString() == "PseudoConsoleWindow";
       uint pid; GetWindowThreadProcessId(h, out pid);
-      l.Add(new long[] { h.ToInt64(), pid });
+      l.Add(new long[] { h.ToInt64(), pid, con ? 1 : 0 });
       return true;
     }, IntPtr.Zero);
     return l;
@@ -54,7 +75,8 @@ public static class CosmoWin {
   }
   public static void Apply(long hw, string mode) {
     IntPtr h = new IntPtr(hw);
-    if (mode == "max") { ShowWindow(h, 3); SetForegroundWindow(h); return; }
+    if (mode == "focus") { Front(hw); return; }
+    if (mode == "max") { ShowWindow(h, 3); Front(hw); return; }
     ShowWindow(h, 9);
     // no title bar and no frame, over the whole monitor (also over the task bar)
     int st = GetWindowLong(h, -16);
@@ -64,7 +86,7 @@ public static class CosmoWin {
     var mi = new MONITORINFO(); mi.cbSize = Marshal.SizeOf(mi); GetMonitorInfo(MonitorFromWindow(h, 2), ref mi);
     var m = mi.rcMonitor;
     SetWindowPos(h, IntPtr.Zero, m.L, m.T, m.R - m.L, m.B - m.T, 0x0020 | 0x0040 | 0x0004);
-    SetForegroundWindow(h);
+    Front(hw);
   }
 }`;
 
@@ -76,7 +98,7 @@ $ErrorActionPreference = 'SilentlyContinue'
 $root = [uint32]$env:COSMOU_WIN_PID; $dir = $env:COSMOU_WIN_DIR; $mode = $env:COSMOU_WIN_MODE
 # programs from the app's folder count when they started with it or after it (not one that was already running)
 $since = [DateTimeOffset]::FromUnixTimeMilliseconds([int64]$env:COSMOU_WIN_AT).LocalDateTime.AddSeconds(-3)
-$done = @{}; $end = (Get-Date).AddSeconds(45); Write-Output ('watching ' + $root + ' ' + $mode)
+$done = @{}; $logs = @{}; $once = @{}; $game = $null; $end = (Get-Date).AddSeconds(45); Write-Output ('watching ' + $root + ' ' + $mode)
 while ((Get-Date) -lt $end) {
   $procs = @(Get-CimInstance Win32_Process -Property ProcessId,ParentProcessId,ExecutablePath,CreationDate)
   $mine = @{}; if ($root) { $mine[$root] = 1 }
@@ -84,19 +106,26 @@ while ((Get-Date) -lt $end) {
   if ($dir) { foreach ($p in $procs) { if ($p.ExecutablePath -and $p.CreationDate -ge $since -and $p.ExecutablePath.StartsWith($dir, [StringComparison]::OrdinalIgnoreCase)) { $mine[[uint32]$p.ProcessId] = 1 } } }
   foreach ($w in [CosmoWin]::Windows()) {
     $h = $w[0]
-    if (-not $mine.ContainsKey([uint32]$w[1]) -or -not [CosmoWin]::Big($h)) { continue }
-    # a game often sizes its window again right after it opens: for a few seconds CosmoU puts it back
-    if (-not $done.ContainsKey($h)) { $done[$h] = Get-Date; [CosmoWin]::Apply($h, $mode); Write-Output ('window ' + [CosmoWin]::Name($h) + ' ' + $mode) }
-    elseif ($mode -eq 'full' -and ((Get-Date) - $done[$h]).TotalSeconds -lt 8 -and -not [CosmoWin]::Fills($h)) { [CosmoWin]::Apply($h, $mode) }
+    if (-not $mine.ContainsKey([uint32]$w[1])) { continue }
+    # the app's log window (a console) steps aside once the game's window is there
+    if ($w[2] -eq 1) { if ($game -and -not $logs.ContainsKey($h)) { $logs[$h] = 1; [CosmoWin]::Down($h); Write-Output ('log window down ' + [CosmoWin]::Name($h)) }; continue }
+    if (-not [CosmoWin]::Big($h)) { continue }
+    # a game often sizes its window again right after it opens: for a few seconds CosmoU puts it back (and in front)
+    if (-not $done.ContainsKey($h)) { $done[$h] = Get-Date; $game = $h; [CosmoWin]::Apply($h, $mode); Write-Output ('window ' + [CosmoWin]::Name($h) + ' ' + $mode + ' front=' + [CosmoWin]::IsFront($h)) }
+    elseif (((Get-Date) - $done[$h]).TotalSeconds -lt 8 -and $h -eq $game) {
+      if ($mode -eq 'full' -and -not [CosmoWin]::Fills($h)) { [CosmoWin]::Apply($h, $mode) }
+      elseif (-not [CosmoWin]::IsFront($h) -and -not $once.ContainsKey($h)) { $once[$h] = 1; [void][CosmoWin]::Front($h); Write-Output ('front again ' + [CosmoWin]::IsFront($h)) }
+    }
   }
   Start-Sleep -Milliseconds 600
 }
 `;
 
-// mode: 'max' (maximized) or 'full' (full screen without a border); pid: the started program (0 when Windows
+// mode: 'max' (maximized), 'full' (full screen without a border) or 'focus' (only in front, with the keyboard and the
+// controller – for every app, so a port that opens a console window first doesn't leave its game behind); pid: the started program (0 when Windows
 // opened it); dir: the program's folder (not used for programs inside Windows' own folder)
 function windowMode(mode, pid, dir, log) {
-  if (process.platform !== 'win32' || (mode !== 'max' && mode !== 'full')) return null;
+  if (process.platform !== 'win32' || !['max', 'full', 'focus'].includes(mode)) return null;
   const win = (process.env.SystemRoot || process.env.windir || 'C:\\Windows').toLowerCase();
   const own = dir && !String(dir).toLowerCase().startsWith(win) && String(dir).length > 3 ? String(dir).replace(/[\\/]*$/, '\\') : '';
   try {

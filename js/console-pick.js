@@ -32,7 +32,7 @@ function consolePick(onStart) {
     const p = SYS[k],
       n = games.filter(g => sysOf(g) === k && g.kind !== 'app' && g.format !== 'Demo').length;
     const b = document.createElement('button');
-    b.className = 'cp-card' + (k === curSys ? ' cur' : '');
+    b.className = 'cp-card' + (k === curSys && !everySys ? ' cur' : '');
     b.dataset.s = k;
     b.setAttribute('role', 'option');
     b.innerHTML =
@@ -42,12 +42,32 @@ function consolePick(onStart) {
     b.querySelector('small').textContent = n + (n === 1 ? ' game' : ' games') + ' · ' + p.homeLabel;
     b.onclick = () => {
       d.close();
+      // a console's card: only its games (again)
+      if (everySys) setEvery(false);
       if (k !== curSys) setSystem(k);
       else if (typeof blip === 'function') blip('open');
     };
     b.onfocus = () => b.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
     // the mouse chooses like the D-pad: one card is lit, never two
     // (only for a real move – a resting mouse under the opening cards changes nothing)
+    b.onpointermove = e => (e.movementX || e.movementY) && document.activeElement !== b && b.focus({ preventScroll: true });
+    row.append(b);
+  }
+  // the last card: the games of every console on one page, in the look of the console on screen
+  {
+    const n = games.filter(g => g.kind !== 'app' && g.format !== 'Demo').length;
+    const b = document.createElement('button');
+    b.className = 'cp-card cp-every' + (everySys ? ' cur' : '');
+    b.dataset.s = 'every';
+    b.setAttribute('role', 'option');
+    b.innerHTML =
+      '<span class="pv pv-every" aria-hidden="true"><i class="pv-top"></i><i class="pv-t"></i><i class="pv-t"></i><i class="pv-t"></i><i class="pv-t"></i><i class="pv-t"></i><i class="pv-t"></i><i class="pv-nav"></i></span><b>Every console</b><small></small>';
+    b.querySelector('small').textContent = n + (n === 1 ? ' game' : ' games') + ' · all together';
+    b.onclick = () => {
+      d.close();
+      if (!everySys) setEvery(true);
+    };
+    b.onfocus = () => b.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
     b.onpointermove = e => (e.movementX || e.movementY) && document.activeElement !== b && b.focus({ preventScroll: true });
     row.append(b);
   }

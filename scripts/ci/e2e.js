@@ -231,7 +231,7 @@ async function waitFor(fn, ms) {
     if (cards === 'setup') break;
     if (!Array.isArray(cards)) await w.waitForTimeout(1000);
   }
-  ok('console cards on start', JSON.stringify(cards) === '["wiiu","switch","wii","n64"]' || cards === 'setup', cards);
+  ok('console cards on start (and Every console last)', JSON.stringify(cards) === '["wiiu","switch","wii","n64","every"]' || cards === 'setup', cards);
   if (Array.isArray(cards)) await shot('00-consoles');
   await E(() => document.querySelector('#cpick') && document.querySelector('#cpick').close());
 
@@ -577,6 +577,38 @@ async function waitFor(fn, ms) {
     await E(id => api.appRemove(id), r.id);
     await E(() => load());
     await w.waitForTimeout(600);
+  }
+
+  // ---- every console on one page (the last card when choosing a console); favorites from every console ----
+  {
+    const ev = await E(async () => {
+      const av = sysAvail();
+      if (av.length < 2) return { skip: av };
+      const one = list().length,
+        mine = curSys;
+      consolePick(false);
+      await new Promise(r => setTimeout(r, 400));
+      const card = document.querySelector('#cpick .cp-every');
+      card.click();
+      await new Promise(r => setTimeout(r, 600));
+      const all = { n: list().length, sys: [...new Set(list().map(g => sysOf(g)))].length, label: $('#sort').textContent };
+      setEvery(false);
+      const a = games.find(g => sysOf(g) === av[0] && g.kind !== 'app'),
+        b = games.find(g => sysOf(g) === av[1] && g.kind !== 'app'),
+        was = new Set(favs);
+      favs = new Set([a.name, b.name]);
+      setShow('fav');
+      const fav = list().map(g => sysOf(g)).sort();
+      setShow('all');
+      favs = was;
+      render();
+      return { av, one, all, fav, back: list().length, mine, card: !!card };
+    });
+    ok(
+      'every console on one page, favorites from every console',
+      ev.skip || (ev.card && ev.all.n > ev.one && ev.all.sys >= 2 && /Every console/.test(ev.all.label) && ev.fav.length === 2 && ev.back === ev.one),
+      ev,
+    );
   }
 
   // ---- your order (RT / Move): a game lifted and moved two places on; the clean view ----

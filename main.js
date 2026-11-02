@@ -1937,11 +1937,12 @@ function launchApp(id) {
     const child = spawn(cmd[0], cmd[1], { detached: true, stdio: 'ignore', cwd, env: P.childEnv(exe) });
     child.on('error', () => {});
     child.unref();
-    if (a.win) WW.windowMode(a.win, child.pid, path.dirname(exe), l => process.env.COSMOU_DEBUG && console.error('app ' + l));
+    // (also without a window choice: the game's window comes to the front, not its log window)
+    WW.windowMode(a.win || 'focus', child.pid, path.dirname(exe), l => process.env.COSMOU_DEBUG && console.error('app ' + l));
     return { ok: true, note: 'app', child };
   }
   shell.openPath(a.path);
-  if (a.win) WW.windowMode(a.win, 0, path.dirname(a.path));
+  WW.windowMode(a.win || 'focus', 0, path.dirname(a.path));
   return { ok: true, note: 'app' };
 }
 // ---------- Other systems: CosmoU takes on the look of the console you play ----------

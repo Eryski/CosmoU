@@ -997,3 +997,55 @@ textarea,
   background-repeat: no-repeat !important;
   background-position: center !important;
 }
+
+/* ---- choosing a console: the last card, "Every console" – small tiles in the colours of the consoles ---- */
+.pv-every {
+  --pbg: linear-gradient(150deg, #24324a, #121a2a);
+  --ptop: rgba(255, 255, 255, 0.18);
+  --pnav: rgba(255, 255, 255, 0.22);
+}
+.pv-every .pv-t {
+  width: 18%;
+  border-radius: 22%;
+  box-shadow: inset 0 2px 2px rgba(255, 255, 255, 0.35);
+}
+.pv-every .pv-t:nth-child(n + 2) {
+  top: 27%;
+}
+.pv-every .pv-t:nth-child(n + 5) {
+  top: 55%;
+}
+.pv-every .pv-t:nth-child(2),
+.pv-every .pv-t:nth-child(5) {
+  left: 16%;
+}
+.pv-every .pv-t:nth-child(3),
+.pv-every .pv-t:nth-child(6) {
+  left: 41%;
+}
+.pv-every .pv-t:nth-child(4),
+.pv-every .pv-t:nth-child(7) {
+  left: 66%;
+}
+.pv-every .pv-t:nth-child(2) {
+  background: #e60012;
+}
+.pv-every .pv-t:nth-child(3) {
+  background: #00a6d6;
+}
+.pv-every .pv-t:nth-child(4) {
+  background: #6a4fc0;
+}
+.pv-every .pv-t:nth-child(5) {
+  background: #f2b632;
+}
+.pv-every .pv-t:nth-child(6) {
+  background: #3fae5a;
+}
+.pv-every .pv-t:nth-child(7) {
+  background: #c9ccd2;
+}
+.pv-every .pv-nav {
+  bottom: 6%;
+  height: 8%;
+}

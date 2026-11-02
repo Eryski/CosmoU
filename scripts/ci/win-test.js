@@ -141,7 +141,7 @@ async function portableTest() {
     };
     // the console cards on start: the arrow keys (the D-pad) choose, Enter (A) takes that console
     const cards = await E(() => (document.querySelector('#cpick[open]') ? [...document.querySelectorAll('#cpick .cp-card')].map(b => b.dataset.s) : null));
-    ok('console cards on start, one per console', JSON.stringify(cards) === JSON.stringify(CONSOLES.map(c => c[0])), cards);
+    ok('console cards on start, one per console (and Every console last)', JSON.stringify(cards) === JSON.stringify([...CONSOLES.map(c => c[0]), 'every']), cards);
     await shot('00-consoles');
     for (const k of ['ArrowRight', 'ArrowRight']) {
       await w.keyboard.press(k);
@@ -212,10 +212,11 @@ async function portableTest() {
       fs.mkdirSync(pdir, { recursive: true });
       write(
         path.join(pdir, 'port.cs'),
-        'using System;using System.IO;using System.Windows.Forms;class P{[STAThread]static void Main(){try{var f=new Form();f.Text="CosmoU test app";f.Width=640;f.Height=480;f.StartPosition=FormStartPosition.CenterScreen;Application.Run(f);}catch(Exception e){File.WriteAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"error.txt"),e.ToString());}}}',
+        'using System;using System.IO;using System.Windows.Forms;class P{[STAThread]static void Main(){try{Console.WriteLine("[host] test port starting");System.Threading.Thread.Sleep(1500);var f=new Form();f.Text="CosmoU test app";f.Width=640;f.Height=480;f.StartPosition=FormStartPosition.CenterScreen;Application.Run(f);}catch(Exception e){File.WriteAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"error.txt"),e.ToString());}}}',
       );
       try {
-        cp.execFileSync(path.join(process.env.SystemRoot || 'C:\\Windows', 'Microsoft.NET', 'Framework64', 'v4.0.30319', 'csc.exe'), ['-nologo', '-target:winexe', '-r:System.Windows.Forms.dll', '-out:' + port, path.join(pdir, 'port.cs')], { encoding: 'utf8' });
+        // a console program (like many ports: a log window first, then the game's window)
+        cp.execFileSync(path.join(process.env.SystemRoot || 'C:\\Windows', 'Microsoft.NET', 'Framework64', 'v4.0.30319', 'csc.exe'), ['-nologo', '-target:exe', '-r:System.Windows.Forms.dll', '-out:' + port, path.join(pdir, 'port.cs')], { encoding: 'utf8' });
       } catch (e) {
         ok('test port built', false, String(e.stdout || e.message).slice(0, 400));
       }
@@ -248,6 +249,7 @@ public static class TW {
   [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr h, out R r);
   [DllImport("user32.dll")] public static extern int GetWindowLong(IntPtr h, int i);
   [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr h, out uint p);
+  [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
 }
 '@
 Add-Type -A System.Windows.Forms
@@ -256,7 +258,7 @@ if ($h -eq [IntPtr]::Zero) { 'null'; exit }
 $r = New-Object TW+R; [void][TW]::GetWindowRect($h, [ref]$r)
 [uint32]$p = 0; [void][TW]::GetWindowThreadProcessId($h, [ref]$p)
 $s = [System.Windows.Forms.Screen]::FromHandle($h).Bounds
-@{ l = $r.L; t = $r.T; r = $r.Rt; b = $r.B; sx = $s.X; sy = $s.Y; sw = $s.Width; sh = $s.Height; caption = (([TW]::GetWindowLong($h, -16) -band 0xC00000) -ne 0); pid = $p } | ConvertTo-Json -Compress`;
+@{ l = $r.L; t = $r.T; r = $r.Rt; b = $r.B; sx = $s.X; sy = $s.Y; sw = $s.Width; sh = $s.Height; caption = (([TW]::GetWindowLong($h, -16) -band 0xC00000) -ne 0); pid = $p; front = ([TW]::GetForegroundWindow() -eq $h) } | ConvertTo-Json -Compress`;
         try {
           const o = JSON.parse(cp.execFileSync('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-EncodedCommand', Buffer.from(q, 'utf16le').toString('base64')], { encoding: 'utf8', timeout: 30000 }).trim());
           if (o) o.full = o.l <= o.sx && o.t <= o.sy && o.r >= o.sx + o.sw && o.b >= o.sy + o.sh && !o.caption;
@@ -281,6 +283,7 @@ $s = [System.Windows.Forms.Screen]::FromHandle($h).Bounds
       try {
         seen = fs.readFileSync(path.join(pdir, 'error.txt'), 'utf8') + seen;
       } catch {}
+      ok('the game window is in front (keyboard and controller go to it, not to its log window)', wi && wi.front, wi);
       ok('the app (a shortcut) opens in full screen (Window: Full screen)', wi && wi.full, { started: started && started.ok, wi, log: log.join('').split('\n').filter(l => /app /.test(l)).slice(-6), seen: seen.slice(0, 1500) });
       try {
         cp.execFileSync('taskkill', ['/F', '/IM', 'TestPort.exe'], { stdio: 'ignore' });

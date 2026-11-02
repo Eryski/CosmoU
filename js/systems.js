@@ -52,11 +52,12 @@ function applySystem(first) {
       const b = document.createElement('button');
       b.textContent = SYS[k].short;
       b.dataset.s = k;
-      b.className = k === curSys ? 'on' : '';
-      b.onclick = () => setSystem(k);
+      b.className = k === curSys && !everySys ? 'on' : '';
+      // a console's button: only its games (also when it is the one on screen and every console was shown)
+      b.onclick = () => (k === curSys && everySys ? setEvery(false) : setSystem(k));
       sw.append(b);
     }
-  $('.brand small').textContent = p.name + ' Library';
+  $('.brand small').textContent = everySys ? 'Every console' : p.name + ' Library';
   SHOW_LABEL.wiiu = p.name + ' games';
   // the third view button is the system's own home screen
   const vb = [...document.querySelectorAll('#vt button')];
@@ -97,6 +98,14 @@ function sysNext(d = 1) {
 function setSystem(k) {
   if (!SYS[k] || k === curSys) return;
   blip('page');
+  // going to a console shows its games (not every console's any more)
+  if (everySys) {
+    everySys = false;
+    try {
+      localStorage.setItem('cosmou.everySys', '0');
+    } catch {}
+    if (typeof sortUi === 'function') sortUi();
+  }
   // each system keeps its own theme and view
   lsSys('style', style);
   lsSys('viewMode', mode);

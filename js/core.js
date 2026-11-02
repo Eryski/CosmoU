@@ -205,7 +205,9 @@ function toast(t, ms = 3500, type, action) {
 const cur = () => games.find(g => g.name === sel);
 // ---------- favorites, sorting and the "show" filter (menu: js/menus.js) ----------
 let favs = new Set(),
-  showFilter = 'all';
+  showFilter = 'all',
+  // the games of every console together (Sort & filter → Every console, or the last card when choosing a console)
+  everySys = false;
 try {
   const f = JSON.parse(localStorage.getItem('cosmou.favs') || '[]');
   if (Array.isArray(f)) favs = new Set(f.filter(x => typeof x === 'string'));
@@ -213,6 +215,7 @@ try {
   if (['az', 'za', 'recent', 'most', 'own'].includes(so)) sortMode = so;
   const sh = localStorage.getItem('cosmou.show');
   if (['all', 'fav', 'wiiu', 'apps'].includes(sh)) showFilter = sh;
+  everySys = localStorage.getItem('cosmou.everySys') === '1';
 } catch {}
 const isFav = name => favs.has(name);
 const SORT_LABEL = { az: 'A–Z', za: 'Z–A', recent: 'Recent', most: 'Most played', own: 'Your order' },
@@ -237,8 +240,9 @@ function setOwnOrder(names) {
 function list() {
   const q = $('#q').value.trim().toLowerCase();
   let l = games.filter(g => g.name.toLowerCase().includes(q) || (g.tid && String(g.tid).toLowerCase().includes(q)));
-  // only the games of the system on screen, and the apps added to it (or to every console)
-  if (typeof curSys === 'string')
+  // only the games of the system on screen, and the apps added to it (or to every console);
+  // favorites and "Every console" show the games of all consoles together
+  if (typeof curSys === 'string' && !everySys && showFilter !== 'fav')
     l = l.filter(g => (g.kind === 'app' ? !g.appSys || g.appSys === 'all' || g.appSys === curSys : sysOf(g) === curSys));
   if (view === 'recent') l = l.filter(g => plays[g.name]);
   if (showFilter === 'fav') l = l.filter(g => favs.has(g.name));
