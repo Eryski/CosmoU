@@ -2041,20 +2041,27 @@ function getText(url, max = 12 * 1048576, hops = 0) {
   });
 }
 // the list of pictures of one console on the libretro server (kept for two weeks)
+// (when the server can't be reached, the list comes from libretro's archive on GitHub: gh = true)
 async function thumbFiles(folder) {
   if (thumbLists[folder]) return thumbLists[folder];
   const f = path.join(autoDir(), 'thumbs-' + safeName(folder) + '.json');
   try {
     const c = JSON.parse(fs.readFileSync(f, 'utf8'));
-    if (Date.now() - c.at < 14 * 864e5 && Array.isArray(c.files)) return (thumbLists[folder] = c.files);
+    if (Date.now() - c.at < 14 * 864e5 && Array.isArray(c.files) && c.files.length) return (thumbLists[folder] = { files: c.files, gh: !!c.gh });
   } catch {}
   const html = await getText(SD.listUrl(folder));
-  if (!html) return [];
-  const files = SD.thumbList(html);
+  let files = html ? SD.thumbList(html) : [],
+    gh = false;
+  if (!files.length) {
+    const j = await getText(SD.ghTreeUrl(folder), 40 * 1048576);
+    files = j ? SD.ghList(j) : [];
+    gh = true;
+  }
+  if (!files.length) return { files: [], gh: false };
   try {
-    fs.writeFileSync(f, JSON.stringify({ at: Date.now(), files }));
+    fs.writeFileSync(f, JSON.stringify({ at: Date.now(), files, gh }));
   } catch {}
-  return (thumbLists[folder] = files);
+  return (thumbLists[folder] = { files, gh });
 }
 async function findSysArt(g) {
   const def = SYSTEMS[g.sys];
@@ -2067,9 +2074,9 @@ async function findSysArt(g) {
     return '';
   }
   for (const folder of def.thumbs || []) {
-    const files = await thumbFiles(folder);
-    const hit = SD.bestThumb(files, g.file || g.name);
-    if (hit) return SD.thumbUrl(folder, hit);
+    const t = await thumbFiles(folder);
+    const hit = SD.bestThumb(t.files, g.file || g.name);
+    if (hit) return SD.thumbUrls(folder, hit, t.gh);
   }
   return '';
 }
@@ -2079,10 +2086,18 @@ async function runSysArt() {
     const g = sysJobs.shift(),
       k = sysArtKey(g);
     try {
-      const url = await findSysArt(g);
-      if (process.env.COSMOU_DEBUG) console.error('cover for', g.sys, g.name, '→', url || 'none');
-      const dest = path.join(autoDir(), k + '-cover' + (/\.png(\?|$)/i.test(url) ? '.png' : '.jpg'));
-      if (url && (await fetchImage(url, dest))) {
+      // one address (eShop) or a few to try one after the other (libretro, then its GitHub archive)
+      const found = await findSysArt(g),
+        urls = (Array.isArray(found) ? found : [found]).filter(Boolean);
+      let ok = false;
+      for (const url of urls) {
+        const dest = path.join(autoDir(), k + '-cover' + (/\.png(\?|$)/i.test(url) ? '.png' : '.jpg'));
+        ok = await fetchImage(url, dest);
+        if (process.env.COSMOU_DEBUG) console.error('cover for', g.sys, g.name, '→', url, ok ? 'ok' : 'failed');
+        if (ok) break;
+      }
+      if (!urls.length && process.env.COSMOU_DEBUG) console.error('cover for', g.sys, g.name, '→ none');
+      if (ok) {
         if (mainWin && !mainWin.isDestroyed()) mainWin.webContents.send('covers-updated');
       } else fs.writeFileSync(sysMiss(g), String(Date.now()));
     } catch {}

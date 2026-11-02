@@ -205,6 +205,24 @@
   const thumbUrl = (folder, file) =>
     THUMBS + encodeURIComponent(folder).replace(/%20/g, '%20') + '/Named_Boxarts/' + encodeURIComponent(file);
   const listUrl = folder => THUMBS + encodeURIComponent(folder) + '/Named_Boxarts/';
+  // when the libretro server is down: the same pictures from libretro's archive on GitHub (one repository per console,
+  // "Nintendo - Nintendo 64" → libretro-thumbnails/Nintendo_-_Nintendo_64)
+  const ghRepo = folder => 'libretro-thumbnails/' + encodeURIComponent(String(folder).replace(/ /g, '_'));
+  const ghTreeUrl = folder => 'https://api.github.com/repos/' + ghRepo(folder) + '/git/trees/HEAD?recursive=1';
+  function ghList(json) {
+    try {
+      const j = typeof json === 'string' ? JSON.parse(json) : json;
+      return (j.tree || [])
+        .map(t => t.path)
+        .filter(p => /^Named_Boxarts\/[^/]+\.png$/.test(p))
+        .map(p => p.slice('Named_Boxarts/'.length));
+    } catch {
+      return [];
+    }
+  }
+  const ghThumbUrl = (folder, file) => 'https://raw.githubusercontent.com/' + ghRepo(folder) + '/HEAD/Named_Boxarts/' + encodeURIComponent(file);
+  // where to get one picture: the libretro server, and its GitHub archive as a second try
+  const thumbUrls = (folder, file, gh) => (gh ? [ghThumbUrl(folder, file)] : [thumbUrl(folder, file), ghThumbUrl(folder, file)]);
   // Nintendo's eShop search (Europe): square pictures, and every Switch game has its title id there
   const eshopUrl = (title, tid) =>
     'https://searching.nintendo-europe.com/en/select?rows=8&wt=json&fl=title,application_id_s,image_url_sq_s,image_url&q=' +
@@ -230,7 +248,7 @@
     return u;
   }
 
-  const api = { SYSTEMS, ORDER, DESKTOP, CORES, ANDROID, norm, titleOf, thumbList, bestThumb, thumbUrl, listUrl, eshopUrl, eshopPick };
+  const api = { SYSTEMS, ORDER, DESKTOP, CORES, ANDROID, norm, titleOf, thumbList, bestThumb, thumbUrl, listUrl, ghTreeUrl, ghList, ghThumbUrl, thumbUrls, eshopUrl, eshopPick };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.SYSDATA = api;
 })(this);

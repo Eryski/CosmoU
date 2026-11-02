@@ -321,16 +321,23 @@
     }
     if (!sysRunning) runSysArt();
   }
+  // (when the libretro server can't be reached, the list comes from its archive on GitHub: gh = true)
   async function thumbList(folder) {
     if (thumbs[folder]) return thumbs[folder];
     const f = 'public/covers-auto/thumbs-' + safeName(folder) + '.json';
     const c = readJson(f, null);
-    if (c && Date.now() - c.at < 14 * 864e5 && Array.isArray(c.files)) return (thumbs[folder] = c.files);
+    if (c && Date.now() - c.at < 14 * 864e5 && Array.isArray(c.files) && c.files.length) return (thumbs[folder] = { files: c.files, gh: !!c.gh });
     const r = await call('fetchText', SD.listUrl(folder));
-    if (!r || !r.ok) return [];
-    const files = SD.thumbList(r.text);
-    sync('write', f, JSON.stringify({ at: Date.now(), files }));
-    return (thumbs[folder] = files);
+    let files = r && r.ok ? SD.thumbList(r.text) : [],
+      gh = false;
+    if (!files.length) {
+      const j = await call('fetchText', SD.ghTreeUrl(folder));
+      files = j && j.ok ? SD.ghList(j.text) : [];
+      gh = true;
+    }
+    if (!files.length) return { files: [], gh: false };
+    sync('write', f, JSON.stringify({ at: Date.now(), files, gh }));
+    return (thumbs[folder] = { files, gh });
   }
   async function findArt(g) {
     const d = SD.SYSTEMS[g.sys],
@@ -344,8 +351,9 @@
       return '';
     }
     for (const folder of d.thumbs || []) {
-      const hit = SD.bestThumb(await thumbList(folder), g.file || g.name);
-      if (hit) return SD.thumbUrl(folder, hit);
+      const t = await thumbList(folder);
+      const hit = SD.bestThumb(t.files, g.file || g.name);
+      if (hit) return SD.thumbUrls(folder, hit, t.gh);
     }
     return '';
   }
@@ -354,8 +362,14 @@
     while (sysJobs.length) {
       const g = sysJobs.shift(),
         k = sysKey(g);
-      const url = await findArt(g).catch(() => '');
-      const x = url && (await call('fetchFile', url, 'public/covers-auto/' + k + '-cover' + (/\.png(\?|$)/i.test(url) ? '.png' : '.jpg'), 'image/'));
+      // one address (eShop) or a few to try one after the other (libretro, then its GitHub archive)
+      const found = await findArt(g).catch(() => ''),
+        urls = (Array.isArray(found) ? found : [found]).filter(Boolean);
+      let x = null;
+      for (const url of urls) {
+        x = await call('fetchFile', url, 'public/covers-auto/' + k + '-cover' + (/\.png(\?|$)/i.test(url) ? '.png' : '.jpg'), 'image/');
+        if (x && x.ok) break;
+      }
       if (x && x.ok) emit('covers-updated');
       else if (!(x && x.offline)) sync('write', 'public/covers-auto/' + k + '-art.miss', String(Date.now()));
       sysBusy.delete(k);
