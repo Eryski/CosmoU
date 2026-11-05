@@ -686,19 +686,20 @@ async function waitFor(fn, ms) {
   {
     const own = await E(async () => {
       const sleep = ms => new Promise(r => setTimeout(r, ms));
-      await ownSave([...((cfg && cfg.ownSystems) || []), { id: 'own-mods', name: 'Mods', look: '3ds' }]);
+      await osysSave([...((cfg && cfg.ownSystems) || []), { id: 'own-mods', name: 'Mods', look: '3ds' }]);
       await sleep(300);
       const av = sysAvail();
       setSystem('own-mods');
       await sleep(1500);
-      const res = { av, cur: curSys, theme: style, brand: document.querySelector('.brand small').textContent, empty: $('#et').textContent };
+      // (apps on every console show up here too: then it isn't empty)
+      const res = { av, cur: curSys, theme: style, brand: document.querySelector('.brand small').textContent, empty: $('#et').textContent, onlyApps: list().every(g => g.kind === 'app') };
       setSystem('wiiu');
       await sleep(1200);
-      await ownSave(((cfg && cfg.ownSystems) || []).filter(o => o.id !== 'own-mods'));
+      await osysSave(((cfg && cfg.ownSystems) || []).filter(o => o.id !== 'own-mods'));
       res.after = sysAvail();
       return res;
     });
-    ok('your own console: listed, in its borrowed look, apps only', own.av.includes('own-mods') && own.cur === 'own-mods' && own.theme === '3ds' && /Mods/.test(own.brand) && /No apps on Mods/.test(own.empty) && !own.after.includes('own-mods'), own);
+    ok('your own console: listed, in its borrowed look, apps only', own.av.includes('own-mods') && own.cur === 'own-mods' && own.theme === '3ds' && /Mods/.test(own.brand) && (/No apps on Mods/.test(own.empty) || own.onlyApps) && !own.after.includes('own-mods'), own);
   }
 
   // ---- a game closed with the controller (L + D-pad Down + Select): it ends, CosmoU comes back ----
