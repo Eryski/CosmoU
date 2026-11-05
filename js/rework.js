@@ -57,11 +57,18 @@ function rwEmpty() {
       : 'Choose the folder with your ' + SYS[curSys].short + ' games – they show up here in the ' + SYS[curSys].short + ' look.';
     $('#ebtn').textContent = IS_IOS ? 'Get games' : 'Choose ' + SYS[curSys].short + ' folder';
   } else $('#ebtn').textContent = IS_IOS ? 'Get games from MeloCafe' : 'Choose games folder';
+  // your own console (apps only): its apps are added, not found in a folder
+  if (kind === 'folder' && typeof curSys === 'string' && /^own-/.test(curSys) && SYS[curSys]) {
+    $('#et').textContent = 'No apps on ' + SYS[curSys].name + ' yet';
+    $('#ep').textContent = 'Add a program, a PC port or a tool – it shows up here in the ' + SYS[curSys].homeLabel + ' look.';
+    $('#ebtn').textContent = 'Add app';
+  }
   if (q) $('#et').textContent = 'Nothing called “' + (q.length > 28 ? q.slice(0, 27) + '…' : q) + '”';
   if (q) $('#ep').textContent = 'Search looks at the game names. Try a shorter word, or clear the search.';
 }
 // the folder button of an empty library: the folder of the console you are looking at
 $('#ebtn').onclick = async () => {
+  if (typeof curSys === 'string' && /^own-/.test(curSys)) return openApp(null);
   if (typeof curSys !== 'string' || curSys === 'wiiu' || !window.api || !api.systemPickFolder) return pickFolder();
   const r = await api.systemPickFolder(curSys);
   if (r && r.error) return toast(r.error, 7000);

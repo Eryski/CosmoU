@@ -749,6 +749,19 @@
       const r = await call('pickApp');
       return r && r.pkg ? sysWrite(k, { pkg: r.pkg, appName: r.name || r.pkg }) : settings();
     },
+    // your own consoles (apps only), like on the computer
+    ownSystemsSave: async list => {
+      const s = read(),
+        ok = id => /^own-[a-z0-9-]{1,30}$/.test(String(id));
+      const clean = (Array.isArray(list) ? list : [])
+        .filter(o => o && ok(o.id) && typeof o.name === 'string' && o.name.trim())
+        .slice(0, 20)
+        .map(o => ({ id: o.id, name: o.name.trim().slice(0, 24), look: SYS_LIST.includes(o.look) ? o.look : 'switch' }));
+      const ids = new Set(clean.map(o => o.id));
+      const customApps = (s.customApps || []).map(a => (ok(a.sys) && !ids.has(a.sys) ? { ...a, sys: 'all' } : a));
+      write({ ...s, ownSystems: clean, customApps });
+      return settings();
+    },
     systemRemove: async k => {
       const c = sysCfg()[k];
       if (c && c.gamesDir && !IOS) await call('forgetFolder', c.gamesDir);
@@ -914,7 +927,12 @@
         args: '',
         cover,
         coverAt,
-        sys: a.sys === 'all' || (typeof a.sys === 'string' && Object.prototype.hasOwnProperty.call(window.SYSDATA.SYSTEMS, a.sys)) ? a.sys : old.sys || 'all',
+        sys:
+          a.sys === 'all' ||
+          (typeof a.sys === 'string' && Object.prototype.hasOwnProperty.call(window.SYSDATA.SYSTEMS, a.sys) && !/^own-/.test(a.sys)) ||
+          (s.ownSystems || []).some(o => o.id === a.sys)
+            ? a.sys
+            : old.sys || 'all',
       };
       const i = apps.findIndex(x => x.id === id);
       if (i >= 0) apps[i] = entry;

@@ -14,6 +14,9 @@ Thanks for testing! 💙 Please don't share this file. Report bugs **[here](../.
 - The pictures menu stays open on **Next / Previous picture**, so you can skip through to your favourite.
 - **🪟 Apps in full screen (Windows)** – Edit app → **Window**: *Maximized* or *Full screen*. For PC ports and games that always open in a small window: CosmoU makes the game's window full screen (also when a launcher starts the game, and for a shortcut (.lnk) to the game – its launch options work then too).
 - **🌐 Every console on one page** – the last card when choosing a console (or Sort & filter → **Every console**): the games of all your consoles together, in the look of the console you're on. **Favorites** now show the favorites of every console.
+- **🎮 Back to CosmoU** – when a game ends, CosmoU comes to the front again. **L + D-pad Down + Select** closes the game you're playing and brings you back (on Windows also while the game has the focus).
+- **🏷️ Marks** – click the **left stick** to make a game a favorite; **hold** it for a wheel of colours and signs (⚙ system app, ?, !). The colour lines the game's cover in every view. Also with **K** or “Mark…” in a game's menu.
+- **🧩 Your own console** – Settings → Cemu & Games → Add another console → **Your own console (apps)…**: a console with your name (Mods, Tools, PC ports …) in the look of a real one, for apps only.
 - **📂 Click “CosmoU” at the top left** to open the CosmoU folder (settings, covers, music, pictures, themes – `CosmoU-data` next to the portable .exe).
 
 ### Fixed
@@ -27,6 +30,7 @@ Thanks for testing! 💙 Please don't share this file. Report bugs **[here](../.
 - **Ports with a log window (cmd):** the game's window comes to the front – keyboard and controller go to the game, the log window steps aside, and Window: Full screen works for them too.
 - **Box art after adding or changing a cover:** shows right away on the 3D case too (it needed a restart before).
 - **🕹️ Right stick scrolls** Settings and every other window (and the Grid), like in Nintendo's menus.
+- **Drop-down lists** (like “Add another console”) are readable in every theme.
 - **Mouse:** the arrow stays an arrow over text (the text cursor only shows where you can type).
 - **Covers for N64, Wii, NES …** come from libretro's archive on GitHub when their server is down.
 - **Grid:** moving with the controller or the arrow keys no longer makes the whole grid blink like a reloaded page – and up / down go a row.

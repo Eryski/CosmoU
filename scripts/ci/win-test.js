@@ -267,6 +267,10 @@ $s = [System.Windows.Forms.Screen]::FromHandle($h).Bounds
           return { err: String(e.message).slice(0, 200) };
         }
       };
+      await E(() => {
+        window.__back = [];
+        api.onGameBack(d => window.__back.push(d.kind));
+      });
       const started = await E(id => api.play({ appId: id, name: 'Test Port' }), r && r.id);
       let wi = null;
       await waitFor(() => {
@@ -285,6 +289,28 @@ $s = [System.Windows.Forms.Screen]::FromHandle($h).Bounds
       } catch {}
       ok('the game window is in front (keyboard and controller go to it, not to its log window)', wi && wi.front, wi);
       ok('the app (a shortcut) opens in full screen (Window: Full screen)', wi && wi.full, { started: started && started.ok, wi, log: log.join('').split('\n').filter(l => /app /.test(l)).slice(-6), seen: seen.slice(0, 1500) });
+      // closing the game (what L + D-pad Down + Select does): the game goes, CosmoU comes back
+      const portRuns = () => {
+        try {
+          return /TestPort\.exe/i.test(cp.execFileSync('tasklist', ['/FI', 'IMAGENAME eq TestPort.exe'], { encoding: 'utf8' }));
+        } catch {
+          return false;
+        }
+      };
+      const closed = await E(() => api.closeGame());
+      await waitFor(() => !portRuns(), 8000);
+      const b1 = await E(() => window.__back.slice());
+      ok('closing the game with the controller combo: the game closes, CosmoU comes back', closed === true && !portRuns() && b1.includes('closed'), { closed, b1 });
+      // a game that ends by itself: CosmoU notices (also when it isn't CosmoU's own child any more) and comes back
+      await E(id => api.play({ appId: id, name: 'Test Port' }), r && r.id);
+      await waitFor(() => portRuns(), 15000);
+      await wait(4000);
+      try {
+        cp.execFileSync('taskkill', ['/F', '/IM', 'TestPort.exe'], { stdio: 'ignore' });
+      } catch {}
+      await waitFor(async () => (await E(() => window.__back.length)) >= 2, 20000);
+      const b2 = await E(() => window.__back.slice());
+      ok('a game that ends: back to CosmoU', b2[1] === 'ended', b2);
       try {
         cp.execFileSync('taskkill', ['/F', '/IM', 'TestPort.exe'], { stdio: 'ignore' });
       } catch {}

@@ -640,6 +640,102 @@ async function waitFor(fn, ms) {
     );
   }
 
+  // ---- marks: the left stick clicked = favorite, held = the wheel; the colour lines the cover ----
+  {
+    const mk = await E(async () => {
+      const real = navigator.getGamepads.bind(navigator);
+      const btn = {};
+      const p = { id: 'stand-in pad', index: 0, connected: true, mapping: 'standard', get buttons() { return Array.from({ length: 17 }, (_, i) => ({ pressed: !!btn[i], value: 0 })); }, axes: [0, 0, 0, 0] };
+      navigator.getGamepads = () => [p];
+      const ev = new Event('gamepadconnected');
+      ev.gamepad = p;
+      dispatchEvent(ev);
+      const sleep = ms => new Promise(r => setTimeout(r, ms));
+      mode = 'covers';
+      syncMode();
+      render();
+      await sleep(400);
+      const g = cur().name,
+        was = favs.has(g);
+      btn[10] = true;
+      await sleep(150);
+      btn[10] = false;
+      await sleep(300);
+      const fav = favs.has(g) !== was;
+      if (favs.has(g) !== was) toggleFav(cur());
+      btn[10] = true;
+      await sleep(800);
+      const open = mkIsOpen();
+      btn[10] = false;
+      await sleep(200);
+      markPick(MARKS.findIndex(m => m.k === 'blue'));
+      btn[0] = true;
+      await sleep(150);
+      btn[0] = false;
+      await sleep(400);
+      const el = document.querySelector('#cfrow .cc.mid');
+      const res = { g, fav, open, mark: marks[g], cls: el && el.className, col: el && el.style.getPropertyValue('--mark') };
+      setMark(cur(), 'none');
+      navigator.getGamepads = real;
+      return res;
+    });
+    ok('the left stick: clicked a favorite, held the wheel of marks; the colour lines the cover', mk.fav && mk.open && mk.mark === 'blue' && /marked/.test(mk.cls) && mk.col === '#2f8cf0', mk);
+  }
+
+  // ---- your own console (apps only) ----
+  {
+    const own = await E(async () => {
+      const sleep = ms => new Promise(r => setTimeout(r, ms));
+      await ownSave([...((cfg && cfg.ownSystems) || []), { id: 'own-mods', name: 'Mods', look: '3ds' }]);
+      await sleep(300);
+      const av = sysAvail();
+      setSystem('own-mods');
+      await sleep(1500);
+      const res = { av, cur: curSys, theme: style, brand: document.querySelector('.brand small').textContent, empty: $('#et').textContent };
+      setSystem('wiiu');
+      await sleep(1200);
+      await ownSave(((cfg && cfg.ownSystems) || []).filter(o => o.id !== 'own-mods'));
+      res.after = sysAvail();
+      return res;
+    });
+    ok('your own console: listed, in its borrowed look, apps only', own.av.includes('own-mods') && own.cur === 'own-mods' && own.theme === '3ds' && /Mods/.test(own.brand) && /No apps on Mods/.test(own.empty) && !own.after.includes('own-mods'), own);
+  }
+
+  // ---- a game closed with the controller (L + D-pad Down + Select): it ends, CosmoU comes back ----
+  if (process.platform !== 'win32') {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cosmou-game-'));
+    const prog = path.join(dir, 'longgame.sh');
+    fs.writeFileSync(prog, '#!/bin/sh\nsleep 300 &\nwait\n', { mode: 0o755 });
+    const gs = await E(async prog => {
+      const sleep = ms => new Promise(r => setTimeout(r, ms));
+      const a = await api.appSave({ path: prog, name: 'Long Game', sys: 'all' });
+      await load();
+      window.__back = [];
+      api.onGameBack(d => window.__back.push(d.kind));
+      const real = navigator.getGamepads.bind(navigator);
+      const btn = {};
+      const p = { id: 'stand-in pad', index: 0, connected: true, mapping: 'standard', get buttons() { return Array.from({ length: 17 }, (_, i) => ({ pressed: !!btn[i], value: 0 })); }, axes: [0, 0, 0, 0] };
+      navigator.getGamepads = () => [p];
+      await launch(games.find(g => g.name === 'Long Game'));
+      await sleep(1500);
+      btn[4] = btn[13] = btn[8] = true;
+      await sleep(900);
+      btn[4] = btn[13] = btn[8] = false;
+      await sleep(1500);
+      navigator.getGamepads = real;
+      await api.appRemove(a.id);
+      await load();
+      return { back: window.__back.slice() };
+    }, prog);
+    let alive = '';
+    try {
+      alive = require('child_process').execSync("ps -eo args | grep -c '[s]leep 300'", { encoding: 'utf8' }).trim();
+    } catch (e) {
+      alive = String(e.stdout || '0').trim();
+    }
+    ok('a game closed with L + D-pad Down + Select: it ends, CosmoU comes back', gs.back.includes('closed') && alive === '0', { gs, alive });
+  }
+
   // ---- your order (RT / Move): a game lifted and moved two places on; the clean view ----
   {
     const mv = await E(async () => {

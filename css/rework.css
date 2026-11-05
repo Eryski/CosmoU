@@ -1049,3 +1049,130 @@ textarea,
   bottom: 6%;
   height: 8%;
 }
+
+/* ---- the list of a drop-down: always dark text on light, readable in every theme (Eduard) ---- */
+select option,
+select optgroup {
+  color: #17202b;
+  background: #fff;
+}
+select option:checked {
+  color: #fff;
+  background: #1596d6;
+}
+
+/* ---- marks (js/marks.js): the game's colour around its cover in every view, a small sign in a corner ---- */
+.marked :is(.art, .wa, .wh-a) {
+  outline: 4px solid var(--mark);
+  outline-offset: 3px;
+}
+.marked.on :is(.art, .wa, .wh-a),
+.marked.mid .art {
+  outline-width: 5px;
+  box-shadow: 0 0 26px 2px color-mix(in srgb, var(--mark) 55%, transparent);
+}
+.mkb {
+  position: absolute;
+  top: 7%;
+  left: 7%;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  width: 1.7em;
+  height: 1.7em;
+  border-radius: 50%;
+  font: 800 clamp(11px, 1.1vw, 16px) / 1 var(--head, system-ui);
+  font-style: normal;
+  color: #fff;
+  box-shadow:
+    0 0 0 2px rgba(255, 255, 255, 0.9),
+    0 3px 8px rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+}
+/* the wheel */
+#mkwheel {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  display: none;
+  place-items: center;
+  background: radial-gradient(circle, rgba(6, 12, 26, 0.55), rgba(6, 12, 26, 0.78));
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+#mkwheel.on {
+  display: grid;
+  animation: mkin 0.22s ease-out;
+}
+@keyframes mkin {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+}
+#mkwheel .mk-ring {
+  --r: min(30vh, 30vw, 250px);
+  position: relative;
+  width: calc(var(--r) * 2 + 90px);
+  height: calc(var(--r) * 2 + 90px);
+  border-radius: 50%;
+  background: radial-gradient(circle, transparent calc(var(--r) - 44px), rgba(20, 34, 60, 0.75) calc(var(--r) - 43px), rgba(20, 34, 60, 0.75) calc(var(--r) + 44px), transparent calc(var(--r) + 45px));
+  grid-area: 1 / 1;
+}
+#mkwheel .mk-i {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 64px;
+  height: 64px;
+  margin: -32px 0 0 -32px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--col);
+  color: #fff;
+  font: 800 28px / 1 var(--head, system-ui);
+  transform: translate(calc(var(--x) * var(--r)), calc(var(--y) * var(--r)));
+  box-shadow:
+    0 0 0 3px rgba(255, 255, 255, 0.35),
+    0 6px 14px rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+  transition:
+    transform 0.16s ease-out,
+    box-shadow 0.16s;
+}
+#mkwheel .mk-i.mk-none {
+  background: rgba(255, 255, 255, 0.12);
+}
+#mkwheel .mk-i.sel {
+  transform: translate(calc(var(--x) * var(--r)), calc(var(--y) * var(--r))) scale(1.32);
+  box-shadow:
+    0 0 0 4px #fff,
+    0 0 0 9px color-mix(in srgb, var(--col) 60%, transparent),
+    0 10px 24px rgba(0, 0, 0, 0.45);
+}
+#mkwheel .mk-mid {
+  grid-area: 1 / 1;
+  display: grid;
+  gap: 6px;
+  max-width: calc(min(30vh, 30vw, 250px) * 1.3);
+  text-align: center;
+  color: #fff;
+  pointer-events: none;
+}
+#mkwheel .mk-mid b {
+  font: 800 30px / 1.1 var(--head, system-ui);
+}
+#mkwheel .mk-mid small {
+  font-size: 15px;
+  opacity: 0.75;
+}
+#mkwheel .mk-hint {
+  position: absolute;
+  bottom: 6vh;
+  left: 0;
+  right: 0;
+  margin: 0;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 14px;
+}

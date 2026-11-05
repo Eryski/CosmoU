@@ -296,6 +296,13 @@ function gameMenu(g, at) {
         hint: 'F',
         fn: () => toggleFav(g),
       },
+      typeof markWheel === 'function' && {
+        label: typeof markOf === 'function' && markOf(g.name) ? 'Mark: ' + markOf(g.name).label + '…' : 'Mark with a colour…',
+        icon: 'mark',
+        hint: 'K',
+        sub: 'Hold the left stick',
+        fn: () => setTimeout(() => markWheel(g), 30),
+      },
       '-',
       cemuGame(g) && !IS_MOBILE && { label: 'Graphic packs', icon: 'packs', hint: 'G', fn: pick(() => openPacks(g)) },
       app && { label: 'Edit app', icon: 'edit', fn: pick(() => openApp(g)) },

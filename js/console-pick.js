@@ -30,7 +30,8 @@ function consolePick(onStart) {
   row.replaceChildren();
   for (const k of av) {
     const p = SYS[k],
-      n = games.filter(g => sysOf(g) === k && g.kind !== 'app' && g.format !== 'Demo').length;
+      own = /^own-/.test(k),
+      n = own ? games.filter(g => g.kind === 'app' && g.appSys === k).length : games.filter(g => sysOf(g) === k && g.kind !== 'app' && g.format !== 'Demo').length;
     const b = document.createElement('button');
     b.className = 'cp-card' + (k === curSys && !everySys ? ' cur' : '');
     b.dataset.s = k;
@@ -39,7 +40,7 @@ function consolePick(onStart) {
       `<span class="pv pv-${p.theme}" aria-hidden="true"><i class="pv-top"></i><i class="pv-t"></i><i class="pv-t"></i>` +
       `<i class="pv-t"></i><i class="pv-x"></i><i class="pv-nav"></i></span><b></b><small></small>`;
     b.querySelector('b').textContent = p.name;
-    b.querySelector('small').textContent = n + (n === 1 ? ' game' : ' games') + ' · ' + p.homeLabel;
+    b.querySelector('small').textContent = n + (own ? (n === 1 ? ' app' : ' apps') : n === 1 ? ' game' : ' games') + ' · ' + p.homeLabel;
     b.onclick = () => {
       d.close();
       // a console's card: only its games (again)

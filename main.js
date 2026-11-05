@@ -8,6 +8,7 @@ const https = require('https'),
   AdmZip = require('adm-zip');
 const P = require('./platform');
 const WW = require('./js/win-window.js');
+const GS = require('./js/game-session.js');
 
 // ---------- portable mode ----------
 // The Windows portable .exe keeps everything (settings, covers, music, themes, saves, a downloaded Cemu) in a
@@ -416,8 +417,28 @@ ipcMain.handle('pickFolder', async () => {
   write(s);
   return s;
 });
+// a game ended or was closed with the controller: CosmoU comes to the front again
+function backToCosmo(kind) {
+  if (!mainWin || mainWin.isDestroyed()) return;
+  try {
+    if (mainWin.isMinimized()) mainWin.restore();
+    mainWin.show();
+    // (Windows hands the focus to a window in the background only this way)
+    mainWin.setAlwaysOnTop(true);
+    mainWin.focus();
+    setTimeout(() => !mainWin.isDestroyed() && mainWin.setAlwaysOnTop(false), 500);
+    mainWin.webContents.send('game-back', { kind });
+  } catch {}
+}
+ipcMain.handle('closeGame', () => GS.close());
 ipcMain.handle('play', (_, arg) => {
   const r = playGame(arg);
+  const dir = r.dir;
+  delete r.dir;
+  if (r.ok) {
+    GS.start(r.child ? r.child.pid : 0, dir, mainWin, kind => backToCosmo(kind));
+    if (r.child) r.child.on('exit', () => GS.exited(r.child));
+  }
   if (r.ok && arg && typeof arg === 'object') {
     recordPlay(arg.name);
     trackSession(r.child, arg.name);
@@ -611,7 +632,7 @@ function playGame(arg) {
   });
   child.on('error', () => {});
   child.unref();
-  return { ok: true, note, preset, child };
+  return { ok: true, note, preset, child, dir: path.dirname(s.cemuPath) };
 }
 
 ipcMain.handle('showInFolder', (_, p) => {
@@ -1939,11 +1960,11 @@ function launchApp(id) {
     child.unref();
     // (also without a window choice: the game's window comes to the front, not its log window)
     WW.windowMode(a.win || 'focus', child.pid, path.dirname(exe), l => process.env.COSMOU_DEBUG && console.error('app ' + l));
-    return { ok: true, note: 'app', child };
+    return { ok: true, note: 'app', child, dir: path.dirname(exe) };
   }
   shell.openPath(a.path);
   WW.windowMode(a.win || 'focus', 0, path.dirname(a.path));
-  return { ok: true, note: 'app' };
+  return { ok: true, note: 'app', dir: path.dirname(a.path) };
 }
 // ---------- Other systems: CosmoU takes on the look of the console you play ----------
 // Wii U is Cemu (everything above). Every other console (js/systems-data.js) has one emulator and one games folder
@@ -2182,7 +2203,7 @@ function launchSystemGame(sys, game) {
   const child = spawn(cmd[0], cmd[1], { detached: true, stdio: 'ignore', cwd: path.dirname(c.emuPath), env: P.childEnv(c.emuPath) });
   child.on('error', () => {});
   child.unref();
-  return { ok: true, note: 'system', child };
+  return { ok: true, note: 'system', child, dir: path.dirname(c.emuPath) };
 }
 const sysSave = (sys, patch) => {
   const s = read(),
@@ -2218,6 +2239,22 @@ ipcMain.handle('systemRemove', (_, sys) => {
     systems = { ...(s.systems || {}) };
   delete systems[sys];
   write({ ...s, systems });
+  return read();
+});
+
+// your own consoles (for apps only: mods, tools, PC ports …): a name and the console look they borrow
+const OWN_ID = /^own-[a-z0-9-]{1,30}$/;
+const ownOk = (s, id) => OWN_ID.test(String(id)) && (s.ownSystems || []).some(o => o.id === id);
+ipcMain.handle('ownSystemsSave', (_, list) => {
+  const s = read();
+  const clean = (Array.isArray(list) ? list : [])
+    .filter(o => o && OWN_ID.test(String(o.id)) && typeof o.name === 'string' && o.name.trim())
+    .slice(0, 20)
+    .map(o => ({ id: o.id, name: o.name.trim().slice(0, 24), look: sysOk(o.look) ? o.look : 'switch' }));
+  // the apps of a console that is gone go back to every console
+  const ids = new Set(clean.map(o => o.id));
+  const customApps = (s.customApps || []).map(a => (OWN_ID.test(String(a.sys)) && !ids.has(a.sys) ? { ...a, sys: 'all' } : a));
+  write({ ...s, ownSystems: clean, customApps });
   return read();
 });
 
@@ -2285,7 +2322,10 @@ ipcMain.handle('appSave', (_, a) => {
     args: String(a.args || '').slice(0, 300),
     cover,
     coverAt,
-    sys: a.sys === 'all' || (typeof a.sys === 'string' && Object.prototype.hasOwnProperty.call(SYSTEMS, a.sys)) ? a.sys : old.sys || 'all',
+    sys:
+      a.sys === 'all' || (typeof a.sys === 'string' && Object.prototype.hasOwnProperty.call(SYSTEMS, a.sys)) || ownOk(s, a.sys)
+        ? a.sys
+        : old.sys || 'all',
     win: APP_WIN.includes(a.win) ? a.win : old.win || '',
   };
   const i = apps.findIndex(x => x.id === id);

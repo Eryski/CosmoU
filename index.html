@@ -622,6 +622,13 @@
               <h3 class="sh">What’s new in this version</h3>
               <div class="grp wnew" data-k="whats new changelog version news features">
                 <div class="wn">
+                  <i>🏷️</i
+                  ><span
+                    ><b>Marks, your own consoles, back to CosmoU</b
+                    ><small>Hold the left stick for colours · a console of your own for apps · L + Down + Select closes a game</small></span
+                  >
+                </div>
+                <div class="wn">
                   <i>🌐</i
                   ><span
                     ><b>Every console on one page</b
@@ -865,6 +872,30 @@
             ><button class="btn" id="fbi">Open GitHub issue</button>
           </div>
           <button class="btn main big" id="fbx">Done</button>
+        </div>
+      </div>
+    </dialog>
+    <dialog id="owndlg" class="glass">
+      <div class="in win">
+        <div class="hd">
+          <h2 id="own_t">Your own console</h2>
+          <p class="hint" style="margin: 8px 0 0">A console with your own name for apps – mods, tools, PC ports. It borrows the look of a real console.</p>
+        </div>
+        <div class="bd">
+          <div class="grp" style="margin-top: 10px">
+            <div class="set">
+              <div class="lbl"><strong>Name</strong><small>For example Mods, Tools or PC Ports</small></div>
+              <input class="sel" id="own_n" maxlength="24" style="width: 240px" />
+            </div>
+            <div class="set">
+              <div class="lbl"><strong>Look</strong><small>Its home screen, theme and sounds</small></div>
+              <select class="sel" id="own_l" style="width: 240px"></select>
+            </div>
+          </div>
+        </div>
+        <div class="ft">
+          <button class="btn ghost" id="own_rm">Remove console</button>
+          <div class="acts"><button class="btn" id="own_x">Cancel</button><button class="btn main big" id="own_s">Save</button></div>
         </div>
       </div>
     </dialog>
@@ -1274,7 +1305,10 @@
     <script src="js/quick.js"></script>
     <script src="js/looks.js"></script>
     <script src="js/order.js"></script>
+    <script src="js/own-systems.js"></script>
+    <script src="js/marks.js"></script>
     <script src="js/app.js"></script>
+    <script src="js/session-pad.js"></script>
     <script src="js/rework.js"></script>
   </body>
 </html>

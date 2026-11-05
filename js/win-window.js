@@ -141,4 +141,4 @@ function windowMode(mode, pid, dir, log) {
     return null;
   }
 }
-module.exports = { windowMode };
+module.exports = { windowMode, SRC };

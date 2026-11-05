@@ -174,6 +174,8 @@ function padTick(now) {
     rb: b(5),
     hm: b(16),
     r3: b(11),
+    // the left stick pressed: a favorite (clicked) or the wheel of marks (held)
+    l3: b(10),
     // the triggers: RT moves a game (your order), holding LT and RT switches the clean view
     lt: b(6),
     rt: b(7),
@@ -209,7 +211,8 @@ function padTick(now) {
   else pad.sT = now;
   if (!busy && fire.hm && typeof openQuick === 'function') openQuick();
   else if (!busy) {
-    if (open) {
+    if (typeof mkIsOpen === 'function' && mkIsOpen()) markPad(fire, gp0);
+    else if (open) {
       // inside a window the D-pad moves between the buttons, A presses, B goes back
       if (open.id === 'dlg' && (fire.lb || fire.rb)) sxStep(fire.rb ? 1 : -1, true);
       if (fire.u || fire.d || fire.l || fire.r) padFocus(open, fire);
@@ -236,6 +239,19 @@ function padTick(now) {
       // RT: lift the chosen game to move it (Covers and Grid); LT + RT held: the clean view (js/order.js)
       if (fire.rt && !s.lt && typeof orderStart === 'function' && (mode === 'covers' || mode === 'grid')) orderStart();
       if (typeof cleanHold === 'function') cleanHold(s.lt && s.rt, now);
+      // the left stick: clicked = favorite, held = the wheel of marks (js/marks.js)
+      if (s.l3 && !pad.l3At) {
+        pad.l3At = now;
+        pad.l3Done = false;
+      }
+      if (s.l3 && pad.l3At && !pad.l3Done && now - pad.l3At > 450 && cur() && typeof markWheel === 'function') {
+        pad.l3Done = true;
+        markWheel(cur());
+      }
+      if (!s.l3 && pad.l3At) {
+        if (!pad.l3Done && cur() && typeof toggleFav === 'function') toggleFav(cur());
+        pad.l3At = 0;
+      }
       if (isHome()) {
         for (const k of ['l', 'r', 'u', 'd']) if (fire[k]) homeStep(k);
         if (fire.lb || fire.rb) whTurn(fire.rb ? 1 : -1);
