@@ -670,9 +670,9 @@ async function waitFor(fn, ms) {
       await sleep(200);
       markPick(MARKS.findIndex(m => m.k === 'blue'));
       btn[0] = true;
-      await sleep(150);
-      btn[0] = false;
       await sleep(400);
+      btn[0] = false;
+      await sleep(500);
       const el = document.querySelector('#cfrow .cc.mid');
       const res = { g, fav, open, mark: marks[g], cls: el && el.className, col: el && el.style.getPropertyValue('--mark') };
       setMark(cur(), 'none');
