@@ -5,51 +5,37 @@
 Thanks for testing! 💙 Please don't share this file. Report bugs **[here](../../issues/new/choose)** or in `#🐞-bug-reports` on Discord.
 
 ### What's new to test
-**The new look – one CosmoU, and a Switch that feels like a Switch**
-- **🎮 The Switch has its own interface** – with the Switch on screen, CosmoU looks and works like a Switch: **Home** with your last played games in one row (A starts the first one right away), round buttons below (All Software, Play Activity, Themes, Controllers, Consoles, System Settings, Power), **All Software** with sorting (**Y**) and search (**/**), a page for each game (**+**), **Quick Settings** on the Home button (or **Q**), *Basic White* and *Basic Black*, its own clicks. No Wii U Home, no Plaza, no buddies there. With a Wii U as well: the circles at the top left (or **L / R**) switch the whole window. Settings → Appearance → Switch → *Its own interface* turns it off.
-- **🎯 Nintendo controllers** – A is the button with the A on it (on the right, like on a Switch), everywhere in CosmoU. PlayStation controllers show ✕ ○ □ △ in the legend.
-- **🧭 One dock** – Library · Favorites · Recently played | Themes · Settings (keys **L**, **\***, **R**, **T**, **,**). Favorites and the themes are one click away.
-- **🕹️ Controller legend** – while you use a controller, a small line above the dock shows what A, Y, X, LB / RB and Home do right now.
-- **🪟 The same rules in every window** – the same corners, buttons and rows everywhere, headings without capitals, calmer shadows. Details: Play, Favorite, **Mark** and **⋯ More** side by side, the tools as one list, Quick quality as one switch.
-- **⚙️ Settings in two groups** – *Games & Consoles* (was “Cemu & Games”), Appearance, Sound & Music, Controllers & TV, Saves & Data – then **Wii U · Cemu**: Graphics, Overlay, Buddies & Plaza. Without a Wii U they are not shown.
-- **Buddies live on the Wii U** – the other consoles start without the buddy greeting.
+**🎮 Switch 2 – a console of its own**
+- **Switch 2 support** – Settings → Games & Consoles → Add a console → **Switch 2**: choose your games folder and your Switch 2 emulator (**Eden-NX2**, **Eglantine** or one of their forks). Game files (`.xci`, `.nsp`) and dumped games (a folder with `exefs/main` inside) are found, updates and DLC are not counted as games, the emulator gets `-f -g <game>`, and covers come from Nintendo's eShop.
+- **✨ Its own interface** – with the Switch 2 on screen, CosmoU becomes a Switch 2: dark glass, the chosen game's colours behind everything, its title big above a row of large squares, one frame that glows in blue and red, a dock of round buttons (Library, Play Activity, Themes, Controllers, Consoles, System Settings, Power). **Y** opens the **Library** (Y again: Recent · Most played · A–Z · Favorites, **/** searches), **+** a full **page for each game** (Start, favorite, mark, folder, its facts), **Home** (or **Q**) **Quick Settings**. *Dark* and *Light*, soft sounds that play a little scale along the row. Settings → Appearance → Switch 2 turns it off.
+- **🎵 Its own music** – *Mix & Match*: a cheerful bossa in two moods, a classic part (nylon guitar, whistle, marimba) and a new one (electric piano, flute, a little pop beat). Written for CosmoU.
 
-**Also new in this beta**
-- **🎮 Pictures and music in the Quick Menu** – Quick Menu (Home / Guide button, or Q) → **Sound** → **Pictures · …** and **Music · …** for the console you're on: add, change or remove them with the controller.
-- **🖼️ A new picture on every visit** – add several pictures to a console (up to 30); every time you go to that console (and at every start of CosmoU) the next one shows up. Settings → Appearance has **Add picture…**, **Next** and **Remove this one** too.
+**🎡 The wheel of marks, new**
+- A ring of twelve pieces around the game: the chosen piece steps out and glows, a pointer turns to it, and the game in the middle **wears the mark before you choose it**. Every piece has its own note, marking sends out a ring of the colour and the wheel folds into the game. Stick, D-pad, **L / R**, mouse wheel and keyboard (**K**) all work.
+- **A works while the stick still points at a mark** – no need to let go first. (Thanks Eduard!)
 
-- **↔ Your own order** – press **RT** on a game (or **M**, or “Move” in its menu), move it with the D-pad, put it down with **A** or **RT**. Sort: “Your order”, kept for each console.
-- **🧹 Clean view** – hold **LT + RT** (or press **H**, or Quick Menu → Look): in Covers only the games stay, small at the bottom with the name above them – your background is free.
-- **➕ Add an app** right from the Quick Menu (Sound column).
-- The pictures menu stays open on **Next / Previous picture**, so you can skip through to your favourite.
-- **🪟 Apps in full screen (Windows)** – Edit app → **Window**: *Maximized* or *Full screen*. For PC ports and games that always open in a small window: CosmoU makes the game's window full screen (also when a launcher starts the game, and for a shortcut (.lnk) to the game – its launch options work then too).
-- **🌐 Every console on one page** – the last card when choosing a console (or Sort & filter → **Every console**): the games of all your consoles together, in the look of the console you're on. **Favorites** now show the favorites of every console.
-- **🎮 Back to CosmoU** – when a game ends, CosmoU comes to the front again. **L + D-pad Down + Select** closes the game you're playing and brings you back (on Windows also while the game has the focus).
-- **🏷️ Marks** – click the **left stick** to make a game a favorite; **hold** it for a wheel of colours and signs (⚙ system app, ?, !). The colour lines the game's cover in every view. Also with **K** or “Mark…” in a game's menu.
-- **🧩 Your own console** – Settings → Games & Consoles → Add another console → **Your own console (apps)…**: a console with your name (Mods, Tools, PC ports …) in the look of a real one, for apps only.
-- **📂 Click “CosmoU” at the top left** to open the CosmoU folder (settings, covers, music, pictures, themes – `CosmoU-data` next to the portable .exe).
+**📁 Folders** *(idea: Eduard)*
+- Put games and apps of a console into **folders** – mods for the Wii, tools, games to finish. A game's menu (right click, X) → **Put in a folder…** → *New folder…* (name and colour), or a folder you have. On the Switch and Switch 2: a game's page (+) → *Put in a folder*.
+- A folder is a square with the covers of its games, in every view and on the Switch / Switch 2 Home (always first). **A** opens it, **B** (or Esc) leaves it, the first square inside leads back. Its details (Y / I) change its name and colour or delete it (the games stay). A search, Favorites and Recently played still show every game.
+- **🏷️ M for mods** on the wheel of marks.
+
+**🎨 Each console's own look** *(idea: Eduard)*
+- Choosing a console: the **pencil** on a card (**E** on the keyboard, **X** on a controller) – or Settings → Games & Consoles → **Look**: its **name**, its **colour** (its circle on the Switch and Switch 2, a line on its card) and its **theme**. Your own consoles also choose the console they look like. *Back to standard* undoes it.
+
+**🔵 The console circles (Switch and Switch 2)**
+- No circle for the console you're on (you're there already), and under each circle just the console's name – no more "Switch to …". (Thanks Eduard!)
 
 ### Fixed
-- **Wii U Look (Home Menu layout)** shows your picture behind the tiles now.
-- **Apps on every console:** a new app now goes only to the console you're on (Edit app → **Console** to move it, or *Every console*). Apps added before keep showing everywhere until you choose a console for them.
-- **Changing an app's cover:** the new cover shows right away – no more deleting the old one in the covers folder.
-- **Background pictures from a slow drive:** switching consoles no longer flashes black – the old picture stays until the new one is loaded, and the next pictures load ahead.
-- **Grid:** the big banner stays at the top while you scroll down with the controller – only the games scroll.
-- **Long names in the Grid:** no half-cut third line any more; the chosen (or pointed at) game's long name rolls through on one line.
-- **DS covers** (Grid and DS Menu) show the whole box instead of cutting off its edges.
-- **Ports with a log window (cmd):** the game's window comes to the front – keyboard and controller go to the game, the log window steps aside, and Window: Full screen works for them too.
-- **Box art after adding or changing a cover:** shows right away on the 3D case too (it needed a restart before).
-- **🕹️ Right stick scrolls** Settings and every other window (and the Grid), like in Nintendo's menus.
-- **Drop-down lists** (like “Add another console”) are readable in every theme.
-- **Mouse:** the arrow stays an arrow over text (the text cursor only shows where you can type).
-- **Covers for N64, Wii, NES …** come from libretro's archive on GitHub when their server is down.
-- **Grid:** moving with the controller or the arrow keys no longer makes the whole grid blink like a reloaded page – and up / down go a row.
+- **Grid:** moving down brings the chosen row to the top – no more names of the row above peeking out under the banner. The names under the games now have exactly the width of their pictures and frames. (Thanks Eduard!)
+- **Switch:** favorites show a star on their square again (Home and All Software). (Thanks Eduard!)
+- **Switch and Switch 2 (dark):** text fields and lists in Settings and the other windows are readable (they were dark on dark).
 
 ### Please check
-- **The Switch interface:** does it feel like a Switch? Start a game, open a game's page (+), All Software, Quick Settings (Home) – with a Switch / Pro controller and with an Xbox controller.
-- **Switching consoles** with the circles at the top left or L / R: does the whole window change cleanly, and back?
-- Anything in the new windows that is harder to find than before?
-- Does the Quick Menu work well with your controller (open the menus, add a picture, go back)?
-- Do the pictures change when you switch consoles – and stay the same console's pictures?
-- Your PC ports with **Window: Full screen** – does the game fill the screen, and does it still work after alt-tab?
-- Anything that looks wrong behind the glass (text hard to read, picture cut badly)?
+- **Your Switch 2 emulator:** does a game start – a game file and a dumped game? Which emulator (and which build) did you use?
+- **The Switch 2 interface:** does it feel like a Switch 2? Is it smooth on your computer or phone (moving along the row, the Library, a game's page)?
+- **The wheel:** does it feel good with the stick, the D-pad and the mouse? Does A always mark at once?
+- **The music:** does *Mix & Match* loop without a jump?
+- **The circles** at the top left: is it clear where each one goes?
+- **Folders:** make a few, put games in, open and leave them with the controller – in Covers, Grid, the console homes and on the Switch / Switch 2. Anything that feels clumsy?
+- **A console's look:** rename one, give it a colour and another theme – does it show everywhere you expect?
+- **The Grid** with a lot of games and your own picture behind it: scroll down and up with the controller – does anything peek out under the banner?

@@ -472,7 +472,7 @@ async function waitFor(fn, ms) {
   const det = await E(() => ({ scr: nx.scr, det: $('#det').open, items: [...document.querySelectorAll('#nxgnav .nx-gi')].map(b => b.dataset.id) }));
   ok(
     'Switch: the details are the game’s page (Start first, no Cemu tools)',
-    det.scr === 'game' && !det.det && det.items[0] === 'start' && det.items.includes('info') && det.items.every(i => ['start', 'info', 'fav', 'mark', 'edit', 'folder', 'copy'].includes(i)),
+    det.scr === 'game' && !det.det && det.items[0] === 'start' && det.items.includes('info') && det.items.every(i => ['start', 'info', 'fav', 'mark', 'group', 'edit', 'folder', 'copy'].includes(i)),
     det,
   );
   await shot('12-switch-details');
@@ -926,6 +926,100 @@ async function waitFor(fn, ms) {
   await shot('15-switch-covers');
   await E(() => setSystem('wiiu'));
   await w.waitForTimeout(800);
+
+  // ---- Switch 2: a game file (with its update) and a dumped game (a folder with exefs/main), its own interface,
+  // a stand-in emulator named like Eglantine (-f -g <game>), its cover from the eShop (BEE: games for the Switch 2) ----
+  {
+    const S2 = path.join(HOME, 'CosmoU-test', 'Switch2');
+    write(path.join(S2, 'Mario Kart World [0400c3f00006e000].xci'), 'XCI');
+    write(path.join(S2, 'Mario Kart World [0400c3f00006e800].nsp'), 'NSP update');
+    write(path.join(S2, 'Donkey Kong Bananza', 'exefs', 'main'), 'NSO');
+    write(path.join(S2, 'Donkey Kong Bananza', 'romfs', 'data.bin'), 'data');
+    write(path.join(HOME, 'CosmoU-test', 'Emu', 'eglantine.sh'), '#!/bin/sh\nprintf "%s\\n" "$@" > "$HOME/CosmoU-test/switch2-started.txt"\n');
+    const sf = path.join(USERDATA, 'settings.json'),
+      c0 = JSON.parse(fs.readFileSync(sf, 'utf8'));
+    c0.systems = { ...(c0.systems || {}), switch2: { emuPath: path.join(HOME, 'CosmoU-test', 'Emu', 'eglantine.sh'), emuName: 'eglantine', gamesDir: S2 } };
+    fs.writeFileSync(sf, JSON.stringify(c0, null, 2));
+    await E(() => load());
+    await w.waitForTimeout(1500);
+    const s2 = await E(() => games.filter(g => g.sys === 'switch2').map(g => [g.name, g.tid, g.format, !!g.dump, g.path]));
+    ok(
+      'Switch 2 games: a game file with its update and a dumped game (folder with exefs/main)',
+      Array.isArray(s2) &&
+        s2.length === 2 &&
+        s2.some(g => g[0] === 'Mario Kart World' && g[1] === '0400c3f00006e000' && /Update/.test(g[2])) &&
+        s2.some(g => g[0] === 'Donkey Kong Bananza' && g[3] && /exefs[\\/]main$/.test(g[4])),
+      s2,
+    );
+    await E(() => {
+      document.querySelectorAll('dialog[open]').forEach(d => d.close());
+      $('#setup').classList.remove('on');
+      setSystem('switch2');
+    });
+    await w.waitForTimeout(2200);
+    const l2 = await E(() => ({
+      sys: curSys,
+      n2: n2.on,
+      nx: nx.on,
+      shell: getComputedStyle($('.page')).display,
+      tiles: [...document.querySelectorAll('#n2row .n2-t[data-g]')].map(t => t.dataset.g),
+      title: $('#n2title').textContent,
+      theme: style,
+    }));
+    ok(
+      'Switch 2: its own interface (not the first Switch’s, no CosmoU window), its games, the chosen one’s title',
+      // (the app added earlier shows on every console, so it is one of the squares too)
+      l2.sys === 'switch2' &&
+        l2.n2 &&
+        !l2.nx &&
+        l2.shell === 'none' &&
+        ['Mario Kart World', 'Donkey Kong Bananza'].every(n => l2.tiles.includes(n)) &&
+        l2.tiles.includes(l2.title) &&
+        l2.theme === 'switch2',
+      l2,
+    );
+    await shot('16-switch2-home');
+    const k = async key => {
+      await w.keyboard.press(key);
+      await w.waitForTimeout(160);
+    };
+    await k('y');
+    const k1 = await E(() => ({ scr: n2.scr, cells: document.querySelectorAll('#n2grid .n2-cell').length }));
+    await k('+');
+    const k2 = await E(() => ({ scr: n2.scr, acts: [...document.querySelectorAll('#n2gacts button')].map(b => b.dataset.id) }));
+    await shot('17-switch2-game');
+    await k('Escape');
+    await k('Escape');
+    const k3 = await E(() => ({ scr: n2.scr }));
+    await k('q');
+    const k4 = await E(() => ({ qs: n2.qs }));
+    await k('Escape');
+    ok(
+      'Switch 2 on the keyboard: Y the Library, + the game’s page, Esc back, Q Quick Settings',
+      k1.scr === 'lib' && k1.cells >= 2 && k2.scr === 'game' && k2.acts[0] === 'start' && k3.scr === 'home' && k4.qs,
+      [k1, k2, k3, k4],
+    );
+    const started2 = path.join(HOME, 'CosmoU-test', 'switch2-started.txt');
+    const r2 = await E(async () => {
+      const g = games.find(x => x.sys === 'switch2' && x.dump);
+      return api.play({ path: g.path, name: g.name, sys: 'switch2' });
+    });
+    await waitFor(() => fs.existsSync(started2), 10000);
+    let a2 = '';
+    try {
+      a2 = fs.readFileSync(started2, 'utf8');
+    } catch {}
+    ok('a dumped Switch 2 game starts in Eglantine: -f -g <folder>/exefs/main', r2 && r2.ok && /^-f\n-g\n.*Donkey Kong Bananza[\\/]exefs[\\/]main\n$/.test(a2), [r2, a2]);
+    // its cover from Nintendo's eShop (as a game for the Switch 2, by its title id)
+    let c2 = null;
+    await waitFor(async () => {
+      c2 = await E(async () => (await api.scan()).filter(g => g.sys === 'switch2').map(g => [g.name, (g.cover || '').split('/').pop()]));
+      return Array.isArray(c2) && c2.some(x => x[0] === 'Mario Kart World' && x[1]);
+    }, 60000);
+    ok('Switch 2 cover from the eShop (Mario Kart World)', Array.isArray(c2) && c2.some(x => x[0] === 'Mario Kart World' && x[1]), c2);
+    await E(() => setSystem('wiiu'));
+    await w.waitForTimeout(800);
+  }
 
   // Cemu's own log helps when something went wrong
   try {

@@ -333,7 +333,7 @@ const THEME_TUNE = {
   'classic-wii': 'Channel Calm',
   plaza: 'Buddy Parade',
   switch: 'Quiet Home',
-  switch2: 'Next Level Lounge',
+  switch2: 'Mix & Match',
   ds: 'Dual Screen Days',
   dsi: 'Camera Café',
   '3ds': 'Pocket Sunshine',

@@ -21,7 +21,7 @@ function dayName(ts) {
   return new Date(ts).toLocaleDateString('en', { month: 'short', day: 'numeric' });
 }
 const shortName = n => (n.length > 18 ? n.slice(0, 17).trim() + '…' : n);
-const gameOf = name => games.find(g => g.name === name);
+const gameOf = name => games.find(g => g.name === name) || (typeof fdItem === 'function' ? fdItem(name) : null) || undefined;
 
 // ---------- Plaza posts ----------
 const POST_MAX = 30;

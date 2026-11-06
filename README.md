@@ -4,7 +4,11 @@ A free Windows, Linux, macOS, Android and iPhone/iPad launcher for the [Cemu](ht
 
 - One dock for the places and windows you use most: Library, Favorites, Recently played, Themes and Settings – and while you use a controller, a small legend shows what its buttons do
 - The Switch has its own interface: a Home with your last played games in one row and round buttons below, All Software (sort and search), a page for each game, Quick Settings on the Home button, Basic White and Basic Black and its own sounds – with a Wii U as well, the consoles at the top left (or L / R) switch the whole window (Settings → Appearance → Switch turns it off)
+- The Switch 2 is a console of its own, with its own interface: dark glass, the chosen game's colours behind everything, a big title above a row of large squares, a dock of round buttons, a Library with filters and search, a full page for each game, Quick Settings on the Home button, Dark and Light, its own sounds and its own menu music (Mix & Match). It works with the Switch 2 emulators of the Eden family (Eden-NX2, Eglantine and their forks): game files (`.xci`, `.nsp`) and dumped games (a folder with `exefs/main`) are found, the emulator gets `-f -g <game>`, covers come from Nintendo's eShop (Settings → Games & Consoles → Add a console → Switch 2; Settings → Appearance → Switch 2 turns its interface off)
 - Nintendo controllers work by the letters on their buttons (A on the right, like on a Switch)
+- Folders: put games and apps of a console into folders (mods, tools, games to finish) – a folder is a square with the covers of its games in every view; A opens it, B leaves it
+- Each console's own look: its name, colour and theme – from the pencil on its card when choosing a console, or Settings → Games & Consoles → Look
+- Marks: click the left stick for a favorite, hold it for a wheel of colours and signs (★, ⚙ system app, ?, !, M for mods) – the game in the middle wears the mark before you choose it, every piece has its own note (also K on the keyboard)
 - Quick Menu (Q or the controller's Home button): last played games, quick switches and every window in one place
 - Favorites, sort & filter (A–Z, Z–A, recently played, most played; all, favorites, Wii U games, apps) and a game menu on right-click
 - Game details with play time, last played, sessions and first played; press ? for every shortcut
@@ -124,4 +128,4 @@ js/            UI code, one file per area (core, wiiu-look, covers, settings, de
 Use **Settings → Send feedback** in the app, join the [CosmoU Discord](https://discord.gg/BZry7jGjr7), or open an issue here.
 
 ## Notes
-CosmoU is an independent project. It does not include any games, firmware, keys or Nintendo files, and it is not affiliated with Nintendo or the Cemu team. Wii U and Nintendo are trademarks of Nintendo. Cemu is licensed under MPL 2.0.
+CosmoU is an independent project. It does not include any games, firmware, keys or Nintendo files, and it is not affiliated with Nintendo, the Cemu team or the makers of any other emulator. CosmoU only starts the emulators you already have – for the Switch 2 that means your own game dumps, `prod.keys` and firmware, set up in the emulator itself. Wii U and Nintendo are trademarks of Nintendo. Cemu is licensed under MPL 2.0.

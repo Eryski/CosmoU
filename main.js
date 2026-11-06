@@ -1974,12 +1974,32 @@ const SD = require('./js/systems-data.js');
 const SYSTEMS = SD.SYSTEMS;
 const sysOk = s => typeof s === 'string' && s !== 'wiiu' && Object.prototype.hasOwnProperty.call(SYSTEMS, s);
 // Switch files carry their title id: [0100ABCD12340000] is the game, …800 its update, other endings are DLC
+// (Switch 2: [0400…]). The Switch 2's emulators also start a dumped game: a folder with exefs/main in it.
+const dumpMain = d => {
+  const m = path.join(d, 'exefs', 'main');
+  try {
+    return fs.statSync(m).isFile() ? m : '';
+  } catch {
+    return '';
+  }
+};
 function scanSystem(sys, dir) {
   const def = SYSTEMS[sys],
     out = [],
     updates = new Set();
   if (!dir || !fs.existsSync(dir)) return out;
   const exts = def.ext.map(e => '.' + e);
+  // a dumped game: its folder is the game (its name, its title id), exefs/main is what the emulator starts
+  const dump = (d, main) => {
+    const name = path.basename(d),
+      tid = SD.tidOf(name);
+    if (tid && tid.slice(-3) !== '000') return;
+    out.push({ name: SD.titleOf(name + '.dir') || name, file: name, path: main, sys, tid, dump: true, format: def.short + ' · Folder' });
+  };
+  if (def.dumps && dumpMain(dir)) {
+    dump(dir, dumpMain(dir));
+    return out;
+  }
   const walk = (d, depth) => {
     let list = [];
     try {
@@ -1989,10 +2009,11 @@ function scanSystem(sys, dir) {
     }
     for (const e of list) {
       const p = path.join(d, e.name);
-      if (e.isDirectory() && depth < 3 && !e.name.startsWith('.')) walk(p, depth + 1);
+      if (e.isDirectory() && def.dumps && !e.name.startsWith('.') && dumpMain(p)) dump(p, dumpMain(p));
+      else if (e.isDirectory() && depth < 3 && !e.name.startsWith('.')) walk(p, depth + 1);
       else if (e.isFile() && exts.includes(path.extname(e.name).toLowerCase())) {
         const base = path.parse(e.name).name,
-          tid = sys === 'switch' ? ((base.match(/\[(0100[0-9a-f]{12})\]/i) || [])[1] || '').toLowerCase() : '';
+          tid = def.eshop ? SD.tidOf(base) : '';
         if (tid && tid.slice(-3) === '800') {
           updates.add(tid.slice(0, 13));
           continue;
@@ -2113,7 +2134,7 @@ async function findSysArt(g) {
   const def = SYSTEMS[g.sys];
   if (def.eshop) {
     for (const tid of g.tid ? [g.tid, ''] : ['']) {
-      const j = await getText(SD.eshopUrl(SD.titleOf(g.file || g.name), tid));
+      const j = await getText(SD.eshopUrl(SD.titleOf(g.file || g.name), tid, def.eshop));
       const u = j && SD.eshopPick(j, SD.titleOf(g.file || g.name), tid);
       if (u) return u;
     }

@@ -1,0 +1,203 @@
+/* CosmoU – folders (js/folders.js) and each console's own look (js/console-look.js) */
+
+/* a folder's square: its colour, a card with up to four covers on it and a folder's tab */
+.fd-art {
+  background: linear-gradient(150deg, color-mix(in srgb, var(--fc, #5aa9ff) 82%, #fff), color-mix(in srgb, var(--fc, #5aa9ff) 72%, #000)) !important;
+  display: grid !important;
+  place-items: center;
+  color: #fff;
+  overflow: hidden;
+}
+.fd-art > span,
+.fd-art > .art-name {
+  display: none !important;
+}
+.fd-mos {
+  position: relative;
+  width: 76%;
+  height: 76%;
+  margin-top: 6%;
+  box-sizing: border-box;
+  padding: 7%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 6%;
+  border-radius: 13%;
+  background: rgba(255, 255, 255, 0.24);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.4),
+    0 0.6em 1.4em rgba(0, 0, 0, 0.22);
+}
+/* the tab */
+.fd-mos::before {
+  content: '';
+  position: absolute;
+  left: 9%;
+  top: -10%;
+  width: 36%;
+  height: 11%;
+  border-radius: 0.5em 0.5em 0 0;
+  background: rgba(255, 255, 255, 0.34);
+}
+.fd-mos i {
+  min-width: 0;
+  min-height: 0;
+  border-radius: 16%;
+  background-size: cover;
+  background-position: center;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+}
+.fd-n1 i {
+  grid-column: 1 / -1;
+  grid-row: 1 / -1;
+}
+.fd-n2 i {
+  grid-row: 1 / -1;
+}
+.fd-n3 i:first-child {
+  grid-row: 1 / -1;
+}
+.fd-mos svg {
+  grid-column: 1 / -1;
+  grid-row: 1 / -1;
+  place-self: center;
+  width: 48%;
+  height: 48%;
+  opacity: 0.9;
+}
+/* the way back: the folder's colour, dimmed, an arrow */
+.fd-backart {
+  background: linear-gradient(150deg, color-mix(in srgb, var(--fc, #5aa9ff) 38%, #2b303b), #171a21) !important;
+  align-content: center;
+  gap: 4%;
+}
+.fd-arrow {
+  width: 38%;
+  height: 38%;
+  color: #fff;
+}
+.fd-cap {
+  font-weight: 700;
+  font-size: 0.95em;
+  letter-spacing: 0.01em;
+  opacity: 0.9;
+}
+
+/* colour choices (folders and consoles) */
+.fd-cols {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  max-width: 280px;
+}
+.fd-col {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--fc);
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.45);
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+.fd-col.std {
+  background: conic-gradient(#1ea7dd, #e5484d, #f29a3c, #2f9e5c, #6b5bd2, #1ea7dd);
+}
+.fd-col:hover {
+  transform: scale(1.1);
+}
+.fd-col.on {
+  box-shadow:
+    0 0 0 3px var(--surface, #fff),
+    0 0 0 5.5px var(--fc, var(--accent, #19c3e6));
+}
+.fd-col.std.on {
+  box-shadow:
+    0 0 0 3px var(--surface, #fff),
+    0 0 0 5.5px var(--text, #333);
+}
+.fd-col:focus-visible {
+  outline: 2px solid var(--ring, #19c3e6);
+  outline-offset: 4px;
+}
+
+/* choosing a console: the colour you chose on its card, a pencil to change its look */
+.cp-card {
+  position: relative;
+}
+.cp-card.cp-col .pv {
+  box-shadow: 0 0 0 3px var(--cpc);
+}
+.cp-card.cp-col b::before {
+  content: '';
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: var(--cpc);
+  vertical-align: 1px;
+}
+.cp-edit {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: rgba(10, 14, 22, 0.62);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
+  opacity: 0;
+  transform: scale(0.8);
+  transition:
+    opacity 0.18s,
+    transform 0.18s;
+  cursor: pointer;
+}
+.cp-edit svg {
+  width: 16px;
+  height: 16px;
+}
+.cp-card:hover .cp-edit,
+.cp-card:focus .cp-edit,
+.cp-card:focus-visible .cp-edit {
+  opacity: 1;
+  transform: none;
+}
+.cp-edit:hover {
+  background: rgba(10, 14, 22, 0.85);
+}
+@media (hover: none) {
+  .cp-edit {
+    opacity: 0.85;
+    transform: none;
+  }
+}
+.cp-hint2 {
+  opacity: 0.7;
+  font-size: 13px;
+}
+
+/* text fields and lists in the dark windows of the Switch interfaces: light writing on a dark field (they were dark
+   on dark) */
+body.face-n2:not(.n2-light) dialog :is(input.sel, select.sel, textarea.sel, input[type='text'], input[type='search'], select),
+body.face-nx.nx-black dialog :is(input.sel, select.sel, textarea.sel, input[type='text'], input[type='search'], select) {
+  color: #f5f7fc !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.16) !important;
+}
+body.face-n2:not(.n2-light) dialog :is(input, textarea)::placeholder,
+body.face-nx.nx-black dialog :is(input, textarea)::placeholder {
+  color: rgba(232, 238, 250, 0.45);
+}
+body.face-n2:not(.n2-light) dialog select option,
+body.face-nx.nx-black dialog select option {
+  color: #f5f7fc;
+  background: #1c1f28;
+}

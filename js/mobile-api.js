@@ -270,7 +270,7 @@
         for (const f of await filesOf(k, c.gamesDir)) {
           const base = f.name.replace(/\.[^.]+$/, ''),
             ext = f.name.split('.').pop().toLowerCase();
-          const tid = k === 'switch' ? ((base.match(/\[(0100[0-9a-f]{12})\]/i) || [])[1] || '').toLowerCase() : '';
+          const tid = SD.SYSTEMS[k].eshop ? SD.tidOf(base) : '';
           if (tid && tid.slice(-3) === '800') {
             updates.add(tid.slice(0, 13));
             continue;
@@ -344,7 +344,7 @@
       title = SD.titleOf(g.file || g.name);
     if (d.eshop) {
       for (const tid of g.tid ? [g.tid, ''] : ['']) {
-        const r = await call('fetchText', SD.eshopUrl(title, tid));
+        const r = await call('fetchText', SD.eshopUrl(title, tid, d.eshop));
         const u = r && r.ok && SD.eshopPick(r.text, title, tid);
         if (u) return u;
       }

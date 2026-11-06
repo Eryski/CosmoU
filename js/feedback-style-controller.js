@@ -213,8 +213,8 @@ function padTick(now) {
   }
   if (!busy && (open || mode === 'grid')) padScroll(open, gp0.axes[3] || 0, now);
   else pad.sT = now;
-  // the Switch's own interface has its own buttons (js/switch-face.js)
-  if (typeof nxPad === 'function' && nxPad(fire, s, open, busy, now)) {
+  // the Switch's and the Switch 2's own interfaces have their own buttons (js/switch-face.js, js/switch2-face.js)
+  if ((typeof nxPad === 'function' && nxPad(fire, s, open, busy, now)) || (typeof n2Pad === 'function' && n2Pad(fire, s, open, busy, now))) {
     requestAnimationFrame(padTick);
     return;
   }
@@ -224,6 +224,8 @@ function padTick(now) {
     else if (open) {
       // inside a window the D-pad moves between the buttons, A presses, B goes back
       if (open.id === 'dlg' && (fire.lb || fire.rb)) sxStep(fire.rb ? 1 : -1, true);
+      // choosing a console: X edits the look of the card in focus (js/console-look.js)
+      if (open.id === 'cpick' && fire.x && typeof slEditFocused === 'function') slEditFocused();
       if (fire.u || fire.d || fire.l || fire.r) padFocus(open, fire);
       if (fire.b) {
         if (open.id === 'dlg' && document.activeElement && document.activeElement.closest('.sx-main')) sxFocusNav();

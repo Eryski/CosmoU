@@ -990,6 +990,12 @@ textarea,
     mask-image: linear-gradient(transparent, #000 22px, #000 calc(100% - 150px), rgba(0, 0, 0, 0.15) calc(100% - 60px), transparent);
   }
 }
+/* a game's name sits exactly under its picture: the same width and edges as the picture and its frame
+   (it was 4px narrower on each side – Eduard) */
+body[data-mode='grid'] #grid .tile b {
+  margin-left: 0;
+  margin-right: 0;
+}
 
 /* ---- covers that are nearly square (a DS box): the whole box shows, the narrow rest is the cover itself, dimmed ---- */
 .art.fit {
@@ -1089,90 +1095,4 @@ select option:checked {
     0 3px 8px rgba(0, 0, 0, 0.3);
   pointer-events: none;
 }
-/* the wheel */
-#mkwheel {
-  position: fixed;
-  inset: 0;
-  z-index: 9000;
-  display: none;
-  place-items: center;
-  background: radial-gradient(circle, rgba(6, 12, 26, 0.55), rgba(6, 12, 26, 0.78));
-  -webkit-backdrop-filter: blur(6px);
-  backdrop-filter: blur(6px);
-}
-#mkwheel.on {
-  display: grid;
-  animation: mkin 0.22s ease-out;
-}
-@keyframes mkin {
-  from {
-    opacity: 0;
-    transform: scale(0.94);
-  }
-}
-#mkwheel .mk-ring {
-  --r: min(30vh, 30vw, 250px);
-  position: relative;
-  width: calc(var(--r) * 2 + 90px);
-  height: calc(var(--r) * 2 + 90px);
-  border-radius: 50%;
-  background: radial-gradient(circle, transparent calc(var(--r) - 44px), rgba(20, 34, 60, 0.75) calc(var(--r) - 43px), rgba(20, 34, 60, 0.75) calc(var(--r) + 44px), transparent calc(var(--r) + 45px));
-  grid-area: 1 / 1;
-}
-#mkwheel .mk-i {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 64px;
-  height: 64px;
-  margin: -32px 0 0 -32px;
-  border: 0;
-  border-radius: 50%;
-  background: var(--col);
-  color: #fff;
-  font: 800 28px / 1 var(--head, system-ui);
-  transform: translate(calc(var(--x) * var(--r)), calc(var(--y) * var(--r)));
-  box-shadow:
-    0 0 0 3px rgba(255, 255, 255, 0.35),
-    0 6px 14px rgba(0, 0, 0, 0.35);
-  cursor: pointer;
-  transition:
-    transform 0.16s ease-out,
-    box-shadow 0.16s;
-}
-#mkwheel .mk-i.mk-none {
-  background: rgba(255, 255, 255, 0.12);
-}
-#mkwheel .mk-i.sel {
-  transform: translate(calc(var(--x) * var(--r)), calc(var(--y) * var(--r))) scale(1.32);
-  box-shadow:
-    0 0 0 4px #fff,
-    0 0 0 9px color-mix(in srgb, var(--col) 60%, transparent),
-    0 10px 24px rgba(0, 0, 0, 0.45);
-}
-#mkwheel .mk-mid {
-  grid-area: 1 / 1;
-  display: grid;
-  gap: 6px;
-  max-width: calc(min(30vh, 30vw, 250px) * 1.3);
-  text-align: center;
-  color: #fff;
-  pointer-events: none;
-}
-#mkwheel .mk-mid b {
-  font: 800 30px / 1.1 var(--head, system-ui);
-}
-#mkwheel .mk-mid small {
-  font-size: 15px;
-  opacity: 0.75;
-}
-#mkwheel .mk-hint {
-  position: absolute;
-  bottom: 6vh;
-  left: 0;
-  right: 0;
-  margin: 0;
-  text-align: center;
-  color: rgba(255, 255, 255, 0.75);
-  font-size: 14px;
-}
+/* the wheel: css/marks.css */

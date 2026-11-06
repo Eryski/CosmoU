@@ -36,6 +36,8 @@ async function waitFor(fn, ms) {
 // every console: a game, the emulator's program name (its rule decides the arguments) and what the emulator must get
 const CONSOLES = [
   ['switch', 'Super Mario Odyssey [0100000000010000][v0].nsp', 'eden.exe', 'row', g => ['-f', '-g', g]],
+  // the Switch 2: an emulator of the Eden family (Eglantine), a game with its Switch 2 title id
+  ['switch2', 'Mario Kart World [0400c3f00006e000].xci', 'eglantine.exe', 'row', g => ['-f', '-g', g]],
   ['wii', 'Super Mario Galaxy (USA).rvz', 'Dolphin.exe', 'channels', g => ['-b', '-e', g]],
   ['gamecube', 'Super Mario Sunshine (USA).rvz', 'Dolphin.exe', 'discs', g => ['-b', '-e', g]],
   ['3ds', 'Mario Kart 7.3ds', 'azahar.exe', 'dual', g => [g]],
@@ -165,7 +167,7 @@ async function portableTest() {
     await E(() => load());
     await w.waitForTimeout(1500);
     const av = await E(() => sysAvail());
-    ok('all eleven consoles (no Wii U without Cemu)', JSON.stringify(av) === JSON.stringify(CONSOLES.map(c => c[0])), av);
+    ok('all twelve consoles (no Wii U without Cemu)', JSON.stringify(av) === JSON.stringify(CONSOLES.map(c => c[0])), av);
     const sw = await E(async () => (await api.scan()).filter(g => g.sys).map(g => [g.sys, g.name, g.format]));
     ok('every console’s game found (a Switch update is no game)', Array.isArray(sw) && sw.length === CONSOLES.length && sw.some(g => g[0] === 'switch' && /Update/.test(g[2])), sw);
     await shot('01-start');
@@ -331,12 +333,13 @@ $s = [System.Windows.Forms.Screen]::FromHandle($h).Bounds
         lay: $('#sw').dataset.lay,
         n: list().filter(g => g.kind !== 'app').length,
         sw: $('#sys').hidden ? 'hidden' : $('#sys').textContent,
-        // the Switch has its own interface (js/switch-face.js), the others their home screen in the CosmoU window
-        face: typeof nx === 'object' && nx.on,
+        // the Switch and the Switch 2 have their own interfaces (js/switch-face.js, js/switch2-face.js), the others
+        // their home screen in the CosmoU window
+        face: (typeof nx === 'object' && nx.on) || (typeof n2 === 'object' && n2.on),
       }));
       ok(
         k + ': its home screen, its theme, its games',
-        lk.sys === k && (k === 'switch' ? lk.face : lk.mode === 'chome' && lk.lay === lay && !lk.face) && lk.theme === lk.want && lk.n === 1,
+        lk.sys === k && (/^switch2?$/.test(k) ? lk.face : lk.mode === 'chome' && lk.lay === lay && !lk.face) && lk.theme === lk.want && lk.n === 1,
         lk,
       );
       // the keyboard is the controller here: right, down to the round buttons, right, Escape back
@@ -344,10 +347,10 @@ $s = [System.Windows.Forms.Screen]::FromHandle($h).Bounds
         await w.keyboard.press(key);
         await w.waitForTimeout(120);
       }
-      const z = await E(() => (nx.on ? [nx.zone, nx.a] : [chZone, chApp]));
+      const z = await E(() => (nx.on ? [nx.zone, nx.a] : n2.on ? [n2.zone === 'dock' ? 'apps' : n2.zone, n2.a] : [chZone, chApp]));
       await w.keyboard.press('Escape');
       await w.waitForTimeout(150);
-      const z2 = await E(() => (nx.on ? nx.zone : chZone));
+      const z2 = await E(() => (nx.on ? nx.zone : n2.on ? n2.zone : chZone));
       ok(k + ': down to the round buttons, Escape (B) back', z[0] === 'apps' && z[1] === 1 && (z2 === 'games' || z2 === 'row'), [z, z2]);
       await shot('02-' + k);
       // start the game with Enter (A)
@@ -357,11 +360,16 @@ $s = [System.Windows.Forms.Screen]::FromHandle($h).Bounds
         chAll = false;
         sel = list().find(g => g.kind !== 'app').name;
         render();
-        // (the Switch's interface: the frame on that game)
+        // (the Switch's and the Switch 2's interfaces: the frame on that game)
         if (nx.on) {
           nx.zone = 'row';
           nx.i = Math.max(0, [...$('#nxrow').children].findIndex(t => t.dataset.g === sel));
           nxSelUi();
+        }
+        if (n2.on) {
+          n2.zone = 'row';
+          n2.i = Math.max(0, [...$('#n2row').children].findIndex(t => t.dataset.g === sel));
+          n2SelUi();
         }
       });
       await w.waitForTimeout(300);
@@ -388,12 +396,12 @@ $s = [System.Windows.Forms.Screen]::FromHandle($h).Bounds
       return Array.isArray(arts) && arts.filter(x => x[1]).length >= CONSOLES.length;
     }, 150000);
     const have = Array.isArray(arts) ? arts.filter(x => x[1]).map(x => x[0]) : [];
-    ok('covers: Switch from the eShop', have.includes('switch'), arts);
-    ok('covers: the other consoles from libretro (at least nine of ten)', have.filter(k => k !== 'switch').length >= 9, arts);
-    if (!have.includes('switch') || have.length < CONSOLES.length)
+    ok('covers: Switch and Switch 2 from the eShop', have.includes('switch') && have.includes('switch2'), arts);
+    ok('covers: the other consoles from libretro (at least nine of ten)', have.filter(k => !/^switch2?$/.test(k)).length >= 9, arts);
+    if (!have.includes('switch') || !have.includes('switch2') || have.length < CONSOLES.length)
       ok('cover log', true, log.join('').split('\n').filter(l => /cover/.test(l)).slice(-20).join('\n'));
     await E(() => load());
-    for (const k of ['switch', 'wii', 'gamecube', '3ds', 'n64', 'gba']) {
+    for (const k of ['switch', 'switch2', 'wii', 'gamecube', '3ds', 'n64', 'gba']) {
       await E(s => setSystem(s), k);
       await w.waitForTimeout(1300);
       await shot('03-covers-' + k);

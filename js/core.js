@@ -202,7 +202,8 @@ function toast(t, ms = 3500, type, action) {
   n.onclick = kill;
   setTimeout(kill, Math.max(2500, ms));
 }
-const cur = () => games.find(g => g.name === sel);
+// (a folder of the library is chosen like a game – js/folders.js)
+const cur = () => games.find(g => g.name === sel) || (typeof fdItem === 'function' ? fdItem(sel) : null) || undefined;
 // ---------- favorites, sorting and the "show" filter (menu: js/menus.js) ----------
 let favs = new Set(),
   showFilter = 'all',
@@ -297,8 +298,20 @@ function gridSel(name) {
   nameRoll(t, true);
   if (typeof hoverOff === 'function') hoverOff();
   heroFill();
-  t.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  gridShow(t);
   return true;
+}
+// the chosen game in view: a row that isn't fully visible comes to the top, so the row above goes out of view
+// completely – no names of the row above peeking out under the banner (Eduard)
+function gridShow(t) {
+  const gr = $('#grid'),
+    cs = getComputedStyle(gr),
+    top = parseFloat(cs.scrollPaddingTop) || 0,
+    bot = parseFloat(cs.scrollPaddingBottom) || 0,
+    r = t.getBoundingClientRect(),
+    g = gr.getBoundingClientRect();
+  if (r.top >= g.top + top - 2 && r.bottom <= g.bottom - bot + 2) return;
+  t.scrollIntoView({ block: 'start', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
 }
 // how many tiles are next to each other in the grid (up and down move by that)
 function gridCols() {

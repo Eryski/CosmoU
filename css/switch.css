@@ -130,6 +130,10 @@ body.face-nx {
     inset 0 0 0 calc(var(--u) * 3) rgba(255, 255, 255, 0.18),
     var(--nx-shadow);
 }
+#nx .nx-user.long {
+  font-size: calc(var(--u) * 10.5);
+  letter-spacing: -0.04em;
+}
 .nx-user.here {
   box-shadow:
     inset 0 0 0 calc(var(--u) * 3) var(--nx-sel),
@@ -153,8 +157,9 @@ body.face-nx {
   opacity: 1;
 }
 .nx-user .nx-tip {
-  left: 0;
-  translate: 0 0;
+  /* the name in the middle under its circle (Eduard) */
+  left: 50%;
+  translate: -50% 0;
 }
 .nx-stat {
   flex: none;
@@ -323,6 +328,34 @@ body.face-nx {
   border-radius: calc(var(--u) * 6);
   pointer-events: none;
   z-index: 1;
+}
+/* a favorite: a star in the top right corner */
+.nx-t .nx-fav {
+  position: absolute;
+  top: calc(var(--u) * 10);
+  right: calc(var(--u) * 10);
+  width: calc(var(--u) * 30);
+  height: calc(var(--u) * 30);
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-style: normal;
+  font-size: calc(var(--u) * 17);
+  line-height: 1;
+  color: #ffc443;
+  background: rgba(0, 0, 0, 0.5);
+  box-shadow:
+    0 0 0 calc(var(--u) * 2) rgba(255, 255, 255, 0.9),
+    0 calc(var(--u) * 2) calc(var(--u) * 6) rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+  z-index: 2;
+}
+.nx-grid .nx-t .nx-fav {
+  top: calc(var(--u) * 7);
+  right: calc(var(--u) * 7);
+  width: calc(var(--u) * 26);
+  height: calc(var(--u) * 26);
+  font-size: calc(var(--u) * 15);
 }
 .nx-t .mkb {
   top: calc(var(--u) * 10);

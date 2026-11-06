@@ -1,0 +1,467 @@
+/* CosmoU – the wheel of marks (js/marks.js): a ring of twelve pieces around the game. The chosen piece steps out and
+   glows, a pointer turns to it, the game in the middle wears the mark before you choose it. It opens with a turn,
+   and when you mark, a ring of the colour spreads out and the wheel folds into the game. */
+
+#mkwheel {
+  --w: min(78vh, 78vw, 640px);
+  --sel: #f2b632;
+  --rot: 0deg;
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  display: none;
+  place-items: center;
+  color: #fff;
+  font-family: 'Segoe UI Variable Display', 'Segoe UI', 'SF Pro Display', 'Inter', system-ui, sans-serif;
+  user-select: none;
+  -webkit-user-select: none;
+}
+#mkwheel.on {
+  display: grid;
+}
+#mkwheel.closing {
+  pointer-events: none;
+}
+
+/* behind: the room goes dark and takes the game's colours */
+.mk-bg {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: rgba(5, 8, 16, 0.64);
+  -webkit-backdrop-filter: blur(14px) saturate(1.2);
+  backdrop-filter: blur(14px) saturate(1.2);
+  animation: mkFade 0.3s ease both;
+}
+.mk-bg::before {
+  content: '';
+  position: absolute;
+  inset: -15%;
+  background: var(--cover, none) center / cover;
+  filter: blur(70px) saturate(1.7);
+  opacity: 0.32;
+}
+.mk-bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 30%, rgba(0, 0, 0, 0.55));
+}
+@keyframes mkFade {
+  from {
+    opacity: 0;
+  }
+}
+
+/* the wheel */
+.mk-stage {
+  position: relative;
+  width: var(--w);
+  height: var(--w);
+  display: grid;
+  place-items: center;
+  animation: mkIn 0.6s cubic-bezier(0.2, 0.9, 0.25, 1.2) both;
+}
+@keyframes mkIn {
+  from {
+    opacity: 0;
+    transform: scale(0.7) rotate(-30deg);
+  }
+}
+.mk-glow {
+  position: absolute;
+  inset: 18%;
+  border-radius: 50%;
+  background-color: var(--sel);
+  filter: blur(calc(var(--w) * 0.12));
+  opacity: 0.38;
+  transition: background-color 0.35s;
+}
+.mk-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.mk-plate {
+  fill: rgba(14, 18, 30, 0.6);
+  stroke: rgba(255, 255, 255, 0.08);
+  stroke-width: 1;
+}
+.mk-seg {
+  fill: var(--col);
+  fill-opacity: 0.8;
+  stroke: rgba(255, 255, 255, 0.16);
+  stroke-width: 1;
+  cursor: pointer;
+  transform-box: view-box;
+  transform-origin: 0 0;
+  transition:
+    transform 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.4),
+    fill-opacity 0.2s,
+    stroke 0.2s,
+    stroke-width 0.2s;
+  animation: mkSeg 0.55s cubic-bezier(0.2, 0.9, 0.3, 1.25) both;
+  animation-delay: calc(0.05s + var(--k, 0) * 0.028s);
+}
+.mk-seg.mk-s-none {
+  fill: #ffffff;
+  fill-opacity: 0.13;
+}
+.mk-seg.sel {
+  fill-opacity: 1;
+  stroke: rgba(255, 255, 255, 0.95);
+  stroke-width: 2.5;
+  transform: translate(calc(var(--tx) * 11px), calc(var(--ty) * 11px)) scale(1.03);
+}
+.mk-seg.mk-s-none.sel {
+  fill-opacity: 0.3;
+}
+@keyframes mkSeg {
+  from {
+    opacity: 0;
+    transform: scale(0.55) rotate(-24deg);
+  }
+}
+.mk-rim {
+  fill: rgba(9, 12, 20, 0.78);
+  stroke: rgba(255, 255, 255, 0.1);
+  stroke-width: 1.5;
+}
+.mk-needle {
+  transform-box: view-box;
+  transform-origin: 0 0;
+  transform: rotate(var(--rot));
+  transition: transform 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.35);
+}
+.mk-needle path {
+  fill: var(--sel);
+  stroke: rgba(255, 255, 255, 0.9);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  transition: fill 0.3s;
+}
+
+/* a light that runs slowly round the ring, and a soft sheen towards its outer edge */
+.mk-shine {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  pointer-events: none;
+  background:
+    radial-gradient(circle, transparent 63%, rgba(255, 255, 255, 0.14) 100%),
+    conic-gradient(from 0deg, transparent 0 78%, rgba(255, 255, 255, 0.2) 88%, transparent 97%);
+  -webkit-mask: radial-gradient(circle, transparent calc(var(--w) * 0.279), #000 calc(var(--w) * 0.282), #000 calc(var(--w) * 0.446), transparent calc(var(--w) * 0.449));
+  mask: radial-gradient(circle, transparent calc(var(--w) * 0.279), #000 calc(var(--w) * 0.282), #000 calc(var(--w) * 0.446), transparent calc(var(--w) * 0.449));
+  mix-blend-mode: screen;
+  animation: mkTurn 7s linear infinite;
+}
+@keyframes mkTurn {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* the signs on the pieces (and buttons for the keyboard focus) */
+.mk-btns {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+#mkwheel .mk-i {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: calc(var(--w) * 0.11);
+  height: calc(var(--w) * 0.11);
+  margin: calc(var(--w) * -0.055) 0 0 calc(var(--w) * -0.055);
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #fff;
+  font-family: inherit;
+  font-weight: 800;
+  font-size: calc(var(--w) * 0.056);
+  line-height: 1;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+  transform: translate(calc(var(--x) * var(--w) / 2), calc(var(--y) * var(--w) / 2));
+  transition: transform 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.4);
+  animation: mkFade 0.4s ease both;
+  animation-delay: calc(0.2s + var(--k, 0) * 0.028s);
+  outline: none;
+}
+#mkwheel .mk-i.sel {
+  transform: translate(calc(var(--x) * var(--w) / 2 * 1.07), calc(var(--y) * var(--w) / 2 * 1.07)) scale(1.22);
+}
+
+/* the middle: the game, wearing the mark */
+.mk-mid {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  justify-items: center;
+  width: calc(var(--w) * 0.44);
+  text-align: center;
+  pointer-events: none;
+}
+.mk-cover {
+  position: relative;
+  width: calc(var(--w) * 0.21);
+  height: calc(var(--w) * 0.21);
+  border-radius: calc(var(--w) * 0.04);
+  box-shadow: 0 calc(var(--w) * 0.02) calc(var(--w) * 0.05) rgba(0, 0, 0, 0.5);
+  animation: mkCover 0.6s cubic-bezier(0.2, 0.9, 0.3, 1.3) 0.1s both;
+}
+@keyframes mkCover {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+}
+.mk-art {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  overflow: hidden;
+  background-size: cover;
+  background-position: center;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: calc(var(--w) * 0.05);
+}
+.mk-art.fit {
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-color: #000;
+}
+.mk-art .art-name {
+  display: none;
+}
+.mk-cover::after {
+  content: '';
+  position: absolute;
+  inset: calc(var(--w) * -0.013);
+  border-radius: calc(var(--w) * 0.052);
+  border: calc(var(--w) * 0.009) solid var(--sel);
+  box-shadow: 0 0 calc(var(--w) * 0.04) color-mix(in srgb, var(--sel) 55%, transparent);
+  transition:
+    border-color 0.3s,
+    box-shadow 0.3s;
+}
+.mk-cover[data-k='none']::after {
+  border-style: dashed;
+  border-color: rgba(255, 255, 255, 0.4);
+  box-shadow: none;
+}
+.mk-badge {
+  position: absolute;
+  right: calc(var(--w) * -0.03);
+  top: calc(var(--w) * -0.03);
+  width: calc(var(--w) * 0.068);
+  height: calc(var(--w) * 0.068);
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-style: normal;
+  font-weight: 800;
+  font-size: calc(var(--w) * 0.036);
+  color: #fff;
+  background: var(--sel);
+  box-shadow:
+    0 0 0 calc(var(--w) * 0.005) rgba(255, 255, 255, 0.95),
+    0 calc(var(--w) * 0.008) calc(var(--w) * 0.02) rgba(0, 0, 0, 0.4);
+  transform: scale(0);
+  transition:
+    transform 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.6),
+    background 0.3s;
+}
+.mk-badge:not(:empty) {
+  transform: scale(1);
+}
+.mk-name {
+  margin-top: calc(var(--w) * 0.034);
+  font-size: calc(var(--w) * 0.05);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+.mk-name.swap {
+  animation: mkName 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes mkName {
+  from {
+    opacity: 0;
+    transform: translateY(calc(var(--w) * 0.012));
+  }
+}
+.mk-game {
+  margin-top: calc(var(--w) * 0.008);
+  max-width: 100%;
+  font-size: calc(var(--w) * 0.026);
+  opacity: 0.72;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* marking: a ring of the colour spreads out, the wheel folds into the game */
+.mk-ripple {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: calc(var(--w) * 0.3);
+  height: calc(var(--w) * 0.3);
+  margin: calc(var(--w) * -0.15) 0 0 calc(var(--w) * -0.15);
+  border-radius: 50%;
+  border: calc(var(--w) * 0.008) solid var(--sel);
+  opacity: 0;
+  pointer-events: none;
+}
+#mkwheel.apply .mk-ripple {
+  animation: mkRipple 0.55s ease-out both;
+}
+@keyframes mkRipple {
+  from {
+    opacity: 0.95;
+    transform: scale(0.6);
+  }
+  to {
+    opacity: 0;
+    transform: scale(3.4);
+  }
+}
+/* … and little sparks fly out */
+.mk-burst {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+.mk-burst i {
+  position: absolute;
+  left: calc(var(--w) * -0.009);
+  top: calc(var(--w) * -0.009);
+  width: calc(var(--w) * 0.018 * var(--s, 1));
+  height: calc(var(--w) * 0.018 * var(--s, 1));
+  border-radius: 50%;
+  background: var(--sel);
+  box-shadow: 0 0 calc(var(--w) * 0.02) var(--sel);
+  opacity: 0;
+}
+#mkwheel.apply .mk-burst i {
+  animation: mkBurst 0.6s cubic-bezier(0.1, 0.7, 0.3, 1) both;
+}
+@keyframes mkBurst {
+  0% {
+    opacity: 1;
+    transform: rotate(var(--a)) translateX(calc(var(--w) * 0.1)) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: rotate(var(--a)) translateX(calc(var(--w) * var(--d))) scale(0.3);
+  }
+}
+#mkwheel.closing .mk-bg {
+  animation: mkFadeOut 0.24s ease both;
+}
+#mkwheel.closing .mk-stage {
+  animation: mkOut 0.24s ease-in both;
+}
+#mkwheel.apply .mk-bg {
+  animation: mkFadeOut 0.45s ease 0.08s both;
+}
+#mkwheel.apply .mk-stage {
+  animation: mkApply 0.5s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+#mkwheel.closing .mk-hint {
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+@keyframes mkFadeOut {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes mkOut {
+  to {
+    opacity: 0;
+    transform: scale(0.86) rotate(14deg);
+  }
+}
+@keyframes mkApply {
+  0% {
+    transform: none;
+  }
+  28% {
+    transform: scale(1.04);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.5) rotate(-8deg);
+  }
+}
+
+/* what the buttons do, with the controller's own names */
+.mk-hint {
+  position: absolute;
+  bottom: max(4vh, 18px);
+  left: 0;
+  right: 0;
+  margin: 0;
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  font-size: 15px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.84);
+  animation: mkFade 0.4s ease 0.25s both;
+}
+.mk-hint span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.mk-hint i {
+  min-width: 26px;
+  height: 26px;
+  padding: 0 6px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  font-style: normal;
+  font-weight: 800;
+  font-size: 13px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #0b0d12;
+}
+
+@media (hover: hover) {
+  .mk-seg:hover:not(.sel) {
+    fill-opacity: 0.92;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mk-stage,
+  .mk-seg,
+  #mkwheel .mk-i,
+  .mk-cover,
+  .mk-name.swap,
+  #mkwheel.apply .mk-ripple,
+  #mkwheel.closing .mk-stage,
+  #mkwheel.apply .mk-stage {
+    animation: none;
+  }
+  .mk-needle,
+  .mk-seg,
+  #mkwheel .mk-i {
+    transition: none;
+  }
+  .mk-shine {
+    animation: none;
+  }
+}

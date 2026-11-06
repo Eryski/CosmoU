@@ -9,6 +9,7 @@
 const NX_COL = {
   wiiu: '#1ea7dd',
   switch: '#e5484d',
+  switch2: '#3a3f4b',
   wii: '#8e9aa6',
   gamecube: '#6b5bd2',
   '3ds': '#d23a52',
@@ -21,7 +22,7 @@ const NX_COL = {
   vb: '#c81d1d',
 };
 // the consoles as round "users" in the top left: a short name in each
-const NX_ABBR = { wiiu: 'Wii U', switch: 'Switch', wii: 'Wii', gamecube: 'GC', '3ds': '3DS', ds: 'DS', n64: '64', snes: 'SNES', nes: 'NES', gb: 'GB', gba: 'GBA', vb: 'VB' };
+const NX_ABBR = { wiiu: 'Wii U', switch: 'Switch', switch2: 'Switch 2', wii: 'Wii', gamecube: 'GC', '3ds': '3DS', ds: 'DS', n64: '64', snes: 'SNES', nes: 'NES', gb: 'GB', gba: 'GBA', vb: 'VB' };
 const nxS = (d, f) =>
   f
     ? `<svg viewBox="0 0 24 24" fill="currentColor">${d}</svg>`
@@ -153,18 +154,25 @@ function nxTheme() {
 new MutationObserver(() => nx.on && nxTheme()).observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
 
 // ---------- the games ----------
-const nxGames = () =>
+const nxGamesRaw = () =>
   games.filter(g => (g.kind === 'app' ? !g.appSys || g.appSys === 'all' || g.appSys === curSys : sysOf(g) === curSys));
-// Home: the last played first (like the Switch), the others after them A–Z
+// with folders (js/folders.js): the folders of this console instead of the games in them – or the open folder's games
+const nxGames = () => (typeof fdView === 'function' ? fdView(nxGamesRaw()) : nxGamesRaw());
+const nxFd = l => (typeof fdFirst === 'function' ? fdFirst(l) : l);
+// Home: the last played first (like the Switch), the others after them A–Z (folders first)
 const nxHomeList = () =>
-  nxGames()
-    .slice()
-    .sort((a, b) => (plays[b.name] || 0) - (plays[a.name] || 0) || a.name.localeCompare(b.name));
+  nxFd(
+    nxGames()
+      .slice()
+      .sort((a, b) => (plays[b.name] || 0) - (plays[a.name] || 0) || a.name.localeCompare(b.name)),
+  );
 const nxSec = g => (typeof secOf === 'function' ? secOf(g.name) : 0);
 const NX_SORT = { recent: 'Recently played', most: 'Most played', az: 'Title', fav: 'Favorites first' };
-function nxAllList() {
+const nxAllList = () => nxFd(nxAllList0());
+function nxAllList0() {
   const q = nx.q.trim().toLowerCase();
-  let l = nxGames().filter(g => !q || g.name.toLowerCase().includes(q) || (g.tid && String(g.tid).toLowerCase().includes(q)));
+  // (a search looks through every game, also the ones in folders)
+  let l = (q ? nxGamesRaw() : nxGames()).filter(g => !q || g.name.toLowerCase().includes(q) || (g.tid && String(g.tid).toLowerCase().includes(q)));
   const az = (a, b) => a.name.localeCompare(b.name);
   if (nx.sort === 'az') return l.sort(az);
   if (nx.sort === 'most') return l.sort((a, b) => nxSec(b) - nxSec(a) || (plays[b.name] || 0) - (plays[a.name] || 0) || az(a, b));
@@ -298,28 +306,27 @@ function nxRender() {
   nxHints();
   nxPads();
 }
-// the consoles you have, like the users of a Switch: the one on screen has the frame colour
+// the other consoles you have, like the users of a Switch: a circle each with its short name and, under it, its name.
+// The console on screen has no circle – you are on it already (Eduard)
 function nxUsers() {
   const box = $('#nxusers'),
-    av = sysAvail(),
-    key = av.join() + '|' + curSys;
+    av = sysAvail().filter(k => k !== curSys),
+    key = av.map(k => k + ':' + (SYS[k] ? SYS[k].name + (SYS[k].col || '') : '')).join() + '|' + curSys;
   if (box.dataset.k !== key) {
     box.dataset.k = key;
     // up to eight, like the users of a Switch; with more consoles the last circle lists the rest
     let shown = av;
-    if (av.length > 8) {
-      shown = av.slice(0, 7);
-      if (!shown.includes(curSys)) shown[6] = curSys;
-    }
+    if (av.length > 8) shown = av.slice(0, 7);
     const kids = shown.map(k => {
-      const b = document.createElement('button');
-      b.className = 'nx-user' + (k === curSys ? ' here' : '');
+      const b = document.createElement('button'),
+        ab = NX_ABBR[k] || (SYS[k] ? SYS[k].name : k).replace(/[^\p{L}\p{N}]/gu, '').slice(0, 2).toUpperCase();
+      b.className = 'nx-user' + (ab.length > 6 ? ' long' : '');
       b.dataset.s = k;
-      b.style.setProperty('--c', NX_COL[k] || NX_COL[nxLookOf(k)] || '#8a8f98');
-      b.textContent = NX_ABBR[k] || (SYS[k] ? SYS[k].name : k).replace(/[^\p{L}\p{N}]/gu, '').slice(0, 2).toUpperCase();
+      b.style.setProperty('--c', (SYS[k] && SYS[k].col) || NX_COL[k] || NX_COL[nxLookOf(k)] || '#8a8f98');
+      b.textContent = ab;
       const tip = document.createElement('span');
       tip.className = 'nx-tip';
-      tip.textContent = k === curSys ? (SYS[k] ? SYS[k].name : k) : 'Switch to ' + (SYS[k] ? SYS[k].name : k);
+      tip.textContent = SYS[k] ? SYS[k].name : k;
       b.append(tip);
       b.title = tip.textContent;
       b.onclick = () => {
@@ -352,8 +359,8 @@ function nxUsers() {
   }
   nxSelUi();
 }
-// the circle of the console on screen (where Up from the games lands)
-const nxHere = () => Math.max(0, [...$('#nxusers').children].findIndex(b => b.dataset.s === curSys));
+// where Up from the games lands: the first console (the one on screen has no circle)
+const nxHere = () => 0;
 function nxUserGo(k) {
   if (k === curSys) return nxSnd('bump');
   nxSnd('page');
@@ -372,6 +379,14 @@ function nxTile(g, k) {
   const n = document.createElement('em');
   n.textContent = g.name;
   t.append(a, n);
+  // a favorite wears a star in its corner (Eduard)
+  if (favs.has(g.name)) {
+    const f = document.createElement('i');
+    f.className = 'nx-fav';
+    f.textContent = '★';
+    f.setAttribute('aria-label', 'Favorite');
+    t.append(f);
+  }
   return t;
 }
 function nxDrawHome() {
@@ -385,7 +400,7 @@ function nxDrawHome() {
     row = $('#nxrow'),
     shown = l.slice(0, 12),
     many = l.length > 12,
-    sig = shown.map(g => g.name + (g.cover || '')).join('|') + '|' + l.length;
+    sig = shown.map(g => g.name + (g.cover || '') + (favs.has(g.name) ? '★' : '') + (g.kind === 'folder' ? g.format + g.col : '')).join('|') + '|' + l.length;
   if (sig !== nx.sig) {
     nx.sig = sig;
     row.replaceChildren();
@@ -447,7 +462,7 @@ function nxDrawAll() {
   const grid = $('#nxgrid'),
     l = nxAllList();
   $('#nxsortl').textContent = (nx.q ? l.length + ' found · ' : '') + 'Sorted by ' + NX_SORT[nx.sort].toLowerCase();
-  const sig = 'all|' + l.map(g => g.name).join('|');
+  const sig = 'all|' + l.map(g => g.name + (favs.has(g.name) ? '★' : '') + (g.kind === 'folder' ? g.format + g.col : '')).join('|');
   if (grid.dataset.sig !== sig) {
     grid.dataset.sig = sig;
     grid.replaceChildren();
@@ -507,7 +522,7 @@ function nxSelUi(scroll) {
     // the keyboard focus follows the frame (screen readers read what is chosen) – not while typing a search
     const f = document.activeElement;
     if (nx.on && f !== el && el.focus && !nx.ptr && !(f && f.id === 'nxq') && !document.querySelector('dialog[open]')) el.focus({ preventScroll: true });
-    if (el.dataset.g) nxPick(games.find(g => g.name === el.dataset.g));
+    if (el.dataset.g) nxPick(gameOf(el.dataset.g));
   }
   nxHints();
 }
@@ -520,7 +535,8 @@ function nxHints() {
   else if (nx.pop) h.push(['b', 'Back'], ['a', 'OK']);
   else if (nx.scr === 'home') {
     if (nx.zone === 'row' && $('#nxrow .nx-t.nx-sel[data-g]')) h.push(['plus', 'Options'], ['a', 'Start']);
-    else if (nx.zone === 'top') h.push(['a', 'Switch']);
+    // (not "Switch": the word is a console's name here – Eduard)
+    else if (nx.zone === 'top') h.push(['b', 'Back'], ['a', 'Go there']);
     else h.push(['a', 'OK']);
   } else if (nx.scr === 'all') h.push(['y', 'Sort'], ['b', 'Back'], ['plus', 'Options'], ['a', 'Start']);
   else if (nx.scr === 'game') h.push(['b', 'Back'], ['a', 'OK']);
@@ -622,7 +638,7 @@ function nxMove(d) {
     else if (d === 'd') nx.ai = Math.min(n - 1, nx.ai + cols);
     else if (d === 'u') {
       if (nx.ai - cols >= 0) nx.ai -= cols;
-      else if ($('#nxusers').children.length > 1) {
+      else if ($('#nxusers').children.length) {
         nx.zone = 'top';
         nx.u = nxHere();
       }
@@ -666,7 +682,7 @@ function nxA() {
     if (!t) return;
     if (t.classList.contains('nx-allt')) return nxShow('all');
     if (t.classList.contains('nx-empty')) return t.click();
-    const g = games.find(x => x.name === t.dataset.g);
+    const g = gameOf(t.dataset.g);
     if (g) nxStart(g, t);
   } else if (nx.scr === 'all') {
     if (nx.zone === 'top') {
@@ -675,7 +691,7 @@ function nxA() {
     }
     const c = $('#nxgrid').children[nx.ai],
       t = c && c.querySelector('.nx-t'),
-      g = t && games.find(x => x.name === t.dataset.g);
+      g = t && gameOf(t.dataset.g);
     if (g) nxStart(g, t);
   } else if (nx.scr === 'game') {
     const b = $('#nxgnav').children[nx.gi];
@@ -690,6 +706,8 @@ function nxB() {
     nxSnd('back');
     return nxRender();
   }
+  // in a folder: B leaves it first
+  if (typeof fdOpen !== 'undefined' && fdOpen && nx.zone !== 'top' && nx.zone !== 'apps') return fdLeave();
   if (nx.scr === 'all') {
     nx.scr = 'home';
     nx.zone = 'row';
@@ -725,12 +743,12 @@ function nxY() {
 const nxChosen = () => {
   if (nx.scr === 'home' && nx.zone === 'row') {
     const t = $('#nxrow').children[nx.i];
-    return t && t.dataset.g ? games.find(g => g.name === t.dataset.g) : null;
+    return t && t.dataset.g ? gameOf(t.dataset.g) : null;
   }
   if (nx.scr === 'all' && nx.zone !== 'top') {
     const c = $('#nxgrid').children[nx.ai],
       t = c && c.querySelector('.nx-t');
-    return t ? games.find(g => g.name === t.dataset.g) : null;
+    return t ? gameOf(t.dataset.g) : null;
   }
   if (nx.scr === 'game') return nx.game;
   return null;
@@ -750,6 +768,8 @@ function nxStart(g, el) {
 // ---------- a game's page: everything for this game, the Switch way ----------
 function nxOpenGame(g) {
   if (!g) return;
+  // a folder: its own small window (js/folders.js)
+  if (/^folder/.test(g.kind || '')) return openDetail(g);
   nxPick(g);
   if (nx.scr !== 'game') nx.back = nx.scr;
   nx.game = g;
@@ -768,6 +788,7 @@ function nxGameItems(g) {
     { id: 'fav', icon: 'star', label: fav ? 'Remove from favorites' : 'Add to favorites', run: () => (toggleFav(g), nxSnd(fav ? 'off' : 'on')) },
     typeof markWheel === 'function' && { id: 'mark', icon: 'mark', label: m ? 'Mark: ' + m.label : 'Mark with a colour', run: () => markWheel(g) },
     app && window.api && { id: 'edit', icon: 'edit', label: 'Edit app', run: () => openApp(g) },
+    typeof fdMoveMenu === 'function' && { id: 'group', icon: 'all', label: fdNameOf(g) ? 'Folder: ' + fdNameOf(g) : 'Put in a folder', run: () => fdMoveMenu(g) },
     g.path && !IS_MOBILE && window.api && { id: 'folder', icon: 'folder', label: 'Show in folder', run: () => api.showInFolder(g.path) },
     {
       id: 'copy',
@@ -783,7 +804,7 @@ function nxGameItems(g) {
   ].filter(Boolean);
 }
 function nxDrawGame() {
-  const g = nx.game && games.find(x => x.name === nx.game.name);
+  const g = nx.game && gameOf(nx.game.name);
   if (!g) {
     nx.scr = 'home';
     return nxRender();
@@ -874,6 +895,9 @@ function nxGamePane() {
   } else if (it.id === 'mark') {
     para('A colour or a small sign around the game’s square, so you find it quickly. Hold the left stick on a game to choose one.');
     btn('Choose a mark', it.run, true);
+  } else if (it.id === 'group') {
+    para(fdNameOf(g) ? 'In the folder “' + fdNameOf(g) + '”. Move it to another folder or take it out.' : 'Folders keep a console tidy – mods, tools, games to finish. A folder is a square of its own on Home.');
+    btn(fdNameOf(g) ? 'Change folder' : 'Put in a folder', it.run, true);
   } else if (it.id === 'folder') {
     para(String(g.path || ''));
     btn('Show in folder', it.run, true);
@@ -1260,7 +1284,7 @@ addEventListener(
     e.preventDefault();
     e.stopImmediatePropagation();
     const t = e.target.closest('[data-g]'),
-      g = t && games.find(x => x.name === t.dataset.g);
+      g = t && gameOf(t.dataset.g);
     if (g) nxOpenGame(g);
   },
   true,

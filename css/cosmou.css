@@ -8871,6 +8871,11 @@ html {
   --k2: #6c727a;
   --k3: #b6bbc2;
 }
+.box3d[data-case='switch2'] {
+  --k1: #e3122d;
+  --k2: #8f0718;
+  --k3: #ff3d52;
+}
 .box3d[data-case] .bx-b {
   background: linear-gradient(160deg, var(--k1), var(--k2));
 }
@@ -8881,6 +8886,7 @@ html {
   color: color-mix(in srgb, var(--k2) 30%, #000);
 }
 .box3d[data-case='switch'] .bx-s span,
+.box3d[data-case='switch2'] .bx-s span,
 .box3d[data-case='gamecube'] .bx-s span {
   color: #fff;
 }

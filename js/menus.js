@@ -296,6 +296,12 @@ function gameMenu(g, at) {
         hint: 'F',
         fn: () => toggleFav(g),
       },
+      typeof fdMoveMenu === 'function' && {
+        label: fdNameOf(g) ? 'Folder: ' + fdNameOf(g) + '…' : 'Put in a folder…',
+        icon: 'folder',
+        sub: 'Mods, tools, games to finish …',
+        fn: () => setTimeout(() => fdMoveMenu(g, at), 30),
+      },
       typeof markWheel === 'function' && {
         label: typeof markOf === 'function' && markOf(g.name) ? 'Mark: ' + markOf(g.name).label + '…' : 'Mark with a colour…',
         icon: 'mark',
@@ -452,14 +458,14 @@ const KEYS = [
     ],
   ],
   [
-    'Switch',
+    'Switch and Switch 2',
     [
       ['← → ↑ ↓', 'Move the frame'],
       ['Enter', 'Start · OK'],
       ['Esc', 'Back'],
       ['+ · I', 'The game’s page'],
-      ['S · Y', 'All Software · sort'],
-      ['/', 'Search in All Software'],
+      ['S · Y', 'All Software · sort (Switch 2: Library · next filter)'],
+      ['/', 'Search'],
       ['Q', 'Quick Settings'],
       ['T', 'Themes'],
       ['PageUp · PageDown', 'Console'],
@@ -510,12 +516,12 @@ function openKeys() {
         grp.append(r);
       }
       sec.append(grp);
-      if (h === 'Switch') sec.dataset.sw = '1';
+      if (h === 'Switch and Switch 2') sec.dataset.sw = '1';
       box.append(sec);
     }
   // the Switch's keys only with a Switch (its own interface)
   const sw = box.querySelector('[data-sw]');
-  if (sw) sw.hidden = !(typeof nxLookOf === 'function' && sysAvail().some(k => nxLookOf(k) === 'switch'));
+  if (sw) sw.hidden = !(typeof nxLookOf === 'function' && sysAvail().some(k => /^switch2?$/.test(nxLookOf(k))));
   blip('open');
   $('#keysdlg').showModal();
 }
