@@ -98,8 +98,8 @@ render = function () {
   return r;
 };
 const _gridSelRw = gridSel;
-gridSel = function (name) {
-  if (!_gridSelRw(name)) return false;
+gridSel = function (name, still) {
+  if (!_gridSelRw(name, still)) return false;
   try {
     rwHero();
   } catch (e) {

@@ -280,7 +280,7 @@ function heroFill() {
 }
 // choosing another game in the grid: only the selection and the banner change – the tiles stay
 // (building every tile new made the whole grid blink, like reloading a web page)
-function gridSel(name) {
+function gridSel(name, still) {
   const gr = $('#grid');
   if (mode !== 'grid' || !gr || gr.hidden) return false;
   const t = [...gr.querySelectorAll('.tile')].find(x => x.dataset.g === name);
@@ -298,7 +298,8 @@ function gridSel(name) {
   nameRoll(t, true);
   if (typeof hoverOff === 'function') hoverOff();
   heroFill();
-  gridShow(t);
+  // (still: the grid is being scrolled by hand – the view stays where it is)
+  if (!still) gridShow(t);
   return true;
 }
 // the chosen game in view: a row that isn't fully visible comes to the top, so the row above goes out of view
@@ -312,6 +313,39 @@ function gridShow(t) {
     g = gr.getBoundingClientRect();
   if (r.top >= g.top + top - 2 && r.bottom <= g.bottom - bot + 2) return;
   t.scrollIntoView({ block: 'start', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+}
+// scrolling the grid without moving the selection (right stick): the selection follows – the tile in the same
+// column that is fully in view, nearest to the one chosen before. Otherwise the next press of the left stick
+// went on from the old game far above and jumped all the way back (Eduard). It never scrolls by itself.
+function gridFollow() {
+  const gr = $('#grid');
+  if (mode !== 'grid' || !gr || gr.hidden) return;
+  const on = gr.querySelector('.tile.on');
+  if (!on) return;
+  const cs = getComputedStyle(gr),
+    g = gr.getBoundingClientRect(),
+    top = g.top + (parseFloat(cs.scrollPaddingTop) || 0),
+    bot = g.bottom - (parseFloat(cs.scrollPaddingBottom) || 0),
+    // how much of a tile is in the free part of the grid (between the banner and the buttons at the bottom)
+    seen = r => Math.max(0, Math.min(r.bottom, bot) - Math.max(r.top, top)) / Math.max(1, Math.min(r.height, bot - top)),
+    r0 = on.getBoundingClientRect();
+  if (seen(r0) > 0.98) return;
+  const x0 = r0.left + r0.width / 2;
+  let best = null,
+    bd = -Infinity;
+  for (const t of gr.querySelectorAll('.tile')) {
+    const r = t.getBoundingClientRect(),
+      s = seen(r);
+    if (s < 0.5) continue;
+    // the most of it in view, then the same column, then the nearest row
+    const d = Math.round(s * 10) * 1e6 - Math.abs(r.left + r.width / 2 - x0) * 100 - Math.abs(r.top - r0.top);
+    if (d > bd) (bd = d), (best = t);
+  }
+  // only better than the one chosen now: no flicker between two rows that are both half in view
+  if (best && best.dataset.g && best.dataset.g !== sel && seen(best.getBoundingClientRect()) > seen(r0) + 0.15) {
+    sel = best.dataset.g;
+    gridSel(sel, true);
+  }
 }
 // how many tiles are next to each other in the grid (up and down move by that)
 function gridCols() {

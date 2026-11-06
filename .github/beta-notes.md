@@ -27,6 +27,7 @@ Thanks for testing! 💙 Please don't share this file. Report bugs **[here](../.
 
 ### Fixed
 - **Grid:** moving down brings the chosen row to the top – no more names of the row above peeking out under the banner. The names under the games now have exactly the width of their pictures and frames. (Thanks Eduard!)
+- **Grid with a controller:** scrolling with the right stick now takes the selection along – the left stick goes on from where you scrolled to instead of jumping all the way back up. (Thanks Eduard!)
 - **Switch:** favorites show a star on their square again (Home and All Software). (Thanks Eduard!)
 - **Switch and Switch 2 (dark):** text fields and lists in Settings and the other windows are readable (they were dark on dark).
 

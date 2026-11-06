@@ -576,8 +576,8 @@ render = function () {
   if (mode === 'grid' && view === 'recent') recentGroups();
 };
 const _gridSelM = gridSel;
-gridSel = function (name) {
-  if (!_gridSelM(name)) return false;
+gridSel = function (name, still) {
+  if (!_gridSelM(name, still)) return false;
   const g = cur();
   if (g) {
     coverMeta(g, -1, 0, $('#hmeta'));

@@ -148,6 +148,8 @@ function padScroll(open, ry, now) {
   const v = Math.sign(ry) * Math.pow((Math.abs(ry) - 0.22) / 0.78, 1.6) * Math.max(900, pad.sBox.clientHeight * 2);
   pad.sBox.scrollTop += v * dt;
   document.body.classList.add('padnav');
+  // in the Grid the selection goes along with the scrolling (Eduard)
+  if (!open && typeof gridFollow === 'function') gridFollow();
 }
 function padTick(now) {
   const gp0 = [...(navigator.getGamepads ? navigator.getGamepads() : [])].find(Boolean);
