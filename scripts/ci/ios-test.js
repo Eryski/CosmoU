@@ -322,10 +322,10 @@ setTimeout(() => {
   ok('two Switch games', Array.isArray(sg) && sg.length === 2 && sg.some(g => g[1] === 'melonx:0100000000010000'), sg);
   await E(() => load().then(() => setSystem('switch')));
   // (a slow simulator needs a moment for the switch)
-  await waitFor(() => curSys === 'switch' && mode === 'chome' && document.querySelectorAll('#swrow .sw-t').length >= 3, 15000);
-  const swl = await E(() => ({ sys: curSys, mode, lay: $('#sw').dataset.lay, tiles: document.querySelectorAll('#swrow .sw-t').length, theme: style }));
-  // (apps added earlier in this test are shown with every console, so there can be more than the two games and “All games”)
-  ok('Switch Home on iPhone and iPad', swl && swl.sys === 'switch' && swl.mode === 'chome' && swl.lay === 'row' && swl.tiles >= 3, swl);
+  await waitFor(() => curSys === 'switch' && nx.on && document.querySelectorAll('#nxrow .nx-t[data-g]').length >= 2, 15000);
+  const swl = await E(() => ({ sys: curSys, face: nx.on, shell: getComputedStyle($('.page')).display, tiles: document.querySelectorAll('#nxrow .nx-t[data-g]').length, theme: style }));
+  // the Switch's own interface (apps added earlier in this test are shown with every console, so there can be more than the two games)
+  ok('Switch Home on iPhone and iPad (its own interface)', swl && swl.sys === 'switch' && swl.face && swl.shell === 'none' && swl.tiles >= 2, swl);
   await shot('04b-switch-home');
   await E(() => {
     const g = list().find(x => x.sys === 'switch' && /Odyssey/.test(x.name));

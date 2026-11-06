@@ -1,6 +1,6 @@
 // CosmoU – your own consoles: a console with a name you choose ("Mods", "Tools", "PC ports" …) for apps only.
 // It borrows the look of a real console (its home screen, theme and sounds) and shows the apps you add to it.
-// Settings → Cemu & Games → Add another console → "Your own console…". (Idea: Eduard)
+// Settings → Games & Consoles → Add another console → "Your own console…". (Idea: Eduard)
 const OWN_LOOKS = ['switch', 'wii', 'gamecube', '3ds', 'ds', 'n64', 'snes', 'nes', 'gb', 'gba', 'vb'];
 let osysFirst = true;
 const osysList = () => ((cfg && cfg.ownSystems) || []).filter(o => o && /^own-/.test(o.id));

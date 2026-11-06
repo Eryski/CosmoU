@@ -74,22 +74,45 @@ async function pickFolder() {
 function ind() {
   const b = document.querySelector('nav button.on'),
     i = $('#ind');
+  if (!b) return;
   i.style.left = b.offsetLeft + 'px';
   i.style.width = b.offsetWidth + 'px';
+}
+// the dock: three places (Library, Favorites, Recently played) and two windows (Themes, Settings).
+// Favorites is the library with the favorites filter, so the Sort & filter menu and the dock always agree.
+const dockAt = () => (view === 'recent' ? 'recent' : showFilter === 'fav' ? 'fav' : 'lib');
+function dockSync() {
+  const at = dockAt();
+  let moved = false;
+  document.querySelectorAll('nav button[data-v]').forEach(x => {
+    const on = x.dataset.v === at;
+    if (on !== x.classList.contains('on')) moved = true;
+    x.classList.toggle('on', on);
+    if (['lib', 'fav', 'recent'].includes(x.dataset.v)) x.setAttribute('aria-current', on ? 'page' : 'false');
+  });
+  if (moved) ind();
 }
 document.querySelectorAll('nav button').forEach(
   b =>
     (b.onclick = () => {
-      if (b.dataset.v === 'set') {
-        openSettings();
-        return;
-      }
-      if (view === b.dataset.v) return;
+      const v = b.dataset.v;
+      if (v === 'set') return openSettings();
+      if (v === 'themes') return typeof openThemes === 'function' ? openThemes() : openSettings('look');
+      if (dockAt() === v) return;
       blip('page');
       document.querySelectorAll('nav button').forEach(x => x.classList.toggle('on', x === b));
       ind();
       withVT(() => {
-        view = b.dataset.v;
+        view = v === 'recent' ? 'recent' : 'lib';
+        // Favorites switches the filter on; Library and Recently played switch it off again
+        const f = v === 'fav' ? 'fav' : showFilter === 'fav' ? 'all' : showFilter;
+        if (f !== showFilter) {
+          showFilter = f;
+          try {
+            localStorage.setItem('cosmou.show', f);
+          } catch {}
+          if (typeof sortUi === 'function') sortUi();
+        }
         render();
         for (const t of [$('#grid'), $('#cf')]) {
           t.classList.remove('swap');

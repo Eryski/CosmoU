@@ -5,6 +5,16 @@
 Thanks for testing! 💙 Please don't share this file. Report bugs **[here](../../issues/new/choose)** or in `#🐞-bug-reports` on Discord.
 
 ### What's new to test
+**The new look – one CosmoU, and a Switch that feels like a Switch**
+- **🎮 The Switch has its own interface** – with the Switch on screen, CosmoU looks and works like a Switch: **Home** with your last played games in one row (A starts the first one right away), round buttons below (All Software, Play Activity, Themes, Controllers, Consoles, System Settings, Power), **All Software** with sorting (**Y**) and search (**/**), a page for each game (**+**), **Quick Settings** on the Home button (or **Q**), *Basic White* and *Basic Black*, its own clicks. No Wii U Home, no Plaza, no buddies there. With a Wii U as well: the circles at the top left (or **L / R**) switch the whole window. Settings → Appearance → Switch → *Its own interface* turns it off.
+- **🎯 Nintendo controllers** – A is the button with the A on it (on the right, like on a Switch), everywhere in CosmoU. PlayStation controllers show ✕ ○ □ △ in the legend.
+- **🧭 One dock** – Library · Favorites · Recently played | Themes · Settings (keys **L**, **\***, **R**, **T**, **,**). Favorites and the themes are one click away.
+- **🕹️ Controller legend** – while you use a controller, a small line above the dock shows what A, Y, X, LB / RB and Home do right now.
+- **🪟 The same rules in every window** – the same corners, buttons and rows everywhere, headings without capitals, calmer shadows. Details: Play, Favorite, **Mark** and **⋯ More** side by side, the tools as one list, Quick quality as one switch.
+- **⚙️ Settings in two groups** – *Games & Consoles* (was “Cemu & Games”), Appearance, Sound & Music, Controllers & TV, Saves & Data – then **Wii U · Cemu**: Graphics, Overlay, Buddies & Plaza. Without a Wii U they are not shown.
+- **Buddies live on the Wii U** – the other consoles start without the buddy greeting.
+
+**Also new in this beta**
 - **🎮 Pictures and music in the Quick Menu** – Quick Menu (Home / Guide button, or Q) → **Sound** → **Pictures · …** and **Music · …** for the console you're on: add, change or remove them with the controller.
 - **🖼️ A new picture on every visit** – add several pictures to a console (up to 30); every time you go to that console (and at every start of CosmoU) the next one shows up. Settings → Appearance has **Add picture…**, **Next** and **Remove this one** too.
 
@@ -16,7 +26,7 @@ Thanks for testing! 💙 Please don't share this file. Report bugs **[here](../.
 - **🌐 Every console on one page** – the last card when choosing a console (or Sort & filter → **Every console**): the games of all your consoles together, in the look of the console you're on. **Favorites** now show the favorites of every console.
 - **🎮 Back to CosmoU** – when a game ends, CosmoU comes to the front again. **L + D-pad Down + Select** closes the game you're playing and brings you back (on Windows also while the game has the focus).
 - **🏷️ Marks** – click the **left stick** to make a game a favorite; **hold** it for a wheel of colours and signs (⚙ system app, ?, !). The colour lines the game's cover in every view. Also with **K** or “Mark…” in a game's menu.
-- **🧩 Your own console** – Settings → Cemu & Games → Add another console → **Your own console (apps)…**: a console with your name (Mods, Tools, PC ports …) in the look of a real one, for apps only.
+- **🧩 Your own console** – Settings → Games & Consoles → Add another console → **Your own console (apps)…**: a console with your name (Mods, Tools, PC ports …) in the look of a real one, for apps only.
 - **📂 Click “CosmoU” at the top left** to open the CosmoU folder (settings, covers, music, pictures, themes – `CosmoU-data` next to the portable .exe).
 
 ### Fixed
@@ -36,6 +46,9 @@ Thanks for testing! 💙 Please don't share this file. Report bugs **[here](../.
 - **Grid:** moving with the controller or the arrow keys no longer makes the whole grid blink like a reloaded page – and up / down go a row.
 
 ### Please check
+- **The Switch interface:** does it feel like a Switch? Start a game, open a game's page (+), All Software, Quick Settings (Home) – with a Switch / Pro controller and with an Xbox controller.
+- **Switching consoles** with the circles at the top left or L / R: does the whole window change cleanly, and back?
+- Anything in the new windows that is harder to find than before?
 - Does the Quick Menu work well with your controller (open the menus, add a picture, go back)?
 - Do the pictures change when you switch consoles – and stay the same console's pictures?
 - Your PC ports with **Window: Full screen** – does the game fill the screen, and does it still work after alt-tab?

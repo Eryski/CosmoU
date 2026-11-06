@@ -158,16 +158,18 @@ function padTick(now) {
   const b = i => !!(gp0.buttons[i] && gp0.buttons[i].pressed),
     ax = gp0.axes[0] || 0,
     ay = gp0.axes[1] || 0,
-    rx = gp0.axes[2] || 0;
+    rx = gp0.axes[2] || 0,
+    // a Nintendo controller: the buttons by the letters printed on them (A is on the right there, js/ds.js)
+    nin = typeof dsPadKind === 'function' && dsPadKind(gp0) === 'nintendo';
   const s = {
     l: b(14) || ax < -0.55,
     r: b(15) || ax > 0.55,
     u: b(12) || ay < -0.55,
     d: b(13) || ay > 0.55,
-    a: b(0),
-    b: b(1),
-    x: b(2),
-    y: b(3),
+    a: b(nin ? 1 : 0),
+    b: b(nin ? 0 : 1),
+    x: b(nin ? 3 : 2),
+    y: b(nin ? 2 : 3),
     st: b(9),
     sl: b(8),
     lb: b(4),
@@ -201,6 +203,8 @@ function padTick(now) {
   const fire = {};
   for (const k in s) fire[k] = hit(k);
   pad.prev = s;
+  // a controller is in use: its legend shows (js/ds.js)
+  if (typeof dsPadUsed === 'function' && Object.keys(fire).some(k => fire[k])) dsPadUsed(gp0);
   const open = [...document.querySelectorAll('dialog[open]')].pop(),
     busy = $('#launch').classList.contains('on') || $('#setup').classList.contains('on') || $('#mapdlg').open;
   if (open !== pad.dlg) {
@@ -209,6 +213,11 @@ function padTick(now) {
   }
   if (!busy && (open || mode === 'grid')) padScroll(open, gp0.axes[3] || 0, now);
   else pad.sT = now;
+  // the Switch's own interface has its own buttons (js/switch-face.js)
+  if (typeof nxPad === 'function' && nxPad(fire, s, open, busy, now)) {
+    requestAnimationFrame(padTick);
+    return;
+  }
   if (!busy && fire.hm && typeof openQuick === 'function') openQuick();
   else if (!busy) {
     if (typeof mkIsOpen === 'function' && mkIsOpen()) markPad(fire, gp0);

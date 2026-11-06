@@ -2,6 +2,9 @@
 
 A free Windows, Linux, macOS, Android and iPhone/iPad launcher for the [Cemu](https://cemu.info) Wii U emulator with a Wii U-inspired home menu.
 
+- One dock for the places and windows you use most: Library, Favorites, Recently played, Themes and Settings – and while you use a controller, a small legend shows what its buttons do
+- The Switch has its own interface: a Home with your last played games in one row and round buttons below, All Software (sort and search), a page for each game, Quick Settings on the Home button, Basic White and Basic Black and its own sounds – with a Wii U as well, the consoles at the top left (or L / R) switch the whole window (Settings → Appearance → Switch turns it off)
+- Nintendo controllers work by the letters on their buttons (A on the right, like on a Switch)
 - Quick Menu (Q or the controller's Home button): last played games, quick switches and every window in one place
 - Favorites, sort & filter (A–Z, Z–A, recently played, most played; all, favorites, Wii U games, apps) and a game menu on right-click
 - Game details with play time, last played, sessions and first played; press ? for every shortcut
@@ -14,7 +17,7 @@ A free Windows, Linux, macOS, Android and iPhone/iPad launcher for the [Cemu](ht
 - Add other apps (emulators, PC games) to your library
 - Controller navigation (D-pad / stick, A to play, B to go back)
 - Automatic Cemu download and setup, automatic covers
-- One Settings window with categories (Cemu & Games, Appearance, Graphics, Sound & Music, Overlay, Controllers & TV, Buddies & Plaza, Saves & Data, About), a search across all settings and full controller navigation
+- One Settings window with categories (Games & Consoles, Appearance, Sound & Music, Controllers & TV, Saves & Data, and for the Wii U: Graphics, Overlay, Buddies & Plaza, then About), a search across all settings and full controller navigation
 - Per-game quality and global graphics, audio and overlay settings
 - Controller type, API and profiles, plus a button mapper: set A, B, sticks and D-pad for an Xbox controller, an SDL controller or the keyboard right in CosmoU, without opening Cemu
 - Built-in feedback form that fills in your Cemu and Windows / Linux / macOS version
@@ -55,7 +58,7 @@ Notes:
 - The AppImage needs FUSE 2. If it doesn't start, install `libfuse2` (Ubuntu 22.04) or `libfuse2t64` (Ubuntu 24.04+), or run it with `--appimage-extract-and-run`.
 - Flatpak Cemu: give it access to your games folder (for example with Flatseal, or `flatpak override --user --filesystem=/path/to/games info.cemu.Cemu`), otherwise Cemu can't open the games CosmoU starts.
 - Controllers: on Linux Cemu uses SDL. Set your controller up once in Cemu (Input settings → API "SDLController"), then the button mapper in CosmoU can change its buttons.
-- Steam Deck: download the AppImage in Desktop Mode, make it executable (right-click → Properties → Permissions), and use **Add to Steam** in CosmoU (Settings → Cemu & Games → Steam) so it shows up in Game Mode. TV mode fits the Deck screen.
+- Steam Deck: download the AppImage in Desktop Mode, make it executable (right-click → Properties → Permissions), and use **Add to Steam** in CosmoU (Settings → Games & Consoles → Steam) so it shows up in Game Mode. TV mode fits the Deck screen.
 - Distros that block user namespaces (Ubuntu 24.04 with AppArmor) are handled: the launcher turns Chromium's sandbox off only when it can't work.
 
 ### macOS

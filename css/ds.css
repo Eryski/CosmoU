@@ -1,0 +1,487 @@
+/* CosmoU – design system v2: the last layer, loaded after cosmou.css and rework.css.
+   It sets the rules every window follows; the themes still choose the colours.
+   - One main action at a time: Play is filled with the theme's accent, everything else is quiet.
+   - Glass only on what floats (the header controls, the dock, the windows); inside a window: plain rows.
+   - Corners by size: 10 small · 12 buttons, fields and rows · 18 groups and cards · 26 windows · round for pills.
+   - Headings in windows are short words in sentence case, never shouting capitals.
+   - One focus ring for keyboard and controller, hover only tints, the open thing has the accent.
+   The Wii U (Wii U Look, Home Menu, Plaza, buddies) keeps its own world; the Switch has its own UI (css/switch.css). */
+
+/* ===================================================================
+   1. Tokens (the names from rework.css, calmer values)
+   =================================================================== */
+:root {
+  --r-sm: 10px;
+  --r-md: 12px;
+  --r-lg: 18px;
+  --r-xl: 26px;
+  --h-sm: 34px;
+  --h-md: 40px;
+  --h-lg: 48px;
+  --h-bar: 44px;
+  /* calmer shadows: less spread, softer */
+  --e-1: 0 1px 2px rgba(0, 0, 0, 0.05), 0 6px 14px -10px rgba(0, 0, 0, 0.22);
+  --e-2: 0 16px 34px -22px rgba(0, 0, 0, 0.38);
+  --e-3: 0 34px 80px -40px rgba(0, 0, 0, 0.52);
+  --fs-label: 12.5px;
+}
+
+/* ===================================================================
+   2. Type: headings inside windows are calm words, not capitals
+   =================================================================== */
+body:not(.pix) :is(.sh, .cm-h, #df, .dst small, #det .qs h3, .mpgrp, .upsec, .ggh) {
+  text-transform: none;
+  letter-spacing: 0;
+  font-family: var(--head);
+  font-size: var(--fs-label);
+  font-weight: 600;
+}
+body:not(.pix) .sh {
+  color: var(--text-2);
+  margin: var(--sp-6) var(--sp-1) var(--sp-2);
+}
+body:not(.pix) .sx-bd .pane > .sh:first-child,
+body:not(.pix) .qm-col > .sh {
+  margin-top: var(--sp-1);
+}
+body:not(.pix) #df {
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+}
+body:not(.pix) .ggh {
+  font-size: var(--fs-sm);
+  color: var(--text-2);
+}
+
+/* ===================================================================
+   3. Header: one height, one gap, the same pill for every control
+   =================================================================== */
+header {
+  gap: var(--sp-2);
+  padding: var(--sp-5) 0 var(--sp-4);
+}
+header .brand {
+  margin-right: auto;
+  line-height: 1.1;
+}
+header .brand small {
+  margin-top: 3px;
+}
+header :is(.search, .tool, .vt, .sysw) {
+  height: var(--h-bar);
+}
+header .vt {
+  padding: 4px;
+}
+header .vt button {
+  height: calc(var(--h-bar) - 8px);
+  padding: 0 var(--sp-4);
+  font-size: var(--fs-md);
+}
+header #vi {
+  top: 4px;
+  bottom: 4px;
+}
+header .tool {
+  padding: 0 var(--sp-4);
+  font-size: var(--fs-md);
+}
+header .qmb {
+  width: var(--h-bar);
+  padding: 0;
+  display: grid;
+  place-items: center;
+}
+header .search {
+  padding: 0 var(--sp-4);
+}
+header .sysw {
+  margin-right: var(--sp-1);
+}
+
+/* ===================================================================
+   4. The dock: where you are (Library, Favorites, Recently played) | windows (Themes, Settings)
+   =================================================================== */
+nav.glass {
+  bottom: 20px;
+  padding: 6px;
+  gap: 2px;
+  align-items: center;
+}
+nav.glass button {
+  height: var(--h-bar);
+  padding: 0 var(--sp-5);
+  font-size: var(--fs-md);
+  gap: var(--sp-2);
+}
+nav.glass #ind {
+  top: 6px;
+  bottom: 6px;
+}
+nav .dk-sep {
+  flex: none;
+  width: 1px;
+  height: 22px;
+  margin: 0 var(--sp-2);
+  background: currentColor;
+  opacity: 0.16;
+  color: var(--ink);
+}
+/* the windows on the right side of the dock never look "open" like a place */
+nav button:is([data-v='themes'], [data-v='set']) {
+  opacity: 0.8;
+}
+nav button:is([data-v='themes'], [data-v='set']):hover {
+  opacity: 1;
+}
+nav button:not(.on):hover {
+  opacity: 0.95;
+}
+@media (max-width: 1080px) {
+  nav.glass button {
+    padding: 0 var(--sp-4);
+  }
+}
+/* narrow windows: icons only (the name is in the tooltip) – the opposite of before, where the icons went */
+@media (max-width: 900px) {
+  nav .nic {
+    display: inline-grid !important;
+  }
+  nav.glass button {
+    padding: 0 var(--sp-4);
+  }
+  nav.glass button > :not(.nic) {
+    display: none;
+  }
+  nav.glass button .lbl {
+    display: none;
+  }
+}
+nav.glass button .lbl {
+  white-space: nowrap;
+}
+
+/* ===================================================================
+   5. The controller legend: what the buttons do right now (only while a controller is used, not in TV mode)
+   =================================================================== */
+#padleg {
+  position: fixed;
+  left: 50%;
+  bottom: 86px;
+  translate: -50% 8px;
+  z-index: 5;
+  display: flex;
+  gap: var(--sp-1);
+  padding: 5px;
+  border-radius: var(--r-pill);
+  font: 600 var(--fs-sm) / 1 var(--head);
+  color: var(--text);
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  box-shadow:
+    0 0 0 1px var(--line),
+    var(--e-2);
+  -webkit-backdrop-filter: blur(14px) saturate(1.4);
+  backdrop-filter: blur(14px) saturate(1.4);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity var(--t-2),
+    translate var(--t-2) var(--ease);
+}
+body.padon:not(.tv):not(.wuhome) #padleg.on {
+  opacity: 1;
+  translate: -50% 0;
+}
+#padleg span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px 4px 4px;
+  white-space: nowrap;
+}
+#padleg i {
+  min-width: 22px;
+  height: 22px;
+  padding: 0 5px;
+  border-radius: 11px;
+  display: grid;
+  place-items: center;
+  font: 800 11px/1 var(--head);
+  font-style: normal;
+  color: var(--surface);
+  background: var(--text);
+}
+
+
+/* ===================================================================
+   6. Windows: the same corner, padding, close button and footer everywhere
+   =================================================================== */
+dialog {
+  border-radius: var(--r-xl);
+}
+dialog::backdrop {
+  background: color-mix(in srgb, var(--bg, #9fc6da) 30%, rgba(10, 20, 30, 0.28));
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+.dx {
+  top: 18px;
+  right: 18px;
+  width: 36px;
+  height: 36px;
+}
+/* no spinning: the close button only tints */
+.dx:hover {
+  transform: none;
+  background: color-mix(in srgb, var(--ink) 14%, transparent);
+}
+.dx:active {
+  transform: scale(0.94);
+}
+/* buttons inside windows: one height, one corner */
+dialog .btn {
+  min-height: var(--h-md);
+  border-radius: var(--r-md);
+  font-weight: 600;
+}
+dialog .btn.main,
+dialog .btn.pri {
+  min-height: var(--h-md);
+}
+dialog .grp .set .btn,
+dialog .sv .btn {
+  min-height: var(--h-sm);
+  padding: 0 var(--sp-4);
+  font-size: var(--fs-sm);
+}
+/* the same row everywhere: name and one line of help on the left, the control on the right */
+.grp {
+  border-radius: var(--r-lg);
+}
+.grp .set {
+  min-height: 60px;
+  gap: var(--sp-4);
+}
+.grp .set .lbl strong {
+  font-weight: 600;
+}
+.grp .set .lbl small {
+  line-height: 1.4;
+}
+
+/* ===================================================================
+   7. Game details: who it is, what you do (Play first), then calm rows
+   =================================================================== */
+#det {
+  width: min(780px, 95vw);
+}
+#det .in.det {
+  gap: var(--sp-5);
+}
+.dhead {
+  align-items: flex-start;
+}
+#det #dt {
+  font-size: clamp(24px, 3vw, 32px);
+  line-height: 1.12;
+  letter-spacing: -0.02em;
+  margin: 2px 0 var(--sp-3);
+}
+#det .dmain {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-top: var(--sp-1);
+}
+#det #dplay {
+  min-width: 160px;
+  height: var(--h-lg);
+  font-size: 17px;
+}
+#det .dmain .btn {
+  height: var(--h-lg);
+  min-height: var(--h-lg);
+  border-radius: var(--r-pill);
+}
+/* the small round buttons next to Play: mark and the game's menu */
+#det .dmain .dico {
+  width: var(--h-lg);
+  padding: 0;
+  display: inline-grid;
+  place-items: center;
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--line);
+  color: var(--text);
+}
+#det .dmain .dico:hover {
+  background: var(--fill);
+}
+#det .dmain .dico svg {
+  width: 20px;
+  height: 20px;
+}
+#det .dmain .dico.marked {
+  box-shadow: inset 0 0 0 2px var(--mark, var(--line));
+}
+/* the tools: one list of rows, like Settings (not a row of tiles) */
+#det .dtools {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 4px;
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+#det .dtools:not(:has(.dtl:not([hidden]))) {
+  display: none;
+}
+#det .dtl {
+  width: 100%;
+  min-height: 54px;
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--r-md);
+  background: transparent;
+  box-shadow: none;
+  text-align: left;
+  position: relative;
+}
+#det .dtl:hover {
+  background: var(--fill);
+}
+#det .dtl::after {
+  content: '›';
+  margin-left: auto;
+  padding-left: var(--sp-3);
+  font-size: 20px;
+  line-height: 1;
+  color: var(--text-2);
+  opacity: 0.55;
+}
+#det .dtl > span {
+  flex: 1;
+  min-width: 0;
+}
+#det .dtl b {
+  font-size: var(--fs-md);
+  font-weight: 600;
+}
+#det .dtl small {
+  font-size: var(--fs-sm);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+}
+#det .dtl:not([hidden]) ~ .dtl:not([hidden])::before {
+  content: '';
+  position: absolute;
+  left: 58px;
+  right: 12px;
+  top: 0;
+  height: 1px;
+  background: var(--line);
+}
+#det .sv {
+  border-radius: var(--r-lg);
+}
+/* quick quality: one segmented control */
+#det .qs .qg {
+  gap: 4px;
+  padding: 4px;
+  border-radius: var(--r-lg);
+  background: var(--fill);
+}
+#det .qs .q {
+  border: 0;
+  border-radius: var(--r-md);
+  background: transparent;
+  box-shadow: none;
+  padding: var(--sp-2) var(--sp-3);
+}
+#det .qs .q:hover {
+  transform: none;
+  background: color-mix(in srgb, var(--surface) 70%, transparent);
+}
+#det .qs .q.on {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--accent) 55%, transparent),
+    var(--e-1);
+}
+#det .qs .q.on small {
+  color: var(--text-2);
+}
+
+/* ===================================================================
+   8. Settings: the categories in groups – everything for every console first, then the Wii U's own
+   =================================================================== */
+.sx-nav .sx-gh {
+  margin: var(--sp-4) 10px var(--sp-1);
+  font: 600 var(--fs-xs) / 1.2 var(--head);
+  color: var(--text-2);
+  opacity: 0.85;
+}
+.sx-nav .sx-gh:first-child {
+  margin-top: 0;
+}
+.sx-nav button {
+  min-height: 40px;
+}
+/* the active category: one clear accent; focus inside the bar: the inner ring only */
+.sx-nav button.on::before {
+  display: none;
+}
+
+/* ===================================================================
+   9. Quick Menu: the same rows as everywhere, the games as a calm shelf
+   =================================================================== */
+.qm-top {
+  align-items: center;
+}
+.qm-col {
+  border-radius: var(--r-lg);
+}
+.qmr {
+  border-radius: var(--r-md);
+}
+#qmrh {
+  margin-top: var(--sp-4);
+}
+
+/* ===================================================================
+   10. Menus and notes
+   =================================================================== */
+#cmenu .cm-in {
+  border-radius: var(--r-lg);
+}
+#cmenu .cm-i {
+  border-radius: var(--r-md);
+}
+#notes .note {
+  border-radius: var(--r-lg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #padleg {
+    transition: none;
+  }
+}
+
+/* without a Wii U the Wii U's own categories are not there (and the Switch has its own Settings look) */
+body:is(.no-wiiu, .face-nx) .sx-nav :is(button, .sx-gh)[data-g='wiiu'] {
+  display: none;
+}
+/* save data and updates: one card with two rows */
+#det #dsv:not([hidden]) + #dup:not([hidden]) {
+  margin-top: calc(-1 * var(--sp-5));
+}
+/* without a Wii U (and on the Switch's own interface) the "Cemu is ready" card is not there */
+body:is(.no-wiiu, .face-nx) #sxstat .st:first-child {
+  display: none;
+}
+body:is(.no-wiiu, .face-nx) #sxstat {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}

@@ -461,6 +461,8 @@ miiNext = function (m, now) {
 function buddyHello() {
   const b = buddies[0];
   if (!b || !lsGet('hello', true) || (window.api && api.launchPlay)) return;
+  // the buddies live on the Wii U: the other consoles (and the Switch's own interface) start without them
+  if (typeof curSys === 'string' && curSys !== 'wiiu') return;
   if (document.querySelector('dialog[open]') || $('#setup').classList.contains('on')) return;
   const h = new Date().getHours(),
     hi = h < 5 ? 'Up late?' : h < 12 ? 'Good morning!' : h < 18 ? 'Hi, welcome back!' : 'Good evening!',

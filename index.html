@@ -6,6 +6,8 @@
     <title>CosmoU</title>
     <link rel="stylesheet" href="css/cosmou.css" />
     <link rel="stylesheet" href="css/rework.css" />
+    <link rel="stylesheet" href="css/ds.css" />
+    <link rel="stylesheet" href="css/switch.css" />
   </head>
   <body>
     <svg class="defs" aria-hidden="true">
@@ -197,10 +199,12 @@
     <div class="wiibar" aria-hidden="true">
       <div class="wclk" id="wclk"><b></b><small></small></div>
     </div>
-    <nav class="glass pill">
-      <span id="ind"></span> <button data-v="lib" class="on">Library</button><button data-v="recent">Recently played</button
+    <nav class="glass pill" id="dock" aria-label="CosmoU">
+      <span id="ind"></span> <button data-v="lib" class="on">Library</button><button data-v="fav">Favorites</button
+      ><button data-v="recent">Recently played</button><i class="dk-sep" aria-hidden="true"></i><button data-v="themes">Themes</button
       ><button data-v="set">Settings</button>
     </nav>
+    <div id="padleg" aria-hidden="true"></div>
     <dialog id="det" class="glass" aria-labelledby="dt">
       <div class="in det">
         <button class="dx" id="dx" aria-label="Close" title="Close (Esc)">
@@ -226,8 +230,9 @@
             <div class="acts dmain">
               <button class="glass pill play dark" id="dplay" autofocus>Play</button
               ><button class="btn dfav" id="dfav" aria-pressed="false">
-                <span class="st">☆</span><span class="lb">Favorite</span>
-              </button>
+                <span class="st">☆</span><span class="lb">Favorite</span></button
+              ><button class="btn dico" id="dmark" aria-label="Mark with a colour" title="Mark with a colour (K)"></button
+              ><button class="btn dico" id="dmore" aria-label="More for this game" title="More (X)"></button>
             </div>
           </div>
         </div>
@@ -309,11 +314,11 @@
             <button class="btn ghost" id="rst" hidden>Reset to Cemu’s values</button>
           </header>
           <div class="bd sx-bd" id="sxbd">
-            <!-- Cemu & Games -->
+            <!-- Games & Consoles -->
             <div class="pane" data-c="general">
-              <div class="sx-ph"><b>Cemu &amp; Games</b></div>
+              <div class="sx-ph"><b>Games &amp; Consoles</b></div>
               <div class="sx-stat" id="sxstat"></div>
-              <h3 class="sh">Cemu</h3>
+              <h3 class="sh">Wii U · Cemu</h3>
               <div class="grp">
                 <div class="set" data-k="emulator install download version update manual exe">
                   <div class="lbl"><strong>Cemu</strong><small id="pc">Not installed</small></div>
@@ -349,7 +354,7 @@
                 </div>
               </div>
               <div id="sysgrp">
-                <h3 class="sh">Other systems</h3>
+                <h3 class="sh">Other consoles</h3>
                 <div class="grp" id="sysrows"></div>
               </div>
               <h3 class="sh">Covers</h3>
@@ -621,6 +626,20 @@
               <div class="grp" id="c_about"></div>
               <h3 class="sh">What’s new in this version</h3>
               <div class="grp wnew" data-k="whats new changelog version news features">
+                <div class="wn">
+                  <i>🎮</i
+                  ><span
+                    ><b>The Switch has its own interface</b
+                    ><small>Home with your last played games, All Software, a page for each game, Quick Settings on the Home button</small></span
+                  >
+                </div>
+                <div class="wn">
+                  <i>🧭</i
+                  ><span
+                    ><b>A calmer CosmoU, one dock</b
+                    ><small>Library · Favorites · Recently played · Themes · Settings – the same buttons and rows in every window</small></span
+                  >
+                </div>
                 <div class="wn">
                   <i>🏷️</i
                   ><span
@@ -1310,5 +1329,7 @@
     <script src="js/app.js"></script>
     <script src="js/session-pad.js"></script>
     <script src="js/rework.js"></script>
+    <script src="js/ds.js"></script>
+    <script src="js/switch-face.js"></script>
   </body>
 </html>

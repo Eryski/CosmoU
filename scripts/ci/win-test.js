@@ -331,18 +331,24 @@ $s = [System.Windows.Forms.Screen]::FromHandle($h).Bounds
         lay: $('#sw').dataset.lay,
         n: list().filter(g => g.kind !== 'app').length,
         sw: $('#sys').hidden ? 'hidden' : $('#sys').textContent,
+        // the Switch has its own interface (js/switch-face.js), the others their home screen in the CosmoU window
+        face: typeof nx === 'object' && nx.on,
       }));
-      ok(k + ': its home screen, its theme, its games', lk.sys === k && lk.mode === 'chome' && lk.lay === lay && lk.theme === lk.want && lk.n === 1, lk);
+      ok(
+        k + ': its home screen, its theme, its games',
+        lk.sys === k && (k === 'switch' ? lk.face : lk.mode === 'chome' && lk.lay === lay && !lk.face) && lk.theme === lk.want && lk.n === 1,
+        lk,
+      );
       // the keyboard is the controller here: right, down to the round buttons, right, Escape back
       for (const key of ['ArrowRight', 'ArrowDown', 'ArrowDown', 'ArrowDown', 'ArrowRight']) {
         await w.keyboard.press(key);
         await w.waitForTimeout(120);
       }
-      const z = await E(() => [chZone, chApp]);
+      const z = await E(() => (nx.on ? [nx.zone, nx.a] : [chZone, chApp]));
       await w.keyboard.press('Escape');
       await w.waitForTimeout(150);
-      const z2 = await E(() => chZone);
-      ok(k + ': down to the round buttons, Escape (B) back', z[0] === 'apps' && z[1] === 1 && z2 === 'games', [z, z2]);
+      const z2 = await E(() => (nx.on ? nx.zone : chZone));
+      ok(k + ': down to the round buttons, Escape (B) back', z[0] === 'apps' && z[1] === 1 && (z2 === 'games' || z2 === 'row'), [z, z2]);
       await shot('02-' + k);
       // start the game with Enter (A)
       const rec = path.join(T, 'Emu', k, 'started.txt');
@@ -351,6 +357,12 @@ $s = [System.Windows.Forms.Screen]::FromHandle($h).Bounds
         chAll = false;
         sel = list().find(g => g.kind !== 'app').name;
         render();
+        // (the Switch's interface: the frame on that game)
+        if (nx.on) {
+          nx.zone = 'row';
+          nx.i = Math.max(0, [...$('#nxrow').children].findIndex(t => t.dataset.g === sel));
+          nxSelUi();
+        }
       });
       await w.waitForTimeout(300);
       await w.keyboard.press('Enter');

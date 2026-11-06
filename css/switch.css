@@ -1,0 +1,1257 @@
+/* CosmoU – the Switch's own interface (js/switch-face.js). Not a theme on top of the CosmoU window: while the
+   Switch is the console on screen, everything else (header, dock, covers, Wii U Look, Plaza, buddies) is gone and
+   this takes the whole window. Flat surfaces, big square tiles, the last played game first, one breathing frame.
+   Everything is measured in --u, a 1280 × 720 screen scaled to the window, so it keeps its proportions. */
+
+body.face-nx :is(.page, #wu, #dock, .wiibar, .bg, #bgpic, #padleg, .tvbar, #hello, #pzc),
+body.face-nx > nav {
+  display: none !important;
+}
+body.face-nx {
+  background: var(--nx-bg, #ebebeb);
+  animation: none;
+}
+#nx {
+  --u: min(calc(100vw / 1280), calc(100vh / 720));
+  --nx-bg: #ebebeb;
+  --nx-ink: #2d2d2d;
+  --nx-mute: #6e6e6e;
+  --nx-line: #cdcdcd;
+  --nx-tile: #ffffff;
+  --nx-card: #ffffff;
+  --nx-hover: rgba(0, 0, 0, 0.05);
+  --nx-circle: #ffffff;
+  --nx-sel: #19c3e6;
+  --nx-sel-2: #7fe3f7;
+  --nx-sel-tx: #0a9fc4;
+  --nx-shadow: 0 calc(var(--u) * 2) calc(var(--u) * 6) rgba(0, 0, 0, 0.12);
+  --nx-font: 'Segoe UI Variable Display', 'Segoe UI Variable Text', 'Segoe UI', 'Inter', system-ui, sans-serif;
+  position: fixed;
+  inset: 0;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  background: var(--nx-bg);
+  color: var(--nx-ink);
+  font-family: var(--nx-font);
+  font-size: calc(var(--u) * 17);
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+}
+#nx[hidden] {
+  display: none;
+}
+#nx.black {
+  --nx-bg: #2d2d2d;
+  --nx-ink: #ffffff;
+  --nx-mute: #bdbdbd;
+  --nx-line: #4e4e4e;
+  --nx-tile: #3b3b3b;
+  --nx-card: #383838;
+  --nx-hover: rgba(255, 255, 255, 0.06);
+  --nx-circle: #454545;
+  --nx-sel: #1fc6ea;
+  --nx-sel-2: #79e4f8;
+  --nx-sel-tx: #33d1f2;
+  --nx-shadow: 0 calc(var(--u) * 2) calc(var(--u) * 8) rgba(0, 0, 0, 0.35);
+}
+#nx button {
+  font: inherit;
+  color: inherit;
+}
+#nx :focus-visible {
+  outline: none;
+}
+
+/* ---------- the frame: the one thing that moves – a cyan line around what is chosen, breathing slowly ---------- */
+@keyframes nxBreathe {
+  0%,
+  100% {
+    border-color: var(--nx-sel);
+    box-shadow: 0 0 calc(var(--u) * 10) calc(var(--u) * -2) color-mix(in srgb, var(--nx-sel) 55%, transparent);
+  }
+  50% {
+    border-color: var(--nx-sel-2);
+    box-shadow: 0 0 calc(var(--u) * 16) calc(var(--u) * -2) color-mix(in srgb, var(--nx-sel) 30%, transparent);
+  }
+}
+.nx-sel::after {
+  content: '';
+  position: absolute;
+  inset: calc(var(--u) * -7);
+  border: calc(var(--u) * 4) solid var(--nx-sel);
+  border-radius: calc(var(--fr, 10) * var(--u));
+  pointer-events: none;
+  animation: nxBreathe 1.6s ease-in-out infinite;
+}
+#nx.still .nx-sel::after {
+  animation: none;
+}
+
+/* ---------- top bar: consoles on the left (like the users), time, connection and battery on the right ---------- */
+.nx-top {
+  flex: none;
+  height: calc(var(--u) * 96);
+  padding: 0 calc(var(--u) * 52);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.nx-users {
+  display: flex;
+  gap: calc(var(--u) * 14);
+}
+#nx .nx-user {
+  position: relative;
+  flex: none;
+  width: calc(var(--u) * 52);
+  height: calc(var(--u) * 52);
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--c, #888);
+  color: #fff;
+  font-weight: 700;
+  font-size: calc(var(--u) * 12.5);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow:
+    inset 0 0 0 calc(var(--u) * 3) rgba(255, 255, 255, 0.9),
+    var(--nx-shadow);
+  --fr: 40;
+}
+#nx.black .nx-user {
+  box-shadow:
+    inset 0 0 0 calc(var(--u) * 3) rgba(255, 255, 255, 0.18),
+    var(--nx-shadow);
+}
+.nx-user.here {
+  box-shadow:
+    inset 0 0 0 calc(var(--u) * 3) var(--nx-sel),
+    var(--nx-shadow);
+}
+.nx-user .nx-tip,
+.nx-a .nx-tip {
+  position: absolute;
+  top: calc(100% + var(--u) * 12);
+  left: 50%;
+  translate: -50% 0;
+  white-space: nowrap;
+  font-size: calc(var(--u) * 15);
+  font-weight: 600;
+  color: var(--nx-sel-tx);
+  opacity: 0;
+  pointer-events: none;
+}
+.nx-user.nx-sel .nx-tip,
+.nx-a.nx-sel .nx-tip {
+  opacity: 1;
+}
+.nx-user .nx-tip {
+  left: 0;
+  translate: 0 0;
+}
+.nx-stat {
+  flex: none;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: calc(var(--u) * 18);
+  font-size: calc(var(--u) * 21);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.nx-stat svg {
+  width: calc(var(--u) * 26);
+  height: calc(var(--u) * 26);
+  display: block;
+}
+.nx-stat .off {
+  opacity: 0.4;
+}
+.nx-batt {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--u) * 6);
+  font-size: calc(var(--u) * 16);
+  font-weight: 600;
+}
+.nx-batt[hidden] {
+  display: none;
+}
+.nx-batt i {
+  position: relative;
+  width: calc(var(--u) * 34);
+  height: calc(var(--u) * 17);
+  border: calc(var(--u) * 2) solid currentColor;
+  border-radius: calc(var(--u) * 4);
+  padding: calc(var(--u) * 2);
+}
+.nx-batt i::before {
+  content: '';
+  display: block;
+  height: 100%;
+  width: var(--lv, 100%);
+  border-radius: calc(var(--u) * 1.5);
+  background: currentColor;
+}
+.nx-batt i::after {
+  content: '';
+  position: absolute;
+  right: calc(var(--u) * -5);
+  top: 50%;
+  translate: 0 -50%;
+  width: calc(var(--u) * 3);
+  height: calc(var(--u) * 7);
+  border-radius: 0 calc(var(--u) * 2) calc(var(--u) * 2) 0;
+  background: currentColor;
+}
+.nx-batt.low i::before {
+  background: #e5484d;
+}
+
+/* ---------- screens ---------- */
+.nx-scr {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+.nx-scr[hidden] {
+  display: none;
+}
+
+/* Home: one row of big squares, the round buttons below */
+.nx-home {
+  justify-content: center;
+  padding-bottom: calc(var(--u) * 8);
+}
+.nx-row {
+  display: flex;
+  gap: calc(var(--u) * 12);
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  padding: calc(var(--u) * 46) calc(var(--u) * 64) calc(var(--u) * 18);
+  scroll-padding: 0 calc(var(--u) * 64);
+  scroll-behavior: smooth;
+}
+.nx-row::-webkit-scrollbar {
+  display: none;
+}
+.nx-t {
+  position: relative;
+  flex: none;
+  width: calc(var(--u) * 256);
+  height: calc(var(--u) * 256);
+  padding: 0;
+  border: 0;
+  border-radius: calc(var(--u) * 4);
+  background: var(--nx-tile);
+  box-shadow: var(--nx-shadow);
+  cursor: pointer;
+  --fr: 12;
+  transition: transform 0.12s ease-out;
+}
+.nx-t .nx-art {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  overflow: hidden;
+  background-size: cover;
+  background-position: center;
+  display: grid;
+  place-items: center;
+}
+.nx-t .nx-art.fit {
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-color: var(--nx-tile);
+}
+.nx-t .nx-art > span {
+  font-weight: 800;
+  font-size: calc(var(--u) * 64);
+  color: rgba(255, 255, 255, 0.92);
+  letter-spacing: -0.03em;
+}
+.nx-t .nx-art .art-name {
+  position: absolute;
+  left: calc(var(--u) * 14);
+  right: calc(var(--u) * 14);
+  bottom: calc(var(--u) * 12);
+  font-size: calc(var(--u) * 15);
+  font-weight: 600;
+  color: #fff;
+  line-height: 1.2;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.35);
+}
+/* the name over the chosen game, in the frame's colour */
+.nx-t > em {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + var(--u) * 14);
+  max-width: calc(var(--u) * 900);
+  font-style: normal;
+  font-weight: 600;
+  font-size: calc(var(--u) * 21);
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--nx-sel-tx);
+  opacity: 0;
+  pointer-events: none;
+}
+.nx-t.nx-sel > em {
+  opacity: 1;
+}
+.nx-t.press {
+  transform: scale(0.95);
+}
+/* a mark (js/marks.js): its colour around the square, its sign in the corner */
+.nx-t.marked::before {
+  content: '';
+  position: absolute;
+  inset: calc(var(--u) * -2);
+  border: calc(var(--u) * 4) solid var(--mark);
+  border-radius: calc(var(--u) * 6);
+  pointer-events: none;
+  z-index: 1;
+}
+.nx-t .mkb {
+  top: calc(var(--u) * 10);
+  left: calc(var(--u) * 10);
+  font-size: calc(var(--u) * 15);
+}
+/* (the corner sign of the old design is not used) */
+.nx-t .nx-mk {
+  position: absolute;
+  top: calc(var(--u) * 8);
+  right: calc(var(--u) * 8);
+  min-width: calc(var(--u) * 26);
+  height: calc(var(--u) * 26);
+  padding: 0 calc(var(--u) * 6);
+  border-radius: calc(var(--u) * 13);
+  display: grid;
+  place-items: center;
+  font-size: calc(var(--u) * 15);
+  font-weight: 800;
+  font-style: normal;
+  color: #fff;
+  background: var(--mc, #f2b632);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+/* "All Software": the last square */
+.nx-t.nx-allt {
+  display: grid;
+  place-items: center;
+  background: var(--nx-card);
+}
+.nx-allt .nx-art {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: calc(var(--u) * 10);
+  color: var(--nx-ink);
+}
+.nx-allt svg {
+  width: calc(var(--u) * 72);
+  height: calc(var(--u) * 72);
+}
+.nx-allt small {
+  font-size: calc(var(--u) * 16);
+  font-weight: 600;
+  color: var(--nx-mute);
+}
+/* no games yet: one big square that leads to Settings */
+.nx-t.nx-empty {
+  background: transparent;
+  box-shadow: inset 0 0 0 calc(var(--u) * 3) var(--nx-line);
+}
+.nx-empty .nx-art {
+  padding: calc(var(--u) * 26);
+  text-align: center;
+  font-size: calc(var(--u) * 17);
+  font-weight: 600;
+  color: var(--nx-mute);
+}
+
+/* the round buttons */
+.nx-apps {
+  display: flex;
+  justify-content: center;
+  gap: calc(var(--u) * 22);
+  margin-top: calc(var(--u) * 44);
+  padding-bottom: calc(var(--u) * 34);
+}
+.nx-a {
+  position: relative;
+  width: calc(var(--u) * 70);
+  height: calc(var(--u) * 70);
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--nx-circle);
+  box-shadow: var(--nx-shadow);
+  cursor: pointer;
+  --fr: 50;
+  transition: transform 0.12s ease-out;
+}
+.nx-a svg {
+  width: calc(var(--u) * 34);
+  height: calc(var(--u) * 34);
+  color: var(--ac, var(--nx-mute));
+}
+.nx-a.press {
+  transform: scale(0.92);
+}
+
+/* ---------- bottom bar: controllers on the left, what the buttons do on the right ---------- */
+.nx-bot {
+  flex: none;
+  height: calc(var(--u) * 70);
+  margin: 0 calc(var(--u) * 30);
+  padding: 0 calc(var(--u) * 22);
+  border-top: 1px solid var(--nx-line);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.nx-pads {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--u) * 10);
+  color: var(--nx-ink);
+}
+.nx-pads svg {
+  width: calc(var(--u) * 38);
+  height: calc(var(--u) * 26);
+  display: block;
+}
+.nx-pads small {
+  font-size: calc(var(--u) * 14);
+  color: var(--nx-mute);
+}
+.nx-hints {
+  display: flex;
+  gap: calc(var(--u) * 26);
+}
+.nx-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--u) * 8);
+  padding: calc(var(--u) * 4) calc(var(--u) * 6);
+  border: 0;
+  border-radius: calc(var(--u) * 8);
+  background: none;
+  font-size: calc(var(--u) * 17);
+  font-weight: 600;
+  cursor: pointer;
+}
+.nx-hint:hover {
+  background: var(--nx-hover);
+}
+.nx-hint i {
+  width: calc(var(--u) * 26);
+  height: calc(var(--u) * 26);
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-style: normal;
+  font-weight: 700;
+  font-size: calc(var(--u) * 15);
+  color: var(--nx-bg);
+  background: var(--nx-ink);
+}
+
+/* ---------- screen headers (All Software, a game's page, System Settings) ---------- */
+.nx-hd {
+  flex: none;
+  height: calc(var(--u) * 84);
+  margin: 0 calc(var(--u) * 30);
+  padding: 0 calc(var(--u) * 22);
+  border-bottom: 1px solid var(--nx-line);
+  display: flex;
+  align-items: center;
+  gap: calc(var(--u) * 16);
+}
+.nx-hd .nx-hic {
+  width: calc(var(--u) * 40);
+  height: calc(var(--u) * 40);
+  display: grid;
+  place-items: center;
+  flex: none;
+  border-radius: calc(var(--u) * 4);
+  background-size: cover;
+  background-position: center;
+}
+.nx-hd .nx-hic svg {
+  width: 100%;
+  height: 100%;
+}
+.nx-hd h1 {
+  font-size: calc(var(--u) * 27);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.nx-hd .nx-sp {
+  flex: 1;
+}
+.nx-hd .nx-sortl {
+  font-size: calc(var(--u) * 16);
+  color: var(--nx-mute);
+  white-space: nowrap;
+}
+/* search in All Software (keyboard and mouse; a controller sorts with Y) */
+.nx-q {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--u) * 8);
+  height: calc(var(--u) * 40);
+  padding: 0 calc(var(--u) * 14);
+  border-radius: calc(var(--u) * 20);
+  background: var(--nx-card);
+  box-shadow: inset 0 0 0 1px var(--nx-line);
+  color: var(--nx-mute);
+}
+.nx-q svg {
+  width: calc(var(--u) * 18);
+  height: calc(var(--u) * 18);
+  flex: none;
+}
+.nx-q input {
+  width: calc(var(--u) * 200);
+  border: 0;
+  outline: 0;
+  background: none;
+  font: inherit;
+  font-size: calc(var(--u) * 16);
+  color: var(--nx-ink);
+}
+.nx-q input::placeholder {
+  color: var(--nx-mute);
+}
+.nx-q:focus-within {
+  box-shadow: inset 0 0 0 calc(var(--u) * 2) var(--nx-sel);
+}
+
+/* All Software: six squares in a row, the name under each */
+.nx-grid {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: none;
+  display: grid;
+  grid-template-columns: repeat(var(--cols, 6), calc(var(--u) * 172));
+  justify-content: center;
+  align-content: start;
+  gap: calc(var(--u) * 26) calc(var(--u) * 22);
+  padding: calc(var(--u) * 30) calc(var(--u) * 52) calc(var(--u) * 40);
+  scroll-padding: calc(var(--u) * 30) 0;
+}
+.nx-grid::-webkit-scrollbar {
+  display: none;
+}
+.nx-grid .nx-t {
+  width: calc(var(--u) * 172);
+  height: calc(var(--u) * 172);
+  --fr: 10;
+}
+.nx-grid .nx-cell {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--u) * 12);
+  min-width: 0;
+}
+.nx-grid .nx-t > em {
+  display: none;
+}
+.nx-grid .nx-cell > b {
+  font-weight: 600;
+  font-size: calc(var(--u) * 15);
+  line-height: 1.25;
+  color: var(--nx-mute);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  padding: 0 calc(var(--u) * 2);
+}
+.nx-grid .nx-cell.on > b {
+  color: var(--nx-sel-tx);
+}
+.nx-grid .nx-t .nx-art > span {
+  font-size: calc(var(--u) * 44);
+}
+.nx-grid .nx-t .nx-art .art-name {
+  display: none;
+}
+.nx-none {
+  grid-column: 1 / -1;
+  padding: calc(var(--u) * 60) 0;
+  text-align: center;
+  color: var(--nx-mute);
+  font-size: calc(var(--u) * 19);
+}
+
+/* ---------- a game's page: what you can do on the left, about it on the right ---------- */
+.nx-gbody {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: calc(var(--u) * 380) 1fr;
+  margin: 0 calc(var(--u) * 30);
+}
+.nx-gnav {
+  padding: calc(var(--u) * 20) 0;
+  border-right: 1px solid var(--nx-line);
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+.nx-gi {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: calc(var(--u) * 14);
+  width: calc(100% - var(--u) * 22);
+  height: calc(var(--u) * 62);
+  margin: 0 0 calc(var(--u) * 4) calc(var(--u) * 10);
+  padding: 0 calc(var(--u) * 18);
+  border: 0;
+  border-radius: calc(var(--u) * 4);
+  background: none;
+  text-align: left;
+  justify-content: flex-start;
+  font-size: calc(var(--u) * 19);
+  font-weight: 500;
+  cursor: pointer;
+  --fr: 8;
+}
+.nx-gi:hover {
+  background: var(--nx-hover);
+}
+.nx-gi.on {
+  font-weight: 600;
+}
+.nx-gi svg {
+  width: calc(var(--u) * 24);
+  height: calc(var(--u) * 24);
+  flex: none;
+  opacity: 0.85;
+}
+.nx-gi.danger {
+  color: #d9383a;
+}
+.nx-gpane {
+  min-width: 0;
+  overflow-y: auto;
+  scrollbar-width: none;
+  padding: calc(var(--u) * 34) calc(var(--u) * 44);
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--u) * 20);
+}
+.nx-gpane h2 {
+  font-size: calc(var(--u) * 24);
+  font-weight: 600;
+}
+.nx-gpane p {
+  font-size: calc(var(--u) * 17);
+  line-height: 1.5;
+  color: var(--nx-mute);
+  max-width: 60ch;
+}
+.nx-hero {
+  display: flex;
+  gap: calc(var(--u) * 30);
+  align-items: flex-end;
+}
+.nx-hero .nx-art {
+  flex: none;
+  width: calc(var(--u) * 220);
+  height: calc(var(--u) * 220);
+  border-radius: calc(var(--u) * 4);
+  background-size: cover;
+  background-position: center;
+  box-shadow: var(--nx-shadow);
+  display: grid;
+  place-items: center;
+}
+.nx-hero .nx-art.fit {
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-color: var(--nx-tile);
+}
+.nx-hero .nx-art > span {
+  font-size: calc(var(--u) * 60);
+  font-weight: 800;
+  color: #fff;
+}
+.nx-hero .nx-art .art-name {
+  display: none;
+}
+.nx-hero > div {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--u) * 12);
+}
+.nx-hero h2 {
+  font-size: calc(var(--u) * 30);
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+.nx-hero small {
+  font-size: calc(var(--u) * 16);
+  color: var(--nx-mute);
+}
+/* the big button of a page (Start, Add to favorites …) */
+.nx-btn {
+  align-self: flex-start;
+  min-width: calc(var(--u) * 220);
+  height: calc(var(--u) * 54);
+  padding: 0 calc(var(--u) * 30);
+  border: 0;
+  border-radius: calc(var(--u) * 27);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(var(--u) * 10);
+  font-size: calc(var(--u) * 19);
+  font-weight: 600;
+  color: #fff !important;
+  background: var(--nx-sel-tx);
+  cursor: pointer;
+  position: relative;
+  --fr: 34;
+}
+.nx-btn.ghost {
+  color: var(--nx-ink) !important;
+  background: var(--nx-card);
+  box-shadow: inset 0 0 0 1px var(--nx-line);
+}
+.nx-btn:hover {
+  filter: brightness(1.05);
+}
+.nx-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  border-radius: calc(var(--u) * 8);
+  overflow: hidden;
+  background: var(--nx-line);
+  box-shadow: 0 0 0 1px var(--nx-line);
+}
+.nx-facts div {
+  padding: calc(var(--u) * 14) calc(var(--u) * 18);
+  background: var(--nx-card);
+  min-width: 0;
+}
+.nx-facts small {
+  display: block;
+  font-size: calc(var(--u) * 14);
+  color: var(--nx-mute);
+}
+.nx-facts b {
+  display: block;
+  margin-top: calc(var(--u) * 4);
+  font-size: calc(var(--u) * 19);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.nx-facts .wide {
+  grid-column: 1 / -1;
+}
+.nx-facts .wide b {
+  font-size: calc(var(--u) * 15);
+  font-weight: 500;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+/* ---------- small lists that open over a screen (sort, themes, consoles, power) ---------- */
+.nx-pop {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.32);
+  animation: nxFade 0.16s ease-out both;
+}
+.nx-pop[hidden] {
+  display: none;
+}
+.nx-pop .nx-box {
+  width: calc(var(--u) * 520);
+  max-height: 84%;
+  overflow-y: auto;
+  scrollbar-width: none;
+  padding: calc(var(--u) * 14) 0;
+  border-radius: calc(var(--u) * 14);
+  background: var(--nx-card);
+  box-shadow: 0 calc(var(--u) * 20) calc(var(--u) * 60) rgba(0, 0, 0, 0.35);
+  animation: nxUp 0.2s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.nx-pop h3 {
+  padding: calc(var(--u) * 10) calc(var(--u) * 28) calc(var(--u) * 14);
+  font-size: calc(var(--u) * 21);
+  font-weight: 600;
+  border-bottom: 1px solid var(--nx-line);
+  margin-bottom: calc(var(--u) * 8);
+}
+.nx-pop .nx-gi {
+  width: calc(100% - var(--u) * 28);
+  margin-left: calc(var(--u) * 14);
+}
+.nx-gi .nx-ck {
+  margin-left: auto;
+  font-style: normal;
+  color: var(--nx-sel-tx);
+  font-weight: 700;
+}
+@keyframes nxFade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes nxUp {
+  from {
+    opacity: 0;
+    transform: translateY(calc(var(--u) * 14)) scale(0.985);
+  }
+}
+
+/* ---------- Quick Settings: a panel from the right (the Home button or Q) ---------- */
+.nx-qs {
+  position: absolute;
+  inset: 0;
+  z-index: 7;
+  background: rgba(0, 0, 0, 0.38);
+  animation: nxFade 0.18s ease-out both;
+}
+.nx-qs[hidden] {
+  display: none;
+}
+.nx-qs .nx-panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: calc(var(--u) * 430);
+  display: flex;
+  flex-direction: column;
+  background: var(--nx-bg);
+  box-shadow: calc(var(--u) * -10) 0 calc(var(--u) * 40) rgba(0, 0, 0, 0.25);
+  animation: nxIn 0.24s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes nxIn {
+  from {
+    transform: translateX(40%);
+    opacity: 0;
+  }
+}
+.nx-qs .nx-qhd {
+  padding: calc(var(--u) * 30) calc(var(--u) * 30) calc(var(--u) * 18);
+  border-bottom: 1px solid var(--nx-line);
+  margin: 0 calc(var(--u) * 10);
+}
+.nx-qs .nx-qhd b {
+  display: block;
+  font-size: calc(var(--u) * 40);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.05;
+}
+.nx-qs .nx-qhd small {
+  font-size: calc(var(--u) * 16);
+  color: var(--nx-mute);
+}
+.nx-qlist {
+  flex: 1;
+  overflow-y: auto;
+  scrollbar-width: none;
+  padding: calc(var(--u) * 14) 0;
+}
+.nx-qlist .nx-gi {
+  width: calc(100% - var(--u) * 28);
+  margin-left: calc(var(--u) * 14);
+  font-size: calc(var(--u) * 18);
+}
+.nx-gi .nx-sw {
+  margin-left: auto;
+  flex: none;
+  width: calc(var(--u) * 48);
+  height: calc(var(--u) * 28);
+  border-radius: calc(var(--u) * 14);
+  background: var(--nx-line);
+  position: relative;
+  transition: background 0.15s;
+}
+.nx-gi .nx-sw::after {
+  content: '';
+  position: absolute;
+  top: calc(var(--u) * 3);
+  left: calc(var(--u) * 3);
+  width: calc(var(--u) * 22);
+  height: calc(var(--u) * 22);
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  transition: transform 0.15s ease-out;
+}
+.nx-gi.tg-on .nx-sw {
+  background: var(--nx-sel-tx);
+}
+.nx-gi.tg-on .nx-sw::after {
+  transform: translateX(calc(var(--u) * 20));
+}
+.nx-gi .nx-val {
+  margin-left: auto;
+  font-size: calc(var(--u) * 16);
+  color: var(--nx-mute);
+  font-weight: 500;
+}
+.nx-vol {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--u) * 14);
+  margin: calc(var(--u) * 6) calc(var(--u) * 32) calc(var(--u) * 10);
+  font-size: calc(var(--u) * 16);
+  color: var(--nx-mute);
+}
+.nx-vol input {
+  flex: 1;
+  accent-color: var(--nx-sel-tx);
+}
+
+/* ---------- starting a game: the screen goes dark, the game's square in the middle ---------- */
+body.face-nx #launch {
+  background: #000;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+body.face-nx #launch .lp {
+  background: none !important;
+  box-shadow: none !important;
+  border: 0 !important;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  color: #fff;
+}
+body.face-nx #launch .lp::before,
+body.face-nx #launch .lp::after {
+  display: none;
+}
+body.face-nx #launch .lp > :not(.art):not(.flow) {
+  display: none;
+}
+body.face-nx #launch .art::before,
+body.face-nx #launch .art::after,
+body.face-nx #launch .art .art-name {
+  display: none;
+}
+body.face-nx #launch .art {
+  width: min(34vh, 34vw);
+  height: min(34vh, 34vw);
+  border-radius: 6px !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6) !important;
+}
+body.face-nx #launch.on .art {
+  animation: nxLaunch 1.4s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes nxLaunch {
+  0% {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  25%,
+  80% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0.9;
+    transform: scale(1.02);
+  }
+}
+body.face-nx #launch .flow {
+  position: fixed;
+  right: 40px;
+  bottom: 36px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: none;
+  border: 4px solid rgba(255, 255, 255, 0.18);
+  border-top-color: #fff;
+  animation: nxSpin 0.9s linear infinite;
+}
+body.face-nx #launch .flow i {
+  display: none;
+}
+@keyframes nxSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---------- notes: top right, flat ---------- */
+body.face-nx #notes {
+  top: 86px;
+  bottom: auto;
+  right: 28px;
+}
+body.face-nx #notes .note {
+  border-radius: 10px;
+  background: #3a3a3a;
+  color: #fff;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  font-family: var(--nx-font, inherit);
+}
+body.face-nx #notes .note::before,
+body.face-nx #notes .note::after {
+  display: none;
+}
+
+/* ---------- windows (Settings and the others) in the Switch's look: flat, full height, a list on the left ---------- */
+body.face-nx dialog:not(.cpick):not(.cmenu) {
+  font-family: 'Segoe UI Variable Display', 'Segoe UI Variable Text', 'Segoe UI', 'Inter', system-ui, sans-serif;
+  border-radius: 14px;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: var(--nxd-bg, #f0f0f0) !important;
+  color: var(--nxd-ink, #2d2d2d) !important;
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.35) !important;
+  --ink: var(--nxd-ink, #2d2d2d);
+  --mute: var(--nxd-mute, #6e6e6e);
+  --text: var(--nxd-ink, #2d2d2d);
+  --text-2: var(--nxd-mute, #6e6e6e);
+  --surface: var(--nxd-card, #fff);
+  --card: var(--nxd-card, #fff);
+  --line: var(--nxd-line, #d6d6d6);
+  --cardline: var(--nxd-line, #d6d6d6);
+  --fill: var(--nxd-fill, rgba(0, 0, 0, 0.05));
+  --field: var(--nxd-fill, rgba(0, 0, 0, 0.05));
+  --accent: #0a9fc4;
+  --accent-hi: #19c3e6;
+  --on-accent: #fff;
+  --ring: #19c3e6;
+  --wsel: #19c3e6;
+  --act1: #19c3e6;
+  --act2: #0a9fc4;
+  --acttx: #fff;
+  --deep: #0a9fc4;
+  --head: 'Segoe UI Variable Display', 'Segoe UI', 'Inter', system-ui, sans-serif;
+}
+body.face-nx.nx-black dialog:not(.cpick) {
+  --nxd-bg: #2f2f2f;
+  --nxd-ink: #fff;
+  --nxd-mute: #bdbdbd;
+  --nxd-card: #3a3a3a;
+  --nxd-line: #4e4e4e;
+  --nxd-fill: rgba(255, 255, 255, 0.07);
+}
+body.face-nx dialog:not(.cpick):not(.cmenu)::before,
+body.face-nx dialog:not(.cpick):not(.cmenu)::after {
+  display: none !important;
+}
+body.face-nx dialog::backdrop {
+  background: rgba(0, 0, 0, 0.42);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+body.face-nx dialog .glass:not(.lp)::before,
+body.face-nx dialog .glass:not(.lp)::after {
+  display: none;
+}
+body.face-nx dialog .btn {
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1px var(--line);
+  background: var(--surface);
+  color: var(--text);
+}
+body.face-nx dialog .btn.main,
+body.face-nx dialog .btn.pri {
+  background: #0a9fc4;
+  color: #fff;
+  box-shadow: none;
+}
+/* System Settings: the whole window, a list on the left with the bar on the chosen one */
+body.face-nx #dlg {
+  width: 100vw;
+  max-width: 100vw;
+  height: 100vh;
+  max-height: 100vh;
+  border-radius: 0;
+  animation: nxFade 0.18s ease-out both;
+}
+body.face-nx #dlg .sx-side {
+  background: transparent;
+  border-right: 1px solid var(--line);
+}
+body.face-nx #dlg .sx-nav button {
+  border-radius: 4px;
+  background: transparent;
+  box-shadow: none;
+  font-size: 16px;
+}
+body.face-nx #dlg .sx-nav button.on {
+  color: #0a9fc4;
+  background: transparent;
+  box-shadow: none;
+  position: relative;
+}
+body.face-nx.nx-black #dlg .sx-nav button.on {
+  color: #33d1f2;
+}
+body.face-nx #dlg .sx-nav button.on::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 9px;
+  bottom: 9px;
+  width: 4px;
+  border-radius: 2px;
+  background: #19c3e6;
+}
+body.face-nx #dlg .sx-nav .ci {
+  filter: none !important;
+  opacity: 1 !important;
+}
+body.face-nx #dlg .grp {
+  border-radius: 8px;
+  box-shadow: 0 0 0 1px var(--line);
+  background: var(--surface);
+}
+body.face-nx #dlg .sx-ft,
+body.face-nx #dlg .sx-hd {
+  background: transparent;
+}
+/* the Wii U's corner of Appearance (Wii U Look, Plaza) has no place here */
+body.face-nx .no-nx {
+  display: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nx-sel::after {
+    animation: none;
+  }
+  .nx-row {
+    scroll-behavior: auto;
+  }
+}
+
+/* the face's first appearance: the squares slide in from the right, once */
+#nx.boot .nx-row .nx-t {
+  animation: nxBoot 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation-delay: calc(var(--i, 0) * 0.035s);
+}
+#nx.boot .nx-apps .nx-a {
+  animation: nxFade 0.4s ease-out 0.2s both;
+}
+@keyframes nxBoot {
+  from {
+    opacity: 0;
+    transform: translateX(calc(var(--u) * 90));
+  }
+}
+
+/* menus (Settings' small lists and the like): a flat card */
+body.face-nx #cmenu .cm-in {
+  border-radius: 12px;
+  background: var(--nxd-card, #fff) !important;
+  color: var(--nxd-ink, #2d2d2d) !important;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3), 0 0 0 1px var(--nxd-line, #d6d6d6) !important;
+  font-family: 'Segoe UI Variable Display', 'Segoe UI Variable Text', 'Segoe UI', 'Inter', system-ui, sans-serif;
+}
+body.face-nx #cmenu .cm-in::before,
+body.face-nx #cmenu .cm-in::after {
+  display: none;
+}
+
+/* upright screens (a phone held upright): the same interface on a 720 units wide screen */
+@media (max-aspect-ratio: 1/1) {
+  #nx {
+    --u: calc(100vw / 720);
+  }
+  .nx-top {
+    padding: 0 calc(var(--u) * 30);
+  }
+  .nx-users {
+    gap: calc(var(--u) * 10);
+  }
+  #nx .nx-user {
+    width: calc(var(--u) * 44);
+    height: calc(var(--u) * 44);
+    font-size: calc(var(--u) * 11);
+  }
+  .nx-row {
+    padding-left: calc(var(--u) * 40);
+    padding-right: calc(var(--u) * 40);
+  }
+  .nx-apps {
+    flex-wrap: wrap;
+    gap: calc(var(--u) * 18);
+    padding: 0 calc(var(--u) * 30) calc(var(--u) * 34);
+  }
+  .nx-grid {
+    --cols: 3;
+    padding-left: calc(var(--u) * 30);
+    padding-right: calc(var(--u) * 30);
+    grid-template-columns: repeat(var(--cols), calc(var(--u) * 196));
+  }
+  .nx-grid .nx-t {
+    width: calc(var(--u) * 196);
+    height: calc(var(--u) * 196);
+  }
+  .nx-hd .nx-sortl {
+    display: none;
+  }
+  .nx-q input {
+    width: calc(var(--u) * 150);
+  }
+  .nx-gbody {
+    grid-template-columns: calc(var(--u) * 270) 1fr;
+  }
+  .nx-hero {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .nx-facts {
+    grid-template-columns: 1fr;
+  }
+  .nx-qs .nx-panel {
+    width: min(100%, calc(var(--u) * 560));
+  }
+}
+
+/* the mouse: what the pointer is on brightens a little (the frame stays where it is until you click) */
+@media (hover: hover) {
+  .nx-t:hover:not(.nx-sel),
+  .nx-a:hover:not(.nx-sel),
+  #nx .nx-user:hover:not(.nx-sel) {
+    filter: brightness(1.06);
+  }
+  .nx-t:hover:not(.nx-sel) {
+    transform: translateY(calc(var(--u) * -2));
+  }
+}

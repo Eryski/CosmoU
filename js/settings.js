@@ -498,7 +498,7 @@ function renderPane(t) {
 }
 
 // ================= The Settings window =================
-const APP_VERSION = (window.api && api.appVersion) || '0.13.2';
+const APP_VERSION = (window.api && api.appVersion) || '0.13.3';
 const SX_ICON = {
   general:
     '<svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="11" fill="none" stroke="#fff" stroke-width="3.4"/><circle cx="16" cy="16" r="3.2" fill="#fff"/></svg>',
@@ -519,15 +519,16 @@ const SX_ICON = {
 };
 // [id, name, description, color, Cemu pane that lives inside it]
 // (on Android, Cemu's own settings live inside Cemu for Android, so the Cemu panes are left out)
+// in two groups: what counts for every console first, then what only the Wii U (Cemu) has
 const SX = [
-  ['general', 'Cemu & Games', 'Cemu, your games folder, covers and your library', '#1e8fe0', ''],
+  ['general', 'Games & Consoles', 'Your consoles, their emulators, games folders, covers and the library', '#1e8fe0', ''],
   ['look', 'Appearance', 'Theme, light or dark and how the views look', '#e57ac0', ''],
-  ['graphics', 'Graphics', 'How Cemu draws your games', '#8a6cf0', 'graphics'],
   ['sound', 'Sound & Music', 'Menu music, UI sounds and the game volume', '#f29a3c', 'audio'],
-  ['overlay', 'Overlay', 'FPS, usage and notifications while you play', '#5ab55e', 'overlay'],
   ['controls', 'Controllers & TV', 'Map buttons, controller profiles and TV mode', '#16b3d9', 'input'],
-  ['plaza', 'Buddies & Plaza', 'Your buddies, their posts and the greeting at start', '#3aa86b', ''],
   ['data', 'Saves & Data', 'Save backups, play time and your settings file', '#e0a91e', ''],
+  ['graphics', 'Graphics', 'How Cemu draws your games', '#8a6cf0', 'graphics'],
+  ['overlay', 'Overlay', 'FPS, usage and notifications while you play', '#5ab55e', 'overlay'],
+  ['plaza', 'Buddies & Plaza', 'Your buddies, their posts and the greeting at start', '#3aa86b', ''],
   ['about', 'About', 'Version, updates, feedback and the community', '#8b959e', 'about'],
 ]
   .filter(c => !IS_MOBILE || !['graphics', 'overlay'].includes(c[0]))
@@ -548,15 +549,30 @@ try {
   const c = localStorage.getItem('cosmou.setCat');
   if (SX.some(x => x[0] === c)) sxCat = c;
 } catch {}
+// the groups of the category bar: the Wii U's own categories under their own heading, About at the end
+const SX_GROUP = { graphics: 'wiiu', overlay: 'wiiu', plaza: 'wiiu', about: 'end' };
+const SX_GROUP_NAME = { wiiu: 'Wii U · Cemu', end: '' };
 (function sxBuild() {
   const nav = $('#sxnav');
+  let grp = '';
   for (const [id, name, , col] of SX) {
+    const g = SX_GROUP[id] || 'all';
+    if (g !== grp && grp) {
+      const h = document.createElement('div');
+      h.className = 'sx-gh';
+      h.dataset.g = g;
+      h.setAttribute('role', 'presentation');
+      h.textContent = SX_GROUP_NAME[g] || '';
+      nav.append(h);
+    }
+    grp = g;
     const b = document.createElement('button'),
       ic = document.createElement('span'),
       t = document.createElement('span'),
       n = document.createElement('i');
     b.type = 'button';
     b.dataset.c = id;
+    b.dataset.g = g;
     b.setAttribute('role', 'tab');
     b.setAttribute('aria-controls', 'sxbd');
     ic.className = 'ci';
@@ -614,11 +630,17 @@ function sxShow(id, focusNav) {
   if (focusNav) document.querySelector('#sxnav button.on').focus();
 }
 function sxStep(d, focusNav) {
-  const i = SX.findIndex(c => c[0] === sxCat);
-  sxShow(SX[(i + d + SX.length) % SX.length][0], focusNav);
+  // (categories hidden for the console on screen are skipped)
+  const shown = SX.filter(c => {
+    const b = document.querySelector(`#sxnav button[data-c="${c[0]}"]`);
+    return !b || b.offsetParent !== null || !$('#dlg').open;
+  });
+  const l = shown.length ? shown : SX,
+    i = Math.max(0, l.findIndex(c => c[0] === sxCat));
+  sxShow(l[(i + d + l.length) % l.length][0], focusNav);
   blip('move');
 }
-// the small status cards on top of Cemu & Games
+// the small status cards on top of Games & Consoles
 function sxStatus() {
   const box = $('#sxstat'),
     n = games.filter(g => g.kind !== 'app').length,

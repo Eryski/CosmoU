@@ -363,7 +363,7 @@ function render() {
           : IS_IOS
             ? 'Get your games from MeloCafe and they appear here.'
             : typeof curSys === 'string' && curSys !== 'wiiu'
-              ? 'Choose your ' + SYS[curSys].name + ' games folder in Settings → Cemu & Games → Other systems.'
+              ? 'Choose your ' + SYS[curSys].name + ' games folder in Settings → Games & Consoles → Other consoles.'
               : 'Choose the folder with your Wii U games and they appear here.';
     $('#ebtn').hidden = !!q || view === 'recent' || !!filtered;
     if (typeof emptyExtra === 'function') emptyExtra(!q && filtered);

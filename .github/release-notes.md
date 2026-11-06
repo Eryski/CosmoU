@@ -1,35 +1,53 @@
 ## 💙 Thank you, Eduard!
 
-Everything in CosmoU 0.13.1 comes from ideas and bug reports by **Eduard** in the CosmoU Discord. Thank you for testing so much and for all the great ideas – this update is yours! 🎉
+CosmoU 0.13.3 is built on ideas and bug reports by **Eduard** in the CosmoU Discord – pictures and music per console, your own order, marks, your own consoles, apps in full screen and so much more. Thank you for testing every beta and for every idea. This update is yours! 🎉
 
 ## ✨ What's new
+### 🎨 One CosmoU, and a Switch that feels like a Switch
+- **🎮 The Switch has its own interface** – with the Switch on screen, CosmoU looks and works like a Switch: **Home** with your last played games in one row (A starts the first one right away), round buttons below (All Software, Play Activity, Themes, Controllers, Consoles, System Settings, Power), **All Software** with sorting (**Y**) and search (**/**), a page for each game (**+**), **Quick Settings** on the Home button (or **Q**), *Basic White* and *Basic Black*, its own clicks. No Wii U Home, no Plaza, no buddies there. With a Wii U as well: the circles at the top left (or **L / R**) switch the whole window. Settings → Appearance → Switch → *Its own interface* turns it off.
+- **🎯 Nintendo controllers** – A is the button with the A on it (on the right, like on a Switch), everywhere in CosmoU. PlayStation controllers show ✕ ○ □ △ in the legend.
+- **🧭 One dock** – Library · Favorites · Recently played | Themes · Settings (keys **L**, **\***, **R**, **T**, **,**). Favorites and the themes are one click away.
+- **🕹️ Controller legend** – while you use a controller, a small line above the dock shows what A, Y, X, LB / RB and Home do right now.
+- **🪟 The same rules in every window** – the same corners, buttons and rows everywhere, headings without capitals, calmer shadows. Details: Play, Favorite, **Mark** and **⋯ More** side by side, the tools as one list, Quick quality as one switch.
+- **⚙️ Settings in two groups** – *Games & Consoles* (was “Cemu & Games”), Appearance, Sound & Music, Controllers & TV, Saves & Data – then **Wii U · Cemu**: Graphics, Overlay, Buddies & Plaza. Without a Wii U they are not shown.
+- **Buddies live on the Wii U** – the other consoles start without the buddy greeting.
 
-### 🏝️ Your own picture and music for each console
-**Settings → Appearance** has two new rows: **Background picture for …** and **Music for …**.
-- Switch to a console (Wii U, Switch, 3DS …), choose any picture and any music file from your computer or phone – done.
-- Every console keeps its own: your Zelda picture on the Wii U, something else on the Switch, another one on the 3DS.
-- The picture lies behind the glass with a soft veil, so everything stays readable – it looks best with **Liquid Glass**.
-- **Remove** brings back the theme's look and music.
+### 🧰 Also new
+- **🎮 Pictures and music in the Quick Menu** – Quick Menu (Home / Guide button, or Q) → **Sound** → **Pictures · …** and **Music · …** for the console you're on: add, change or remove them with the controller.
+- **🖼️ A new picture on every visit** – add several pictures to a console (up to 30); every time you go to that console (and at every start of CosmoU) the next one shows up. Settings → Appearance has **Add picture…**, **Next** and **Remove this one** too.
 
-### 🎨 Theme files with a picture
-A `.cosmoutheme` can now bring a background picture, built on Liquid Glass:
-```json
-{ "name": "Great Sea", "base": "liquid-glass", "image": "sea.jpg", "music": "song.ogg" }
-```
-**Share** saves the theme with its picture and music. The guide: [docs/THEMES.md](https://github.com/Eryski/CosmoU/blob/main/docs/THEMES.md).
+- **↔ Your own order** – press **RT** on a game (or **M**, or “Move” in its menu), move it with the D-pad, put it down with **A** or **RT**. Sort: “Your order”, kept for each console.
+- **🧹 Clean view** – hold **LT + RT** (or press **H**, or Quick Menu → Look): in Covers only the games stay, small at the bottom with the name above them – your background is free.
+- **➕ Add an app** right from the Quick Menu (Sound column).
+- The pictures menu stays open on **Next / Previous picture**, so you can skip through to your favourite.
+- **🪟 Apps in full screen (Windows)** – Edit app → **Window**: *Maximized* or *Full screen*. For PC ports and games that always open in a small window: CosmoU makes the game's window full screen (also when a launcher starts the game, and for a shortcut (.lnk) to the game – its launch options work then too).
+- **🌐 Every console on one page** – the last card when choosing a console (or Sort & filter → **Every console**): the games of all your consoles together, in the look of the console you're on. **Favorites** now show the favorites of every console.
+- **🎮 Back to CosmoU** – when a game ends, CosmoU comes to the front again. **L + D-pad Down + Select** closes the game you're playing and brings you back (on Windows also while the game has the focus).
+- **🏷️ Marks** – click the **left stick** to make a game a favorite; **hold** it for a wheel of colours and signs (⚙ system app, ?, !). The colour lines the game's cover in every view. Also with **K** or “Mark…” in a game's menu.
+- **🧩 Your own console** – Settings → Games & Consoles → Add another console → **Your own console (apps)…**: a console with your name (Mods, Tools, PC ports …) in the look of a real one, for apps only.
+- **📂 Click “CosmoU” at the top left** to open the CosmoU folder (settings, covers, music, pictures, themes – `CosmoU-data` next to the portable .exe).
 
-### ⏭️ Faster pages on the 3DS and Wii home screens
-- At the right edge of a row the **next page** comes (same row, from the left) – at the left edge the page before, like on the console. No more going through every game of a page.
-- The **right stick** turns the pages straight away (**Page Up / Page Down** on a keyboard). Without pages (Switch, shelves) it jumps six games.
-
-### 🎮 CosmoU for Wii U: a shop
-The Wii U app (`CosmoU-WiiU-0.13.0.wuhb`, in the [0.13.0 release](https://github.com/Eryski/CosmoU/releases/tag/v0.13.0)) got a **Shop**: RetroArch (NES, SNES, Game Boy, GBA), NooDS (DS) and other emulators, the whole Homebrew App Store catalog, the 17 other CosmoU themes with their music, and fonts – installed right on the Wii U. Games now start reliably from it, too.
+### 🛠️ Fixed
+- **Wii U Look (Home Menu layout)** shows your picture behind the tiles now.
+- **Apps on every console:** a new app now goes only to the console you're on (Edit app → **Console** to move it, or *Every console*). Apps added before keep showing everywhere until you choose a console for them.
+- **Changing an app's cover:** the new cover shows right away – no more deleting the old one in the covers folder.
+- **Background pictures from a slow drive:** switching consoles no longer flashes black – the old picture stays until the new one is loaded, and the next pictures load ahead.
+- **Grid:** the big banner stays at the top while you scroll down with the controller – only the games scroll.
+- **Long names in the Grid:** no half-cut third line any more; the chosen (or pointed at) game's long name rolls through on one line.
+- **DS covers** (Grid and DS Menu) show the whole box instead of cutting off its edges.
+- **Ports with a log window (cmd):** the game's window comes to the front – keyboard and controller go to the game, the log window steps aside, and Window: Full screen works for them too.
+- **Box art after adding or changing a cover:** shows right away on the 3D case too (it needed a restart before).
+- **🕹️ Right stick scrolls** Settings and every other window (and the Grid), like in Nintendo's menus.
+- **Drop-down lists** (like “Add another console”) are readable in every theme.
+- **Mouse:** the arrow stays an arrow over text (the text cursor only shows where you can type).
+- **Covers for N64, Wii, NES …** come from libretro's archive on GitHub when their server is down.
+- **Grid:** moving with the controller or the arrow keys no longer makes the whole grid blink like a reloaded page – and up / down go a row.
 
 ## Downloads
 
 | | |
 |---|---|
-| Windows | `CosmoU-Windows-Setup-0.13.1.exe` or the portable `.exe` |
+| Windows | `CosmoU-Windows-Setup-0.13.3.exe` or the portable `.exe` |
 | macOS | `.dmg` (Apple silicon and Intel) |
 | Linux | `.AppImage`, `.deb`, `.tar.gz` |
 | Android | `.apk` |

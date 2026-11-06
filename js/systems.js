@@ -1,6 +1,6 @@
 // CosmoU – Systems: CosmoU takes on the look of the console you play.
 // Wii U (Cemu) is always there. Every other console (js/systems-data.js) comes with its own emulator and games folder
-// (Settings → Cemu & Games → Other systems). Each has a profile: its views, its own home screen (js/console-home.js),
+// (Settings → Games & Consoles → Other consoles). Each has a profile: its views, its own home screen (js/console-home.js),
 // its theme with its music, its sounds and – only on the Wii U – the Plaza. With more than one console a switcher in
 // the header changes between them.
 const SYS = {};
@@ -36,6 +36,8 @@ function applySystem(first) {
   if (!av.includes(curSys)) curSys = av[0] || 'wiiu';
   const p = SYS[curSys];
   document.body.dataset.sys = curSys;
+  // without a Wii U, Settings doesn't show the Wii U's own categories (Graphics, Overlay, Buddies & Plaza)
+  document.body.classList.toggle('no-wiiu', !av.includes('wiiu'));
   const sw = $('#sys');
   sw.replaceChildren();
   sw.hidden = av.length < 2;

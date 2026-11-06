@@ -380,6 +380,14 @@ addEventListener('keydown', e => {
   } else if (k === ',') {
     e.preventDefault();
     openSettings();
+  } else if (['l', 'L', '*', 'r', 'R', 't', 'T'].includes(k)) {
+    // the dock: L Library · * Favorites · R Recently played · T Themes
+    const v = { l: 'lib', '*': 'fav', r: 'recent', t: 'themes' }[k.toLowerCase()],
+      b = document.querySelector(`nav button[data-v="${v}"]`);
+    if (b) {
+      e.preventDefault();
+      b.click();
+    }
   } else if (k === '1' || k === '2' || k === '3') {
     const b = document.querySelectorAll('#vt button')[+k - 1];
     if (b && !$('header').hidden) {
@@ -414,8 +422,24 @@ const KEYS = [
       ['Enter', 'Play'],
       ['I', 'Details'],
       ['F', 'Favorite on / off'],
+      ['K', 'Mark with a colour'],
+      ['M', 'Move (your order)'],
       ['G', 'Graphic packs'],
       ['Menu key · right-click', 'Game menu'],
+    ],
+  ],
+  [
+    'Places & windows',
+    [
+      ['L', 'Library'],
+      ['*', 'Favorites'],
+      ['R', 'Recently played'],
+      ['T', 'Themes'],
+      [',', 'Settings'],
+      ['Q', 'Quick Menu'],
+      [IS_MAC ? 'F11 · ⌃⌘F' : 'F11', 'TV mode'],
+      ['Esc', 'Close a window'],
+      ['?', 'This list'],
     ],
   ],
   [
@@ -424,17 +448,21 @@ const KEYS = [
       ['/', 'Search'],
       ['Esc', 'Clear the search'],
       ['S', 'Sort and filter'],
-      ['1 · 2 · 3', 'Covers · Grid · Wii U Look'],
+      ['1 · 2 · 3', 'Covers · Grid · the console’s own view'],
     ],
   ],
   [
-    'Windows',
+    'Switch',
     [
-      [',', 'Settings'],
-      ['Q', 'Quick Menu'],
-      [IS_MAC ? 'F11 · ⌃⌘F' : 'F11', 'TV mode'],
-      ['Esc', 'Close a window'],
-      ['?', 'This list'],
+      ['← → ↑ ↓', 'Move the frame'],
+      ['Enter', 'Start · OK'],
+      ['Esc', 'Back'],
+      ['+ · I', 'The game’s page'],
+      ['S · Y', 'All Software · sort'],
+      ['/', 'Search in All Software'],
+      ['Q', 'Quick Settings'],
+      ['T', 'Themes'],
+      ['PageUp · PageDown', 'Console'],
     ],
   ],
   [
@@ -444,10 +472,14 @@ const KEYS = [
       ['B', 'Back · close'],
       ['Y', 'Details'],
       ['X', 'Game menu'],
+      ['L-stick click', 'Favorite on / off'],
+      ['L-stick hold', 'Marks'],
+      ['RT', 'Move a game'],
+      ['LB · RB', 'Console · categories'],
       ['Home', 'Quick Menu'],
       ['Start', 'Settings'],
       ['Select', 'TV mode'],
-      ['LB · RB', 'Pages · categories'],
+      ['L + ↓ + Select', 'Close the running game'],
     ],
   ],
 ];
@@ -478,8 +510,12 @@ function openKeys() {
         grp.append(r);
       }
       sec.append(grp);
+      if (h === 'Switch') sec.dataset.sw = '1';
       box.append(sec);
     }
+  // the Switch's keys only with a Switch (its own interface)
+  const sw = box.querySelector('[data-sw]');
+  if (sw) sw.hidden = !(typeof nxLookOf === 'function' && sysAvail().some(k => nxLookOf(k) === 'switch'));
   blip('open');
   $('#keysdlg').showModal();
 }
@@ -620,8 +656,11 @@ new MutationObserver(() => {
 // icons in the bottom bar and the view switch, and key hints in their tooltips
 const NAV_IC = {
   lib: '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="8" height="8" rx="2.2"/><rect x="13" y="3" width="8" height="8" rx="2.2"/><rect x="3" y="13" width="8" height="8" rx="2.2"/><rect x="13" y="13" width="8" height="8" rx="2.2"/></svg>',
+  fav: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="m12 2.8 2.7 5.6 6.1.8-4.5 4.2 1.1 6.1L12 16.6l-5.4 2.9 1.1-6.1-4.5-4.2 6.1-.8z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>',
   recent:
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>',
+  themes:
+    '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5c-5.5 0-9.5 4-9.5 8.9 0 4.5 3.6 7.8 7.7 7.8 1.4 0 2-.8 2-1.7 0-1.2-1-1.5-1-2.6 0-1 .8-1.8 2-1.8h2.5c3.4 0 5.8-2.2 5.8-5 0-3.4-4.2-5.6-9.5-5.6Zm-5 9.6a1.6 1.6 0 1 1 0-3.2 1.6 1.6 0 0 1 0 3.2Zm3-4.3a1.6 1.6 0 1 1 0-3.2 1.6 1.6 0 0 1 0 3.2Zm5 .1a1.6 1.6 0 1 1 0-3.2 1.6 1.6 0 0 1 0 3.2Z"/></svg>',
   set: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M10.4 2h3.2l.5 2.6 2 .9 2.2-1.5 2.3 2.3-1.5 2.2.9 2 2.6.5v3.2l-2.6.5-.9 2 1.5 2.2-2.3 2.3-2.2-1.5-2 .9-.5 2.6h-3.2l-.5-2.6-2-.9-2.2 1.5-2.3-2.3 1.5-2.2-.9-2L2 13.6v-3.2l2.6-.5.9-2L4 5.7 6.3 3.4l2.2 1.5 2-.9zM12 8.6a3.4 3.4 0 1 0 0 6.8 3.4 3.4 0 0 0 0-6.8z"/></svg>',
   covers:
     '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="1.5" y="7" width="5" height="10" rx="1.4" opacity=".55"/><rect x="8" y="4" width="8" height="16" rx="1.8"/><rect x="17.5" y="7" width="5" height="10" rx="1.4" opacity=".55"/></svg>',
@@ -639,7 +678,16 @@ for (const b of document.querySelectorAll('nav button, #vt button')) {
 }
 document.querySelectorAll('#vt button').forEach((b, i) => (b.title = b.textContent.trim() + ' (' + (i + 1) + ')'));
 $('#sort').title = 'Sort and filter (S)';
-document.querySelector('nav button[data-v="set"]').title = 'Settings (,)';
+for (const [v, t] of [
+  ['lib', 'Library (L)'],
+  ['fav', 'Favorites (*)'],
+  ['recent', 'Recently played (R)'],
+  ['themes', 'Themes (T)'],
+  ['set', 'Settings (,)'],
+]) {
+  const b = document.querySelector(`nav button[data-v="${v}"]`);
+  if (b) b.title = t;
+}
 
 // Recently played in the grid: small headings for today, yesterday, this week and earlier
 function recentGroups() {

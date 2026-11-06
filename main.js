@@ -605,7 +605,7 @@ function playGame(arg) {
   if (typeof gamePath !== 'string' || !fs.existsSync(gamePath)) return { ok: false, error: 'The game file no longer exists.' };
   P.makeRunnable(s.cemuPath);
   if (!P.isProgram(s.cemuPath))
-    return { ok: false, error: 'Cemu can’t be started. Choose it again in Settings → Cemu & Games.' };
+    return { ok: false, error: 'Cemu can’t be started. Choose it again in Settings → Games & Consoles.' };
   let note = '',
     preset = '';
   const key = arg && typeof arg === 'object' ? arg.key : '';
@@ -1968,7 +1968,7 @@ function launchApp(id) {
 }
 // ---------- Other systems: CosmoU takes on the look of the console you play ----------
 // Wii U is Cemu (everything above). Every other console (js/systems-data.js) has one emulator and one games folder
-// (Settings → Cemu & Games → Other systems); its games get that console's look in the window (js/systems.js).
+// (Settings → Games & Consoles → Other consoles); its games get that console's look in the window (js/systems.js).
 // CosmoU only starts the emulator people chose: it never downloads emulators, keys, firmware or games.
 const SD = require('./js/systems-data.js');
 const SYSTEMS = SD.SYSTEMS;
@@ -2182,7 +2182,7 @@ function launchSystemGame(sys, game) {
   const c = sysOk(sys) && (read().systems || {})[sys];
   const name = sysOk(sys) ? SYSTEMS[sys].name : 'this console';
   if (!c || !c.emuPath || !fs.existsSync(c.emuPath))
-    return { ok: false, error: 'No ' + name + ' emulator chosen yet. Choose it in Settings → Cemu & Games → Other systems.' };
+    return { ok: false, error: 'No ' + name + ' emulator chosen yet. Choose it in Settings → Games & Consoles → Other consoles.' };
   if (typeof game !== 'string' || !fs.existsSync(game)) return { ok: false, error: 'The game file no longer exists.' };
   const base = path.basename(c.emuPath);
   const rule = SD.DESKTOP.find(r => r.re.test(base));
@@ -2199,7 +2199,7 @@ function launchSystemGame(sys, game) {
     args = ['-L', core, game];
   } else if (rule) args = rule.args(game);
   const cmd = P.appCommand(c.emuPath, args);
-  if (!cmd) return { ok: false, error: 'The ' + name + ' emulator can’t be started. Choose it again in Settings → Cemu & Games.' };
+  if (!cmd) return { ok: false, error: 'The ' + name + ' emulator can’t be started. Choose it again in Settings → Games & Consoles.' };
   const child = spawn(cmd[0], cmd[1], { detached: true, stdio: 'ignore', cwd: path.dirname(c.emuPath), env: P.childEnv(c.emuPath) });
   child.on('error', () => {});
   child.unref();

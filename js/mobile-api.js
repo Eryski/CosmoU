@@ -384,7 +384,7 @@
       const r = await call('launchCemu', g.path);
       return r && r.ok ? { ok: true, note: 'system' } : { ok: false, error: (r && r.error) || 'MeloNX couldn’t be started.' };
     }
-    if (!c.pkg) return { ok: false, error: 'No ' + name + ' emulator app chosen yet. Choose it in Settings → Cemu & Games → Other systems.' };
+    if (!c.pkg) return { ok: false, error: 'No ' + name + ' emulator app chosen yet. Choose it in Settings → Games & Consoles → Other consoles.' };
     const rule = SD.ANDROID.find(r => r.re.test(c.pkg)) || { how: 'view' };
     const r = await call('launchEmu', {
       pkg: c.pkg,
@@ -519,7 +519,7 @@
       return r;
     }
     const c = sync('cemuInfo') || {};
-    if (!c.installed) return { ok: false, error: EMU + ' isn’t installed yet. Open Settings → Cemu & Games to get it.' };
+    if (!c.installed) return { ok: false, error: EMU + ' isn’t installed yet. Open Settings → Games & Consoles to get it.' };
     const game = lastGames.find(x => x.path === g.path) || {};
     const r = await call('launchCemu', g.path, game.dirUri || '');
     if (!r || !r.ok) return { ok: false, error: (r && r.error) || 'Cemu couldn’t be started.' };

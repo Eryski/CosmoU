@@ -436,19 +436,20 @@ async function waitFor(fn, ms) {
   await w.waitForTimeout(2000);
   const look = await E(() => ({
     sys: curSys,
-    mode,
     theme: style,
-    tiles: document.querySelectorAll('#swrow .sw-t').length,
-    wiiuLook: !$('#wu').hidden,
-    shown: list().map(g => g.name),
-    brand: $('.brand small').textContent,
+    face: nx.on && document.body.classList.contains('face-nx') && !$('#nx').hidden,
+    shell: getComputedStyle($('.page')).display,
+    tiles: [...document.querySelectorAll('#nxrow .nx-t')].map(t => t.dataset.g || 'all'),
+    wiiuLook: !$('#wu').hidden && getComputedStyle($('#wu')).display !== 'none',
+    shown: nxGames().map(g => g.name),
   }));
   ok(
-    'Switch look: Switch Home, Switch theme, only Switch games',
+    'Switch: its own interface (Switch Home, its theme, only Switch games, no Wii U window)',
     look.sys === 'switch' &&
-      look.mode === 'chome' &&
+      look.face &&
+      look.shell === 'none' &&
       look.theme === 'switch' &&
-      look.tiles === Math.min(12, look.shown.length) + 1 &&
+      look.tiles.length === Math.min(12, look.shown.length) + (look.shown.length > 12 ? 1 : 0) &&
       !look.wiiuLook &&
       look.shown.includes('Metroid Dread') &&
       !look.shown.some(n => /Zelda|Splatoon/.test(n)),
@@ -466,18 +467,50 @@ async function waitFor(fn, ms) {
     swArgs = fs.readFileSync(started, 'utf8');
   } catch {}
   ok('a Switch game starts in its emulator (Eden: -f -g <game>)', sp && sp.ok && /^-f\n-g\n.*Odyssey \[0100000000010000\]/.test(swArgs), [sp, swArgs]);
-  await E(() => openDetail(list().find(x => x.sys === 'switch')));
+  await E(() => openDetail(nxGames().find(x => x.sys === 'switch')));
   await w.waitForTimeout(800);
-  const det = await E(() => ({ kind: $('#df').textContent, packs: $('#dgp').hidden, saves: $('#dsv').hidden }));
-  ok('Switch details: no Cemu tools', det.kind === 'Switch game' && det.packs && det.saves, det);
+  const det = await E(() => ({ scr: nx.scr, det: $('#det').open, items: [...document.querySelectorAll('#nxgnav .nx-gi')].map(b => b.dataset.id) }));
+  ok(
+    'Switch: the details are the game’s page (Start first, no Cemu tools)',
+    det.scr === 'game' && !det.det && det.items[0] === 'start' && det.items.includes('info') && det.items.every(i => ['start', 'info', 'fav', 'mark', 'edit', 'folder', 'copy'].includes(i)),
+    det,
+  );
   await shot('12-switch-details');
+  // the Switch's buttons on the keyboard: B back, All Software, sorting, Quick Settings
+  {
+    const k = async key => {
+      await w.keyboard.press(key);
+      await w.waitForTimeout(150);
+    };
+    // (without Cemu on this computer its setup window may be up – not part of this check)
+    await E(() => {
+      document.querySelectorAll('dialog[open]').forEach(d => d.close());
+      $('#setup').classList.remove('on');
+    });
+    await k('Escape');
+    const s1 = await E(() => ({ scr: nx.scr }));
+    await k('s');
+    const s2 = await E(() => ({ scr: nx.scr, cells: document.querySelectorAll('#nxgrid .nx-cell').length, n: nxGames().length }));
+    await k('y');
+    const s3 = await E(() => ({ pop: !!nx.pop }));
+    await k('Escape');
+    await k('Escape');
+    await k('q');
+    const s4 = await E(() => ({ qs: nx.qs, n: document.querySelectorAll('#nxqlist .nx-gi').length }));
+    await k('Escape');
+    ok(
+      'Switch: B back, All Software, sorting and Quick Settings',
+      s1.scr === 'home' && s2.scr === 'all' && s2.cells === s2.n && s3.pop && s4.qs && s4.n >= 5,
+      [s1, s2, s3, s4],
+    );
+  }
   await E(() => {
     $('#det').close();
     setSystem('wiiu');
   });
   await w.waitForTimeout(1500);
-  const back = await E(() => ({ sys: curSys, mode, n: list().filter(g => g.kind !== 'app').length }));
-  ok('back to Wii U', back.sys === 'wiiu' && back.mode !== 'chome' && back.n >= 2, back);
+  const back = await E(() => ({ sys: curSys, mode, n: list().filter(g => g.kind !== 'app').length, face: nx.on, shell: getComputedStyle($('.page')).display }));
+  ok('back to Wii U (the CosmoU window again)', back.sys === 'wiiu' && back.mode !== 'chome' && back.n >= 2 && !back.face && back.shell !== 'none', back);
 
   // ---- the grid: moving keeps the tiles (no blinking like a reloaded page), up and down go a row ----
   {
