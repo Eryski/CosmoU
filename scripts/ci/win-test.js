@@ -145,8 +145,13 @@ async function portableTest() {
     const cards = await E(() => (document.querySelector('#cpick[open]') ? [...document.querySelectorAll('#cpick .cp-card')].map(b => b.dataset.s) : null));
     ok('console cards on start, one per console (and Every console last)', JSON.stringify(cards) === JSON.stringify([...CONSOLES.map(c => c[0]), 'every']), cards);
     await shot('00-consoles');
-    for (const k of ['ArrowRight', 'ArrowRight']) {
-      await w.keyboard.press(k);
+    // (as many steps right as GameCube is away from the card in focus)
+    const steps = await E(() => {
+      const bs = [...document.querySelectorAll('#cpick .cp-card')];
+      return bs.findIndex(b => b.dataset.s === 'gamecube') - Math.max(0, bs.indexOf(document.activeElement));
+    });
+    for (let k = 0; k < steps; k++) {
+      await w.keyboard.press('ArrowRight');
       await w.waitForTimeout(200);
     }
     await shot('00-consoles-moved');
