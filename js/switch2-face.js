@@ -1079,7 +1079,7 @@ function n2ConsolesPop() {
     'Consoles',
     [
       ...av.map(k => ({ label: SYS[k].name, icon: k === 'wiiu' ? 'wiiu' : 'consoles', on: k === curSys, fn: () => n2UserGo(k) })),
-      av.length > 1 && { label: 'Every console together', icon: 'every', fn: () => setEvery(true) },
+      av.length > 1 && { label: 'Everything together', icon: 'every', fn: () => setEvery(true) },
       { label: 'Add a console…', icon: 'set', fn: () => openSettings('general') },
     ].filter(Boolean),
     Math.max(0, av.indexOf(curSys)),

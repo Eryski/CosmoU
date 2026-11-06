@@ -113,7 +113,8 @@
   fill-opacity: 1;
   stroke: rgba(255, 255, 255, 0.95);
   stroke-width: 2.5;
-  transform: translate(calc(var(--tx) * 11px), calc(var(--ty) * 11px)) scale(1.03);
+  /* steps out a little, but stays on the wheel – no overlapping the ring or its neighbours (Eduard) */
+  transform: translate(calc(var(--tx) * 6px), calc(var(--ty) * 6px));
 }
 .mk-seg.mk-s-none.sel {
   fill-opacity: 0.3;
@@ -193,7 +194,7 @@
   outline: none;
 }
 #mkwheel .mk-i.sel {
-  transform: translate(calc(var(--x) * var(--w) / 2 * 1.07), calc(var(--y) * var(--w) / 2 * 1.07)) scale(1.22);
+  transform: translate(calc(var(--x) * var(--w) / 2 * 1.04), calc(var(--y) * var(--w) / 2 * 1.04)) scale(1.15);
 }
 
 /* the middle: the game, wearing the mark */
@@ -245,8 +246,8 @@
   position: absolute;
   inset: calc(var(--w) * -0.013);
   border-radius: calc(var(--w) * 0.052);
-  border: calc(var(--w) * 0.009) solid var(--sel);
-  box-shadow: 0 0 calc(var(--w) * 0.04) color-mix(in srgb, var(--sel) 55%, transparent);
+  border: calc(var(--w) * 0.009) solid var(--pv, var(--sel));
+  box-shadow: 0 0 calc(var(--w) * 0.04) color-mix(in srgb, var(--pv, var(--sel)) 55%, transparent);
   transition:
     border-color 0.3s,
     box-shadow 0.3s;
@@ -269,7 +270,7 @@
   font-weight: 800;
   font-size: calc(var(--w) * 0.036);
   color: #fff;
-  background: var(--sel);
+  background: var(--pb, var(--sel));
   box-shadow:
     0 0 0 calc(var(--w) * 0.005) rgba(255, 255, 255, 0.95),
     0 calc(var(--w) * 0.008) calc(var(--w) * 0.02) rgba(0, 0, 0, 0.4);

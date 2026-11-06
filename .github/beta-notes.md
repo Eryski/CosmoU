@@ -18,6 +18,7 @@ Thanks for testing! 💙 Please don't share this file. Report bugs **[here](../.
 - Put games and apps of a console into **folders** – mods for the Wii, tools, games to finish. A game's menu (right click, X) → **Put in a folder…** → *New folder…* (name and colour), or a folder you have. On the Switch and Switch 2: a game's page (+) → *Put in a folder*.
 - A folder is a square with the covers of its games, in every view and on the Switch / Switch 2 Home (always first). **A** opens it, **B** (or Esc) leaves it, the first square inside leads back. Its details (Y / I) change its name and colour or delete it (the games stay). A search, Favorites and Recently played still show every game.
 - **🏷️ M for mods** on the wheel of marks.
+- **A sign and a colour at once** – choose a sign on the wheel (⚙, ?, !, M), then open it again and choose a colour: the game keeps its sign and gets a border in that colour (*Exclamation mark · Red*). The same colour again takes the border off. So a system app can stay in your red group. (Idea: Eduard)
 
 **🎨 Each console's own look** *(idea: Eduard)*
 - Choosing a console: the **pencil** on a card (**E** on the keyboard, **X** on a controller) – or Settings → Games & Consoles → **Look**: its **name**, its **colour** (its circle on the Switch and Switch 2, a line on its card) and its **theme**. Your own consoles also choose the console they look like. *Back to standard* undoes it.
@@ -27,6 +28,9 @@ Thanks for testing! 💙 Please don't share this file. Report bugs **[here](../.
 
 ### Fixed
 - **Grid:** moving down brings the chosen row to the top – no more names of the row above peeking out under the banner. The names under the games now have exactly the width of their pictures and frames. (Thanks Eduard!)
+- **The wheel:** the chosen piece stays on the wheel – no more overlapping its neighbours (like the M). (Thanks Eduard!)
+- **Signs on small boxes:** the badge (M, !, ?, ⚙) is sized to the box – small on 3DS and DS squares and GBA cartridges. The GBA cartridges are a little bigger too. (Thanks Eduard!)
+- **Everything:** “Every console” is called **Everything** now (it shows apps and more too), and its button says *Everything* – not the console whose look it borrows. (Thanks Eduard!)
 - **Grid with a controller:** scrolling with the right stick now takes the selection along – the left stick goes on from where you scrolled to instead of jumping all the way back up. (Thanks Eduard!)
 - **Switch:** favorites show a star on their square again (Home and All Software). (Thanks Eduard!)
 - **Switch and Switch 2 (dark):** text fields and lists in Settings and the other windows are readable (they were dark on dark).

@@ -344,9 +344,9 @@ function nxUsers() {
       m.textContent = '+' + (av.length - shown.length);
       const tip = document.createElement('span');
       tip.className = 'nx-tip';
-      tip.textContent = 'Every console';
+      tip.textContent = 'More consoles';
       m.append(tip);
-      m.title = 'Every console';
+      m.title = 'More consoles';
       m.onclick = () => {
         nx.zone = 'top';
         nx.u = [...box.children].indexOf(m);
@@ -995,7 +995,7 @@ function nxSortPop() {
     [
       ...keys.map(k => ({ label: NX_SORT[k], icon: 'sort', on: nx.sort === k, fn: () => nxSetSort(k) })),
       { label: 'Search…', icon: 'search', fn: () => setTimeout(() => $('#nxq').focus(), 30) },
-      many && { label: 'Every console together', icon: 'every', fn: () => setEvery(true) },
+      many && { label: 'Everything together', icon: 'every', fn: () => setEvery(true) },
     ].filter(Boolean),
     Math.max(0, keys.indexOf(nx.sort)),
   );
@@ -1031,7 +1031,7 @@ function nxConsolesPop() {
     'Consoles',
     [
       ...av.map(k => ({ label: SYS[k].name + (k === curSys ? '' : nxLookOf(k) === 'switch' ? '' : ' – its own look'), icon: k === 'wiiu' ? 'wiiu' : 'consoles', on: k === curSys, fn: () => nxUserGo(k) })),
-      av.length > 1 && { label: 'Every console together', icon: 'every', fn: () => setEvery(true) },
+      av.length > 1 && { label: 'Everything together', icon: 'every', fn: () => setEvery(true) },
       { label: 'Add a console…', icon: 'set', fn: () => openSettings('general') },
     ].filter(Boolean),
     Math.max(0, av.indexOf(curSys)),

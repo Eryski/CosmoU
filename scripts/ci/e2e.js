@@ -668,7 +668,7 @@ async function waitFor(fn, ms) {
     });
     ok(
       'every console on one page, favorites from every console',
-      ev.skip || (ev.card && ev.all.n > ev.one && ev.all.sys >= 2 && /Every console/.test(ev.all.label) && ev.fav.length === 2 && ev.back === ev.one),
+      ev.skip || (ev.card && ev.all.n > ev.one && ev.all.sys >= 2 && /Everything/.test(ev.all.label) && ev.fav.length === 2 && ev.back === ev.one),
       ev,
     );
   }

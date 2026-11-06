@@ -46,7 +46,8 @@ function applySystem(first) {
     // many consoles: one button with the console on screen, the others in a menu
     const b = document.createElement('button');
     b.className = 'on';
-    b.textContent = SYS[curSys].short + ' ▾';
+    // Everything on screen: its name – not the console whose look it borrows (Eduard)
+    b.textContent = (everySys ? 'Everything' : SYS[curSys].short) + ' ▾';
     b.onclick = e => sysMenu(e.currentTarget);
     sw.append(b);
   } else
@@ -59,7 +60,7 @@ function applySystem(first) {
       b.onclick = () => (k === curSys && everySys ? setEvery(false) : setSystem(k));
       sw.append(b);
     }
-  $('.brand small').textContent = everySys ? 'Every console' : p.name + ' Library';
+  $('.brand small').textContent = everySys ? 'Everything' : p.name + ' Library';
   SHOW_LABEL.wiiu = p.name + ' games';
   // the third view button is the system's own home screen
   const vb = [...document.querySelectorAll('#vt button')];

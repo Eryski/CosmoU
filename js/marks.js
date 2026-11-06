@@ -22,16 +22,49 @@ try {
   const m = JSON.parse(localStorage.getItem('cosmou.marks') || '{}');
   if (m && typeof m === 'object') marks = m;
 } catch {}
-const markOf = name => MARKS.find(m => m.k === marks[name] && m.k !== 'fav' && m.k !== 'none') || null;
+// A game can have a sign and a colour at once: the sign keeps its badge, the colour lines the cover (Eduard –
+// "open the wheel: choose the sign; open it again: choose the colour of the border"). Kept as 'sign:colour'.
+const mkSign = k => MARKS.find(m => m.k === k && m.icon && m.k !== 'fav' && m.k !== 'none') || null;
+const mkColour = k => MARKS.find(m => m.k === k && !m.icon) || null;
+function mkParts(raw) {
+  const [a, b] = String(raw || '').split(':');
+  return { sign: mkSign(a), colour: mkColour(b) || mkColour(a) };
+}
+// what a game's mark becomes when k is chosen on the wheel
+function mkCombine(raw, k) {
+  if (k === 'none') return '';
+  const { sign, colour } = mkParts(raw);
+  if (mkSign(k)) return colour ? k + ':' + colour.k : k;
+  if (mkColour(k)) {
+    // the same colour again takes it off (the sign stays)
+    if (colour && colour.k === k) return sign ? sign.k : '';
+    return sign ? sign.k + ':' + k : k;
+  }
+  return raw || '';
+}
+// the mark as one thing: its name, its sign, the colour of its line (col) and of its badge
+function mkLook(raw) {
+  const { sign, colour } = mkParts(raw);
+  if (!sign && !colour) return null;
+  return {
+    k: raw,
+    label: sign && colour ? sign.label + ' · ' + colour.label : (sign || colour).label,
+    icon: sign ? sign.icon : '',
+    col: colour ? colour.col : sign.col,
+    badge: sign ? sign.col : '',
+  };
+}
+const markOf = name => mkLook(marks[name]);
 function setMark(g, k) {
   if (!g) return;
   if (k === 'fav') return toggleFav(g);
-  if (k === 'none') delete marks[g.name];
-  else marks[g.name] = k;
+  const v = mkCombine(marks[g.name], k);
+  if (!v) delete marks[g.name];
+  else marks[g.name] = v;
   try {
     localStorage.setItem('cosmou.marks', JSON.stringify(marks));
   } catch {}
-  blip(k === 'none' ? 'back' : 'open');
+  blip(v ? 'open' : 'back');
   const m = markOf(g.name);
   toast(m ? '✓ ' + g.name + ': ' + m.label : '✓ ' + g.name + ' has no mark now', 2400);
   render();
@@ -53,7 +86,12 @@ function markDeco() {
         art.append(b);
       }
       b.textContent = m.icon;
-      b.style.background = m.col;
+      b.style.background = m.badge || m.col;
+      // as big as the box allows: small on a 3DS square or a GBA cartridge, as before on a big cover (Eduard)
+      // (the Switch and Switch 2 size theirs themselves)
+      const w = el.closest('.nx-t, #n2') ? 0 : art.clientWidth;
+      if (w) b.style.fontSize = Math.max(7, Math.min(16, Math.round(w * 0.1))) + 'px';
+      else b.style.removeProperty('font-size');
     } else if (b) b.remove();
   }
 }
@@ -108,7 +146,7 @@ function mkBuild() {
     <div class="mk-stage">
       <div class="mk-glow"></div>
       <svg class="mk-svg" viewBox="-210 -210 420 420" aria-hidden="true">
-        <circle class="mk-plate" r="198"/>
+        <circle class="mk-plate" r="200"/>
         <g class="mk-segs">${segs}</g>
         <circle class="mk-rim" r="110"/>
         <g class="mk-needle"><path d="M0 -114 L-9 -100 L9 -100Z"/></g>
@@ -191,7 +229,7 @@ function markWheel(g) {
     }),
   );
   // start on what the game has now
-  const now = favs.has(g.name) && !marks[g.name] ? 'fav' : marks[g.name] || 'fav';
+  const now = favs.has(g.name) && !marks[g.name] ? 'fav' : String(marks[g.name] || 'fav').split(':')[0];
   const at = Math.max(0, MARKS.findIndex(m => m.k === now));
   mkRot = mkAng(at);
   mkEl.style.setProperty('--rot', mkRot + 'deg');
@@ -217,7 +255,15 @@ function markPick(i) {
   const cov = mkEl.querySelector('.mk-cover'),
     badge = mkEl.querySelector('.mk-badge');
   cov.dataset.k = fav ? 'none' : m.k;
-  badge.textContent = fav ? '' : m.icon || '';
+  // with what it has already: a colour keeps its sign, a sign keeps its colour
+  const pv = m.k === 'fav' ? null : mkLook(mkCombine(mkGame && marks[mkGame.name], m.k));
+  // the same colour again takes it off
+  if (m.k !== 'fav' && m.k !== 'none' && !pv) (cov.dataset.k = 'none'), (mkEl.querySelector('.mk-name').textContent = 'No colour');
+  cov.style.setProperty('--pv', pv ? pv.col : m.col);
+  badge.style.setProperty('--pb', pv && pv.badge ? pv.badge : m.col);
+  badge.textContent = fav ? '' : m.k === 'fav' ? m.icon : pv ? pv.icon || '' : '';
+  // the name says what the game will wear: “Exclamation mark · Red”
+  if (pv && m.k !== 'none') mkEl.querySelector('.mk-name').textContent = pv.label;
   const name = mkEl.querySelector('.mk-name');
   name.classList.remove('swap');
   void name.offsetWidth;

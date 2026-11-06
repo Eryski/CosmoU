@@ -62,7 +62,7 @@ function consolePick(onStart) {
     b.dataset.s = 'every';
     b.setAttribute('role', 'option');
     b.innerHTML =
-      '<span class="pv pv-every" aria-hidden="true"><i class="pv-top"></i><i class="pv-t"></i><i class="pv-t"></i><i class="pv-t"></i><i class="pv-t"></i><i class="pv-t"></i><i class="pv-t"></i><i class="pv-nav"></i></span><b>Every console</b><small></small>';
+      '<span class="pv pv-every" aria-hidden="true"><i class="pv-top"></i><i class="pv-t"></i><i class="pv-t"></i><i class="pv-t"></i><i class="pv-t"></i><i class="pv-t"></i><i class="pv-t"></i><i class="pv-nav"></i></span><b>Everything</b><small></small>';
     b.querySelector('small').textContent = n + (n === 1 ? ' game' : ' games') + ' · all together';
     b.onclick = () => {
       d.close();

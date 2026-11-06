@@ -9442,8 +9442,9 @@ html.dark .wch.ch-empty {
   bottom: 12%;
 }
 .swh[data-cart='gba'] .cart {
-  --cw: 120px;
-  --ch: 78px;
+  /* a little bigger than a real one, so the picture on it reads (Eduard) */
+  --cw: 150px;
+  --ch: 98px;
   --cc: #45484f;
   --cc2: #2f3137;
   border-radius: 6px 6px 10px 10px;

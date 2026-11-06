@@ -212,14 +212,14 @@ function setEvery(on) {
   if (typeof blip === 'function') blip(everySys ? 'open' : 'back');
   toast(
     everySys
-      ? '✓ The games of every console together – Sort & filter → Every console to go back'
+      ? '✓ Everything together: the games of all your consoles – Sort & filter → Everything to go back'
       : '✓ Only the ' + (typeof SYS === 'object' && SYS[curSys] ? SYS[curSys].name + ' ' : '') + 'games again',
     3200,
   );
 }
 function sortUi() {
   const b = $('#sort'),
-    lab = (everySys ? 'Every console · ' : '') + (showFilter !== 'all' ? SHOW_LABEL[showFilter] + ' · ' : '') + SORT_LABEL[sortMode];
+    lab = (everySys ? 'Everything · ' : '') + (showFilter !== 'all' ? SHOW_LABEL[showFilter] + ' · ' : '') + SORT_LABEL[sortMode];
   b.innerHTML =
     '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M7 12h10M10 18h4"/></svg><span></span><svg class="car" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>';
   b.querySelector('span').textContent = lab;
@@ -246,7 +246,7 @@ function sortMenu(anchor) {
       { label: 'All games', icon: 'all', on: showFilter === 'all', hint: String(n('all')), fn: () => setShow('all') },
       { label: 'Favorites', icon: 'star', on: showFilter === 'fav', hint: String(n('fav')), sub: many ? 'From every console' : '', fn: () => setShow('fav') },
       many && {
-        label: 'Every console',
+        label: 'Everything',
         icon: 'all',
         on: everySys,
         sub: everySys ? 'On · the games of all consoles together' : 'The games of all consoles on one page',
@@ -553,7 +553,7 @@ render = function () {
   const b = document.querySelector('.brand small'),
     n = games.filter(g => g.kind !== 'app' && (everySys || sysOf(g) === curSys)).length;
   if (b)
-    b.textContent = (everySys ? 'Every console' : SYS[curSys].name + ' Library') + (n ? ' · ' + n + (n === 1 ? ' game' : ' games') : '');
+    b.textContent = (everySys ? 'Everything' : SYS[curSys].name + ' Library') + (n ? ' · ' + n + (n === 1 ? ' game' : ' games') : '');
   const g = cur();
   if (g && mode === 'grid') {
     coverMeta(g, -1, 0, $('#hmeta'));
