@@ -87,6 +87,11 @@ function padFocusable(d) {
 function padFocus(d, f) {
   document.body.classList.add('padnav');
   pad.moved = true;
+  // choosing a console: the cards' own arrows (a row, or a grid with many consoles)
+  if (d.id === 'cpick') {
+    const key = f.l ? 'ArrowLeft' : f.r ? 'ArrowRight' : f.u ? 'ArrowUp' : 'ArrowDown';
+    return d.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }));
+  }
   const a = document.activeElement,
     inside = a && a !== d && d.contains(a);
   // sliders: left and right change the value
@@ -215,6 +220,16 @@ function padTick(now) {
   }
   if (!busy && (open || mode === 'grid')) padScroll(open, gp0.axes[3] || 0, now);
   else pad.sT = now;
+  // LT on its own – a short press, no RT with it: choose a console, from anywhere (Eduard)
+  // (LT + RT held is the clean view; with a window open LT does nothing here)
+  if (!busy && !open) {
+    if (s.lt && !pad.ltAt) (pad.ltAt = now), (pad.ltRt = false);
+    if (s.lt && s.rt) pad.ltRt = true;
+    if (!s.lt && pad.ltAt) {
+      if (!pad.ltRt && now - pad.ltAt < 500 && typeof consolePick === 'function') consolePick(false);
+      pad.ltAt = 0;
+    }
+  } else pad.ltAt = 0;
   // the Switch's and the Switch 2's own interfaces have their own buttons (js/switch-face.js, js/switch2-face.js)
   if ((typeof nxPad === 'function' && nxPad(fire, s, open, busy, now)) || (typeof n2Pad === 'function' && n2Pad(fire, s, open, busy, now))) {
     requestAnimationFrame(padTick);
@@ -228,6 +243,8 @@ function padTick(now) {
       if (open.id === 'dlg' && (fire.lb || fire.rb)) sxStep(fire.rb ? 1 : -1, true);
       // choosing a console: X edits the look of the card in focus (js/console-look.js)
       if (open.id === 'cpick' && fire.x && typeof slEditFocused === 'function') slEditFocused();
+      // … and RT / LT move the card in focus: your order of the consoles (Eduard)
+      if (open.id === 'cpick' && (fire.lt || fire.rt) && typeof cpMove === 'function') cpMove(fire.rt ? 1 : -1);
       if (fire.u || fire.d || fire.l || fire.r) padFocus(open, fire);
       if (fire.b) {
         if (open.id === 'dlg' && document.activeElement && document.activeElement.closest('.sx-main')) sxFocusNav();

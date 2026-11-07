@@ -9,6 +9,15 @@ try {
 } catch {}
 // the interfaces a console can borrow (js/switch-face.js, js/switch2-face.js)
 const SL_FACES = ['switch', 'switch2'];
+// … and the home screens (js/console-home.js): one of each kind
+const SL_HOMES = ['switch', 'wii', 'gamecube', '3ds', 'ds', 'n64', 'snes', 'gba', 'gb'];
+// the home screen a console borrows (a profile from js/systems-data.js), or null
+function slHomeOf(k) {
+  const o = slData[k],
+    h = o && o.home;
+  if (!h || h === k || k === 'wiiu' || /^own-/.test(k) || !SL_HOMES.includes(h) || !SYSDATA.SYSTEMS[h]) return null;
+  return SYSDATA.SYSTEMS[h];
+}
 const SL_COLS = ['#1ea7dd', '#e5484d', '#3a3f4b', '#8e9aa6', '#6b5bd2', '#2f9e5c', '#f29a3c', '#f06cc0', '#14b8a6', '#c0392b'];
 const slSave = () => {
   try {
@@ -26,6 +35,11 @@ function slApply() {
       // its interface: its own, or the Switch's or the Switch 2's (Eduard: "my Wii U games in this format")
       if (SL_FACES.includes(o.face) && o.face !== k) SYS[k].look = o.face;
       else delete SYS[k].look;
+      // … or another console's home screen (Switch games in the 3DS menu …)
+      const h = slHomeOf(k);
+      SYS[k].homeLabel = h ? h.homeLabel : base.homeLabel;
+      // (a Switch or Switch 2 with another home screen: not its own interface then)
+      if (h && !SYS[k].look) SYS[k].look = 'home';
     }
     SYS[k].col = o.col || '';
   }
@@ -65,7 +79,7 @@ function slEdit(k) {
           <div class="set"><div class="lbl"><strong>Colour</strong><small>Its circle and its card</small></div><div class="fd-cols" id="sl_c" role="radiogroup" aria-label="Colour"></div></div>
           <div class="set"><div class="lbl"><strong>Theme</strong><small>Its colours, light and music while it is on screen</small></div><select class="sel" id="sl_th" style="width: 240px"></select></div>
           <div class="set" id="sl_lr"><div class="lbl"><strong>Looks like</strong><small>Its home screen and sounds</small></div><select class="sel" id="sl_l" style="width: 240px"></select></div>
-          <div class="set" id="sl_fr"><div class="lbl"><strong>Interface</strong><small>Its own home screen – or the whole Switch or Switch 2 interface for its games</small></div><select class="sel" id="sl_f" style="width: 240px"></select></div>
+          <div class="set" id="sl_fr"><div class="lbl"><strong>Interface</strong><small>Its own home screen – the whole Switch or Switch 2 interface, or another console’s home screen</small></div><select class="sel" id="sl_f" style="width: 240px"></select></div>
         </div></div>
         <div class="ft"><button class="btn ghost" id="sl_rs">Back to standard</button><div class="acts"><button class="btn" id="sl_x">Cancel</button><button class="btn main big" id="sl_s">Save</button></div></div>
       </div>`;
@@ -107,12 +121,22 @@ function slEdit(k) {
   $('#sl_lr').hidden = !own;
   $('#sl_fr').hidden = own;
   if (!own) {
-    const fs = $('#sl_f');
+    const fs = $('#sl_f'),
+      og = (label, l) => {
+        const g = document.createElement('optgroup');
+        g.label = label;
+        g.append(...l);
+        return g;
+      };
+    // (the Wii U has its own kind of home: it can borrow a whole interface, not another console's home screen)
+    const homes = k === 'wiiu' ? [] : SL_HOMES.filter(x => x !== k && SYSDATA.SYSTEMS[x]).map(x => new Option(SYSDATA.SYSTEMS[x].name + ' · ' + SYSDATA.SYSTEMS[x].homeLabel, 'h:' + x));
     fs.replaceChildren(
       new Option('Its own · ' + (base.homeLabel || base.name), ''),
-      ...SL_FACES.filter(x => x !== k && SYSDATA.SYSTEMS[x]).map(x => new Option(SYSDATA.SYSTEMS[x].name + ' interface', x)),
+      og('The whole interface', SL_FACES.filter(x => x !== k && SYSDATA.SYSTEMS[x]).map(x => new Option(SYSDATA.SYSTEMS[x].name + ' interface', x))),
+      ...(homes.length ? [og('Another console’s home screen', homes)] : []),
     );
-    fs.value = (slData[k] && slData[k].face) || '';
+    const cur0 = slData[k] || {};
+    fs.value = cur0.face || (cur0.home ? 'h:' + cur0.home : '');
   }
   if (own) {
     const ls = $('#sl_l');
@@ -148,9 +172,11 @@ function slEdit(k) {
     slData[k] = { ...prev, col };
     if (!own) {
       slData[k].name = name && name !== base.name ? name : '';
-      slData[k].face = $('#sl_f').value || '';
+      const f = $('#sl_f').value || '';
+      slData[k].face = SL_FACES.includes(f) ? f : '';
+      slData[k].home = f.startsWith('h:') ? f.slice(2) : '';
     }
-    if (!slData[k].col && !slData[k].name && !slData[k].face) delete slData[k];
+    if (!slData[k].col && !slData[k].name && !slData[k].face && !slData[k].home) delete slData[k];
     slSave();
     // its theme: now when it is on screen, else the next time it is
     const t = th.value;
@@ -186,6 +212,11 @@ consolePick = function () {
     if (SYS[k].col) c.style.setProperty('--cpc', SYS[k].col);
     else c.style.removeProperty('--cpc');
     c.classList.toggle('cp-col', !!SYS[k].col);
+    // its own picture behind its card – the console greets you with your wallpaper (Eduard)
+    const pic = typeof lookPic === 'function' ? lookPic(k) : null;
+    if (pic && pic.url) c.style.setProperty('--cpw', cssPic(pic.url));
+    else c.style.removeProperty('--cpw');
+    c.classList.toggle('cp-pic', !!(pic && pic.url));
     if (!c.querySelector('.cp-edit')) {
       const e = document.createElement('span');
       e.className = 'cp-edit';
@@ -207,9 +238,56 @@ consolePick = function () {
     h.className = 'cp-hint cp-hint2';
     d.querySelector('.cp-in').append(h);
   }
-  h.textContent = 'The pencil (E on the keyboard, X on a controller) changes a console’s name, colour and theme.';
+  h.textContent = IS_MOBILE
+    ? 'The pencil changes a console’s name, colour, theme and interface.'
+    : 'Pencil (E · X): name, colour, theme and interface · Shift + ← → (LT · RT): move a console';
+  // many consoles: a grid instead of one long row (Eduard)
+  d.classList.toggle('cp-many', d.querySelectorAll('.cp-card').length > 6);
   return r;
 };
+
+// ---------- your order of the consoles: the cards, L and R, the circles of the Switch and Switch 2 ----------
+let slOrder = [];
+try {
+  const o = JSON.parse(localStorage.getItem('cosmou.sysOrder') || '[]');
+  if (Array.isArray(o)) slOrder = o.filter(x => typeof x === 'string');
+} catch {}
+const _sysAvailSl = sysAvail;
+sysAvail = function () {
+  const l = _sysAvailSl.apply(this, arguments);
+  if (!slOrder.length) return l;
+  const at = k => {
+    const i = slOrder.indexOf(k);
+    return i < 0 ? 1e3 + l.indexOf(k) : i;
+  };
+  return [...l].sort((a, b) => at(a) - at(b));
+};
+// the card in focus one place on (d = 1) or back (d = -1)
+function cpMove(d) {
+  const dlg = $('#cpick'),
+    c = document.activeElement && document.activeElement.closest && document.activeElement.closest('#cpick .cp-card');
+  if (!dlg || !c || c.dataset.s === 'every') return;
+  const l = sysAvail(),
+    i = l.indexOf(c.dataset.s),
+    j = i + d;
+  if (i < 0 || j < 0 || j >= l.length) return blip('bump');
+  [l[i], l[j]] = [l[j], l[i]];
+  slOrder = l;
+  try {
+    localStorage.setItem('cosmou.sysOrder', JSON.stringify(slOrder));
+  } catch {}
+  // the card itself moves: no new cards, the focus stays on it
+  const o = dlg.querySelector(`.cp-card[data-s="${l[i]}"]`);
+  if (d > 0) o.after(c);
+  else o.before(c);
+  c.focus({ preventScroll: true });
+  c.scrollIntoView({ inline: 'nearest', block: 'nearest' });
+  c.classList.remove('cp-moved');
+  void c.offsetWidth;
+  c.classList.add('cp-moved');
+  blip('move');
+  if (typeof render === 'function') render();
+}
 // E on the keyboard: the look of the card in focus
 addEventListener(
   'keydown',

@@ -385,3 +385,70 @@ if (typeof MCOL !== 'undefined') {
   MCOL.back = MCOL.back || '#8a8f98';
   MCOL.trash = MCOL.trash || '#e5484d';
 }
+
+// ---------- your order (RT): a lifted game put down on a folder goes into it (Eduard) ----------
+// While a game is lifted (js/order.js), moving it onto a folder lights the folder up; putting it down there puts the
+// game into the folder. In a folder, the way back takes it out again. Moving on goes past it as before.
+let fdDrop = null;
+function fdDropUi() {
+  for (const e of document.querySelectorAll('.fd-drop')) e.classList.remove('fd-drop');
+  if (!fdDrop) return;
+  for (const e of document.querySelectorAll('[data-g]')) if (e.dataset.g.split('|')[0] === fdDrop.name) e.classList.add('fd-drop');
+}
+if (typeof orderShift === 'function') {
+  const _orderShiftFd = orderShift;
+  orderShift = function (d) {
+    const l = list(),
+      i = l.findIndex(x => x.name === orderMove);
+    if (i < 0) return _orderShiftFd.apply(this, arguments);
+    const from = fdDrop ? l.findIndex(x => x.name === fdDrop.name) : i,
+      j = from + d;
+    // at the edge on a folder: it stays there
+    if (fdDrop && (j < 0 || j >= l.length)) return blip('bump');
+    // over a folder (or the way back): on it, not past it
+    if (j >= 0 && j < l.length && j !== i && fdIs(l[j])) {
+      fdDrop = l[j];
+      blip('move');
+      fdDropUi();
+      toast(fdDrop.kind === 'folder' ? '📁 Put it down here: into “' + fdDrop.name + '”' : '📁 Put it down here: out of the folder', 2200);
+      return;
+    }
+    // off the folder: back to its own place
+    if (fdDrop) {
+      fdDrop = null;
+      fdDropUi();
+      blip('move');
+      if ((d > 0 && j >= i) || (d < 0 && j <= i)) return;
+    }
+    return _orderShiftFd.apply(this, arguments);
+  };
+}
+if (typeof orderEnd === 'function') {
+  const _orderEndFd = orderEnd;
+  orderEnd = function () {
+    const drop = fdDrop,
+      g = orderMove ? gameOf(orderMove) : null;
+    fdDrop = null;
+    fdDropUi();
+    if (!drop || !g) return _orderEndFd.apply(this, arguments);
+    // put down on the folder: the game goes in (or out), quietly – the folder says it
+    orderMove = '';
+    document.body.classList.remove('moving');
+    if (drop.kind === 'folder') {
+      sel = drop.name;
+      fdPut(g, drop.fid);
+    } else {
+      fdTakeOut(g);
+      sel = drop.name;
+      render();
+    }
+  };
+}
+{
+  const _renderFdDrop = render;
+  render = function () {
+    const r = _renderFdDrop.apply(this, arguments);
+    if (fdDrop) fdDropUi();
+    return r;
+  };
+}

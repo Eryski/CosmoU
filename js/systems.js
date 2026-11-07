@@ -112,6 +112,9 @@ function setSystem(k) {
   // each system keeps its own theme and view
   lsSys('style', style);
   lsSys('viewMode', mode);
+  // which way: the next console in the row comes in from the right, the one before from the left (Eduard: "hops")
+  const av = sysAvail(),
+    dir = av.indexOf(k) < av.indexOf(curSys) ? 'prev' : 'next';
   withVT(() => {
     curSys = k;
     try {
@@ -139,7 +142,7 @@ function setSystem(k) {
     // its own music, its theme's music, or your music file
     if (typeof swapLookMusic === 'function') swapLookMusic();
     render();
-  });
+  }, dir);
 }
 
 // ---------- Settings: the other consoles ----------

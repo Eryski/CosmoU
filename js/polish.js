@@ -2,9 +2,17 @@
 
 // --- Smooth transitions between views (cross-fade of the whole window) ---
 const reduceMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
-function withVT(fn) {
+function withVT(fn, kind) {
   if (!document.startViewTransition || reduceMotion()) return fn();
-  document.startViewTransition(() => fn());
+  // kind: a direction ('next' / 'prev': another console) – css/cosmou.css slides the old screen out and the new in
+  const de = document.documentElement;
+  if (kind) de.dataset.vt = kind;
+  else delete de.dataset.vt;
+  const t = document.startViewTransition(() => fn());
+  t.finished.finally(() => {
+    if (de.dataset.vt === kind) delete de.dataset.vt;
+  });
+  return t;
 }
 
 // --- UI sounds: short synthesized blips (original, no samples) ---

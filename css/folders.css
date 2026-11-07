@@ -128,8 +128,56 @@
 .cp-card {
   position: relative;
 }
-.cp-card.cp-col .pv {
-  box-shadow: 0 0 0 3px var(--cpc);
+/* its colour: a ring around the whole card (Eduard: "the bigger circle") – and the ring of the card in focus */
+.cp-card.cp-col {
+  box-shadow: inset 0 0 0 2px var(--cpc);
+}
+.cp-card.cp-col:is(:focus, :focus-visible) {
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.2),
+    0 0 0 3px var(--cpc),
+    0 0 26px -4px var(--cpc),
+    0 18px 34px -14px rgba(0, 0, 0, 0.7);
+}
+/* its own picture: it fills the little screen of its card – your wallpaper greets you (Eduard) */
+.cp-card.cp-pic .pv {
+  background: var(--cpw) center / cover !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
+}
+.cp-card.cp-pic .pv > i:not(.pv-nav) {
+  opacity: 0;
+}
+.cp-card.cp-pic .pv > .pv-nav {
+  opacity: 0.85;
+}
+/* moved with LT / RT (or Shift + arrows): a little hop */
+.cp-card.cp-moved {
+  animation: cpHop 0.3s cubic-bezier(0.3, 1.5, 0.5, 1);
+}
+@keyframes cpHop {
+  40% {
+    translate: 0 -10px;
+  }
+}
+/* many consoles: a grid instead of one long row */
+#cpick.cp-many .cp-in {
+  max-width: 96vw;
+}
+#cpick.cp-many .cp-row {
+  flex-wrap: wrap;
+  justify-content: center;
+  overflow-x: visible;
+  overflow-y: auto;
+  max-height: 72vh;
+  row-gap: 22px;
+  scroll-snap-type: none;
+}
+#cpick.cp-many .cp-card {
+  /* a little smaller, so two or three rows fit without scrolling */
+  zoom: 0.84;
+}
+#cpick.cp-many .cp-row {
+  scroll-padding: 24px;
 }
 .cp-card.cp-col b::before {
   content: '';
@@ -200,4 +248,17 @@ body.face-n2:not(.n2-light) dialog select option,
 body.face-nx.nx-black dialog select option {
   color: #f5f7fc;
   background: #1c1f28;
+}
+
+/* a lifted game (your order, RT) over a folder: the folder opens its arms – put it down to put the game in */
+.fd-drop {
+  scale: 1.08;
+  z-index: 5;
+  transition: scale 0.18s cubic-bezier(0.3, 1.5, 0.5, 1);
+}
+.fd-drop :is(.art, .wa, .wh-a, .nx-art, .n2-art),
+.fd-drop.art {
+  outline: 4px dashed var(--fc, #5aa9ff);
+  outline-offset: 5px;
+  box-shadow: 0 0 34px 4px color-mix(in srgb, var(--fc, #5aa9ff) 60%, transparent);
 }

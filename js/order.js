@@ -127,8 +127,9 @@ if (typeof quickBuild === 'function') {
     if (look)
       qmRow(look, 'eye', '#5b8def', 'Clean view', cleanOn ? 'On · only the games' : 'Off · hold LT + RT', () => toggleClean(), cleanOn);
     // apps and PC games are added often: right here, not only in Settings
-    if (snd && window.api && api.appSave)
-      qmRow(snd, 'plus', '#2fb36a', 'Add an app', 'A PC game, a port or any program', () => {
+    // (with the look: what is on your console – not under Sound)
+    if (look && window.api && api.appSave)
+      qmRow(look, 'plus', '#2fb36a', 'Add an app', 'A PC game, a port or any program', () => {
         $('#qmdlg').close();
         if (typeof openApp === 'function') openApp(null);
       });

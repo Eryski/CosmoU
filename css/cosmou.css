@@ -2962,6 +2962,52 @@ body.wuhome header > * {
 ::view-transition-new(root) {
   animation-name: vtin;
 }
+/* another console: the old screen glides out to one side, the new one comes in from the other (Eduard: "hops") */
+html[data-vt]::view-transition-old(root),
+html[data-vt]::view-transition-new(root) {
+  animation-duration: 0.52s;
+  animation-timing-function: cubic-bezier(0.25, 0.85, 0.25, 1);
+}
+html[data-vt='next']::view-transition-old(root) {
+  animation-name: vtOutL;
+}
+html[data-vt='next']::view-transition-new(root) {
+  animation-name: vtInR;
+}
+html[data-vt='prev']::view-transition-old(root) {
+  animation-name: vtOutR;
+}
+html[data-vt='prev']::view-transition-new(root) {
+  animation-name: vtInL;
+}
+@keyframes vtOutL {
+  to {
+    opacity: 0;
+    transform: translateX(-7%) scale(0.97);
+    filter: blur(8px);
+  }
+}
+@keyframes vtOutR {
+  to {
+    opacity: 0;
+    transform: translateX(7%) scale(0.97);
+    filter: blur(8px);
+  }
+}
+@keyframes vtInR {
+  from {
+    opacity: 0;
+    transform: translateX(7%) scale(1.02);
+    filter: blur(8px);
+  }
+}
+@keyframes vtInL {
+  from {
+    opacity: 0;
+    transform: translateX(-7%) scale(1.02);
+    filter: blur(8px);
+  }
+}
 @keyframes vtout {
   to {
     opacity: 0;

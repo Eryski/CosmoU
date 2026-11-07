@@ -16,9 +16,28 @@ function consolePick(onStart) {
       if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight' && e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
       e.preventDefault();
       e.stopPropagation();
+      const back = e.key === 'ArrowLeft' || e.key === 'ArrowUp';
+      // Shift + left / right: the card moves (your order of the consoles – js/console-look.js)
+      if (e.shiftKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight') && typeof cpMove === 'function') return cpMove(back ? -1 : 1);
       const bs = [...d.querySelectorAll('.cp-card')],
-        i = bs.indexOf(document.activeElement),
-        n = bs[Math.max(0, Math.min(bs.length - 1, (i < 0 ? 0 : i) + (e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? -1 : 1)))];
+        a = document.activeElement,
+        i = bs.indexOf(a);
+      let n = bs[Math.max(0, Math.min(bs.length - 1, (i < 0 ? 0 : i) + (back ? -1 : 1)))];
+      // many consoles are a grid: up and down go to the card above or below
+      if ((e.key === 'ArrowUp' || e.key === 'ArrowDown') && i >= 0 && d.classList.contains('cp-many')) {
+        const r0 = a.getBoundingClientRect(),
+          x0 = r0.left + r0.width / 2;
+        let best = null,
+          bd = Infinity;
+        for (const b of bs) {
+          const r = b.getBoundingClientRect(),
+            dy = e.key === 'ArrowDown' ? r.top - r0.bottom : r0.top - r.bottom;
+          if (dy < -4) continue;
+          const dd = dy * 4 + Math.abs(r.left + r.width / 2 - x0);
+          if (dd < bd) (bd = dd), (best = b);
+        }
+        n = best || a;
+      }
       if (n && n !== document.activeElement) {
         n.focus();
         if (typeof blip === 'function') blip('move');

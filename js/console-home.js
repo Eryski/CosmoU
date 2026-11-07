@@ -21,7 +21,12 @@ const CH_APPS = [
   ['systems', 'Consoles', '#27b6d6', 'M4 6h16v10H4zM9 20h6M12 16v4', () => sysMenu(document.querySelector('#swapps [data-a="systems"]'))],
   ['set', 'Settings', '#8a8f98', 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm7.4-3a7.4 7.4 0 0 0-.1-1.2l2-1.6-2-3.4-2.4 1a7.4 7.4 0 0 0-2-1.2L14.5 3h-5l-.4 2.6a7.4 7.4 0 0 0-2 1.2l-2.4-1-2 3.4 2 1.6a7.4 7.4 0 0 0 0 2.4l-2 1.6 2 3.4 2.4-1a7.4 7.4 0 0 0 2 1.2l.4 2.6h5l.4-2.6a7.4 7.4 0 0 0 2-1.2l2.4 1 2-3.4-2-1.6c.1-.4.1-.8.1-1.2Z', () => openSettings()],
 ];
-const chProfile = () => SYSDATA.SYSTEMS[curSys] || {};
+// (a console can borrow another one's home screen – js/console-look.js: Switch games in the 3DS menu …)
+const chProfile = () => {
+  const p = SYSDATA.SYSTEMS[curSys] || {},
+    b = typeof slHomeOf === 'function' ? slHomeOf(curSys) : null;
+  return b ? { ...p, home: b.home, variant: b.variant, cart: b.cart } : p;
+};
 // how many icons are next to each other on a page (up and down move by that), 0 = one row
 const chCols = () => (chProfile().home === 'channels' ? 4 : chProfile().variant === '3ds' ? 4 : 0);
 const chPer = () => (chProfile().home === 'channels' ? 12 : chProfile().variant === '3ds' ? 12 : 0);
