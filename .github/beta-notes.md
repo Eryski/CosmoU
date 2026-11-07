@@ -9,12 +9,16 @@ Thanks for testing! 💙 Please don't share this file. Report bugs **[here](../.
 - **Switch 2 support** – Settings → Games & Consoles → Add a console → **Switch 2**: choose your games folder and your Switch 2 emulator (**Eden-NX2**, **Eglantine** or one of their forks). Game files (`.xci`, `.nsp`) and dumped games (a folder with `exefs/main` inside) are found, updates and DLC are not counted as games, the emulator gets `-f -g <game>`, and covers come from Nintendo's eShop.
 - **✨ Its own interface** – with the Switch 2 on screen, CosmoU becomes a Switch 2: dark glass, the chosen game's colours behind everything, its title big above a row of large squares, one frame that glows in blue and red, a dock of round buttons (Library, Play Activity, Themes, Controllers, Consoles, System Settings, Power). **Y** opens the **Library** (Y again: Recent · Most played · A–Z · Favorites, **/** searches), **+** a full **page for each game** (Start, favorite, mark, folder, its facts), **Home** (or **Q**) **Quick Settings**. *Dark* and *Light*, soft sounds that play a little scale along the row. Settings → Appearance → Switch 2 turns it off.
 - **🎮 Any console in another console's look** – Choose console → pencil (**E** / **X**) → **Interface**: *Its own*, the whole *Switch* or *Switch 2 interface* (your Wii U games in the Switch 2's Home, Library and game pages), or *another console's home screen* (Switch games in the 3DS HOME Menu, N64 games on the Wii Menu …). Each console keeps its own choice. (Idea: Eduard)
-- **🗂️ Choosing a console, reworked** – **LT** (a short press) opens it from anywhere. **RT / LT** (or **Shift + ← →**) move the card in focus: your order of the consoles, also for **L / R** and the circles on the Switch. With many consoles the cards are a **grid**. A console's colour rings its whole card, and its own **picture** fills the little screen on its card. (Ideas: Eduard)
+- **🗂️ Choosing a console, reworked** – **LT** (a short press) opens it from anywhere. **RT / LT** (or **Shift + ← →**) move the card in focus: your order of the consoles, also for **L / R** and the circles on the Switch. With many consoles the cards are a **grid**. A console's colour rings its whole card. (Ideas: Eduard)
 - **📁 Into a folder with RT** – lift a game with **RT**, move it onto a folder (it lights up) and put it down: the game is in the folder. In a folder, put it down on the way back to take it out. (Idea: Eduard)
 - **🎵 Its own music** – *Mix & Match*: a cheerful bossa in two moods, a classic part (nylon guitar, whistle, marimba) and a new one (electric piano, flute, a little pop beat). Written for CosmoU.
 
 **🎡 The wheel of marks, new**
-- A ring of twelve pieces around the game: the chosen piece steps out and glows, a pointer turns to it, and the game in the middle **wears the mark before you choose it**. Every piece has its own note, marking sends out a ring of the colour and the wheel folds into the game. Stick, D-pad, **L / R**, mouse wheel and keyboard (**K**) all work.
+- A ring of pieces around the game, and the game in the middle **wears the mark before you choose it**. Stick, D-pad, **L / R**, mouse wheel and keyboard (**K**) all work.
+- **Opening:** the pieces come in a spiral from the mark the game has now, a wave of light runs out, the rim draws itself and throws off a ring of sparks, the game turns in from the side.
+- **Choosing:** a comet of light runs round the rim to the piece; the piece kicks out, glows and sprays sparks, its neighbours lift, its sign pops. The game turns towards it and light runs over it, the name slides in from that side – and the whole room (an aurora behind the wheel) flows into the new colour.
+- **Marking:** a flash, two rings, a burst of sparks and stars that flies on over your library; the badge is stamped on, the wheel folds into the game, and the game's square lights up in its new colour. A soft whoosh, a deep thump and a sparkle – and a controller rumbles.
+- On a slow computer the wheel notices it the first time and leaves out its costly extras, so it stays smooth.
 - **A works while the stick still points at a mark** – no need to let go first. (Thanks Eduard!)
 
 **📁 Folders** *(idea: Eduard)*
@@ -30,6 +34,8 @@ Thanks for testing! 💙 Please don't share this file. Report bugs **[here](../.
 - No circle for the console you're on (you're there already), and under each circle just the console's name – no more "Switch to …". (Thanks Eduard!)
 
 ### Fixed
+- **Sort & filter on other consoles:** *Wii U games* is now *GameCube games* (or the console on screen), counting only that console's games; *Other apps* is *Apps only*. (Thanks Eduard!)
+- **Controller:** a short press is never lost any more, even when the computer is busy for a moment.
 - **Changing consoles** (L / R, the cards) glides: the next console comes in from the right, the one before from the left – no more hard cut. (Thanks Eduard!)
 - **Quick Menu:** *Pictures* and *Add an app* moved to *Look* – *Sound* has only what you hear now. (Thanks Eduard!)
 - **Switch 2: the list of consoles scrolls** – with the controller the chosen line stays in view, the mouse wheel works, and a resting mouse no longer pulls the choice back up. The same for the other lists and Quick Settings on the Switch and Switch 2. (Thanks Eduard!)

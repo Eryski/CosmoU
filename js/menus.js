@@ -219,7 +219,7 @@ function setEvery(on) {
 }
 function sortUi() {
   const b = $('#sort'),
-    lab = (everySys ? 'Everything · ' : '') + (showFilter !== 'all' ? SHOW_LABEL[showFilter] + ' · ' : '') + SORT_LABEL[sortMode];
+    lab = (everySys ? 'Everything · ' : '') + (showFilter !== 'all' ? showLabel(showFilter) + ' · ' : '') + SORT_LABEL[sortMode];
   b.innerHTML =
     '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M7 12h10M10 18h4"/></svg><span></span><svg class="car" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>';
   b.querySelector('span').textContent = lab;
@@ -228,9 +228,13 @@ function sortUi() {
   b.setAttribute('aria-haspopup', 'menu');
 }
 function sortMenu(anchor) {
+  // what is on this console (or on every console together) – favorites come from every console
+  const here = g => everySys || (g.kind === 'app' ? !g.appSys || g.appSys === 'all' || g.appSys === curSys : sysOf(g) === curSys);
   const n = k =>
-    games.filter(g => (k === 'fav' ? favs.has(g.name) : k === 'apps' ? g.kind === 'app' : k === 'wiiu' ? g.kind !== 'app' : true)).length;
-  const hasApps = games.some(g => g.kind === 'app'),
+    games.filter(g =>
+      k === 'fav' ? favs.has(g.name) : here(g) && (k === 'apps' ? g.kind === 'app' : k === 'wiiu' ? g.kind !== 'app' : true),
+    ).length;
+  const hasApps = games.some(g => g.kind === 'app' && here(g)),
     many = typeof sysAvail === 'function' && sysAvail().length > 1;
   openMenu(
     anchor,
@@ -253,14 +257,15 @@ function sortMenu(anchor) {
         fn: () => setEvery(!everySys),
       },
       hasApps && {
-        label: 'Wii U games',
-        icon: 'wiiu',
+        label: showLabel('wiiu'),
+        icon: curSys === 'wiiu' && !everySys ? 'wiiu' : 'play',
         on: showFilter === 'wiiu',
         hint: String(n('wiiu')),
         fn: () => setShow('wiiu'),
       },
       hasApps && {
-        label: 'Other apps',
+        label: 'Apps only',
+        sub: 'PC games, ports and programs you added',
         icon: 'apps',
         on: showFilter === 'apps',
         hint: String(n('apps')),
@@ -535,7 +540,7 @@ if (typeof whMenuItems === 'function') {
     const l = _wmi(kind);
     for (const it of l)
       if (Array.isArray(it) && it[0] === 'sort') {
-        it[1] = 'Sort & filter: ' + (showFilter !== 'all' ? SHOW_LABEL[showFilter] + ' · ' : '') + SORT_LABEL[sortMode];
+        it[1] = 'Sort & filter: ' + (showFilter !== 'all' ? showLabel(showFilter) + ' · ' : '') + SORT_LABEL[sortMode];
         it[3] = () => sortMenu(null);
       }
     if (kind !== 'power') l.push(['keys', 'Keyboard shortcuts', '#8b959e', () => openKeys()]);

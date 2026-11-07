@@ -61,7 +61,7 @@ function applySystem(first) {
       sw.append(b);
     }
   $('.brand small').textContent = everySys ? 'Everything' : p.name + ' Library';
-  SHOW_LABEL.wiiu = p.name + ' games';
+  // (the filter "only the games" is named after the console on screen: showLabel in js/core.js)
   // the third view button is the system's own home screen
   const vb = [...document.querySelectorAll('#vt button')];
   vb[2].dataset.m = p.home;

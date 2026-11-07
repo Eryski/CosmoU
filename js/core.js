@@ -220,10 +220,15 @@ try {
 } catch {}
 const isFav = name => favs.has(name);
 const SORT_LABEL = { az: 'A–Z', za: 'Z–A', recent: 'Recent', most: 'Most played', own: 'Your order' },
-  SHOW_LABEL = { all: 'All games', fav: 'Favorites', wiiu: 'Wii U games', apps: 'Other apps' };
+  SHOW_LABEL = { all: 'All games', fav: 'Favorites', wiiu: 'Games only', apps: 'Apps only' };
 // seconds played (Daily Log) – 0 when the log isn't loaded yet
 const secOf = name =>
   (typeof playLog === 'object' && playLog && playLog.playtime && playLog.playtime[name] && playLog.playtime[name].sec) || 0;
+// the name of a filter: "only the games" is the games of the console on screen (not "Wii U games" on a GameCube – Eduard)
+function showLabel(k) {
+  if (k === 'wiiu' && !everySys && typeof SYS === 'object' && typeof curSys === 'string' && SYS[curSys]) return SYS[curSys].name + ' games';
+  return SHOW_LABEL[k] || '';
+}
 // your own order of the games, for the console on screen
 function ownOrder() {
   try {
@@ -404,7 +409,7 @@ function render() {
       : filtered
         ? showFilter === 'fav'
           ? 'Right-click a game (or press F) and choose “Add to favorites”.'
-          : 'No games match “' + SHOW_LABEL[showFilter] + '”.'
+          : 'No games match “' + showLabel(showFilter) + '”.'
         : view === 'recent'
           ? 'Games you launch will show up here.'
           : IS_IOS

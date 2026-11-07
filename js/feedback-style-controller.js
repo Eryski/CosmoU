@@ -156,13 +156,21 @@ function padScroll(open, ry, now) {
   // in the Grid the selection goes along with the scrolling (Eduard)
   if (!open && typeof gridFollow === 'function') gridFollow();
 }
+// a short press between two pictures still counts (a slow computer, a busy moment): the buttons are also looked at
+// in between, and a press seen there is kept for the next picture
+const padLatch = {};
+setInterval(() => {
+  if (!pad.loop || document.hidden) return;
+  const gp = [...(navigator.getGamepads ? navigator.getGamepads() : [])].find(Boolean);
+  if (gp) gp.buttons.forEach((x, i) => x && x.pressed && (padLatch[i] = true));
+}, 25);
 function padTick(now) {
   const gp0 = [...(navigator.getGamepads ? navigator.getGamepads() : [])].find(Boolean);
   if (!gp0) {
     pad.loop = false;
     return;
   }
-  const b = i => !!(gp0.buttons[i] && gp0.buttons[i].pressed),
+  const b = i => !!((gp0.buttons[i] && gp0.buttons[i].pressed) || padLatch[i]),
     ax = gp0.axes[0] || 0,
     ay = gp0.axes[1] || 0,
     rx = gp0.axes[2] || 0,
@@ -192,6 +200,7 @@ function padTick(now) {
     pl: rx < -0.6,
     pr: rx > 0.6,
   };
+  for (const k in padLatch) delete padLatch[k];
   const hit = k => {
     if (!s[k]) {
       pad.next[k] = 0;

@@ -139,17 +139,6 @@
     0 0 26px -4px var(--cpc),
     0 18px 34px -14px rgba(0, 0, 0, 0.7);
 }
-/* its own picture: it fills the little screen of its card – your wallpaper greets you (Eduard) */
-.cp-card.cp-pic .pv {
-  background: var(--cpw) center / cover !important;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
-}
-.cp-card.cp-pic .pv > i:not(.pv-nav) {
-  opacity: 0;
-}
-.cp-card.cp-pic .pv > .pv-nav {
-  opacity: 0.85;
-}
 /* moved with LT / RT (or Shift + arrows): a little hop */
 .cp-card.cp-moved {
   animation: cpHop 0.3s cubic-bezier(0.3, 1.5, 0.5, 1);

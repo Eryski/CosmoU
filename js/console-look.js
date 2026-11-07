@@ -212,11 +212,6 @@ consolePick = function () {
     if (SYS[k].col) c.style.setProperty('--cpc', SYS[k].col);
     else c.style.removeProperty('--cpc');
     c.classList.toggle('cp-col', !!SYS[k].col);
-    // its own picture behind its card – the console greets you with your wallpaper (Eduard)
-    const pic = typeof lookPic === 'function' ? lookPic(k) : null;
-    if (pic && pic.url) c.style.setProperty('--cpw', cssPic(pic.url));
-    else c.style.removeProperty('--cpw');
-    c.classList.toggle('cp-pic', !!(pic && pic.url));
     if (!c.querySelector('.cp-edit')) {
       const e = document.createElement('span');
       e.className = 'cp-edit';
