@@ -237,6 +237,8 @@ function n2Build() {
   n2$('n2row').parentElement.addEventListener(
     'wheel',
     e => {
+      // (a list or Quick Settings on top scrolls itself – Eduard: the console list didn't scroll)
+      if (n2.pop || n2.qs || e.target.closest('.n2-pop, .n2-qs')) return;
       e.preventDefault();
       const d = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
       if (Math.abs(d) < 4 || Date.now() - n2.wheelT < 90) return;
@@ -417,7 +419,7 @@ function n2DrawHome() {
       e.dataset.empty = '1';
       e.innerHTML = '<div class="n2-art">' + NX_IC.all + '</div>';
       const own = SYS[curSys] && SYS[curSys].own && window.api && api.appSave;
-      e.setAttribute('aria-label', own ? 'Add an app' : 'Add Switch 2 games');
+      e.setAttribute('aria-label', own ? 'Add an app' : 'Add ' + SYS[curSys].name + ' games');
       e.onclick = () => (own ? openApp(null) : openSettings('general'));
       row.append(e);
     }
@@ -479,7 +481,7 @@ function n2Hero(t) {
     title = g.kind === 'folder' ? g.name : 'Back to Home';
     meta = g.kind === 'folder' ? String(g.format || '').split(' · ')[1] + ' · press A to open' : 'Press A or B to leave the folder';
   } else if (g) {
-    kick = [n2Kind(g), String(g.format || '').split(' · ')[1] || ''].filter(Boolean).join(' · ');
+    kick = [...new Set([n2Kind(g), String(g.format || '').split(' · ')[1] || ''].filter(Boolean))].join(' · ');
     title = g.name;
     meta = n2PlayLine(g);
   } else if (t && t.dataset.lib) {
@@ -490,7 +492,7 @@ function n2Hero(t) {
     const own = SYS[curSys] && SYS[curSys].own;
     kick = SYS[curSys] ? SYS[curSys].name : '';
     title = own ? 'No apps here yet' : 'No games yet';
-    meta = own ? 'Press A to add an app.' : 'Press A to choose your games folder and your Switch 2 emulator.';
+    meta = own ? 'Press A to add an app.' : 'Press A to choose your games folder and your ' + SYS[curSys].name + ' emulator.';
   } else if (!n2.ready) {
     kick = SYS[curSys] ? SYS[curSys].name : '';
     title = '';
@@ -620,7 +622,9 @@ function n2SelUi(scroll) {
   if (n2.scr === 'lib' && el && el.dataset.g) n2Ambient(gameOf(el.dataset.g));
   if (el) {
     el.classList.add('n2-sel');
-    if (scroll && n2.scr === 'lib' && !n2.qs && !n2.pop)
+    // a long list: the chosen line stays in view
+    if (n2.pop || n2.qs) el.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    else if (scroll && n2.scr === 'lib')
       el.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
     const f = document.activeElement;
     if (n2.on && f !== el && el.focus && !n2.ptr && !(f && f.id === 'n2q') && !document.querySelector('dialog[open]')) el.focus({ preventScroll: true });
@@ -937,7 +941,7 @@ function n2DrawGame() {
   n2Ambient(g);
   const art = n2$('n2gart');
   paint(art, g);
-  n2$('n2gk').textContent = [n2Kind(g), String(g.format || '').split(' · ')[1] || ''].filter(Boolean).join(' · ');
+  n2$('n2gk').textContent = [...new Set([n2Kind(g), String(g.format || '').split(' · ')[1] || ''].filter(Boolean))].join(' · ');
   n2$('n2gt').textContent = g.name;
   n2$('n2gm').textContent = n2PlayLine(g);
   const acts = n2$('n2gacts'),
@@ -1021,7 +1025,11 @@ function n2PopOpen(title, items, at = 0) {
       n2.popI = k;
       n2PopPress();
     };
-    b.onpointerenter = () => {
+    // only a mouse that really moves picks a line – not a line that scrolls under a resting pointer
+    // (that pulled the choice back up all the time: Eduard "does not scroll down in any way")
+    b.onpointermove = e => {
+      if (!e.movementX && !e.movementY) return;
+      if (n2.popI === k) return;
       n2.popI = k;
       n2SelUi();
     };
@@ -1138,7 +1146,8 @@ function n2QsDraw() {
         r.style.setProperty('--v', v + '%');
         l.querySelector('.n2-val').textContent = v + '%';
         r.oninput = () => n2Vol(+r.value);
-        l.onpointerenter = () => {
+        l.onpointermove = e => {
+          if ((!e.movementX && !e.movementY) || n2.qi === k) return;
           n2.qi = k;
           n2SelUi();
         };
@@ -1153,7 +1162,8 @@ function n2QsDraw() {
         n2.qi = k;
         n2QsPress();
       };
-      b.onpointerenter = () => {
+      b.onpointermove = e => {
+        if ((!e.movementX && !e.movementY) || n2.qi === k) return;
         n2.qi = k;
         n2SelUi();
       };

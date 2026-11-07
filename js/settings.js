@@ -577,6 +577,8 @@ const SX_GROUP_NAME = { wiiu: 'Wii U · Cemu', end: '' };
     b.setAttribute('aria-controls', 'sxbd');
     ic.className = 'ci';
     ic.style.setProperty('--c', col);
+    // (its colour on the whole line too: the open category is ringed in it)
+    b.style.setProperty('--c', col);
     ic.innerHTML = SX_ICON[id];
     t.textContent = name;
     n.className = 'n';

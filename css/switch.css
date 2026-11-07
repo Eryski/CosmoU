@@ -275,7 +275,9 @@ body.face-nx {
   place-items: center;
 }
 .nx-t .nx-art.fit {
-  background-size: contain;
+  /* the cover whole, the rest the same cover bigger and dimmed – no empty bars */
+  background-size: contain, cover, cover;
+  background-position: center;
   background-repeat: no-repeat;
   background-color: var(--nx-tile);
 }
@@ -328,6 +330,11 @@ body.face-nx {
   border-radius: calc(var(--u) * 6);
   pointer-events: none;
   z-index: 1;
+}
+/* chosen and marked: the ring around it is the mark's colour, like on every other console (Eduard: "stays blue") */
+.nx-t.marked.nx-sel {
+  --nx-sel: var(--mark);
+  --nx-sel-2: color-mix(in srgb, var(--mark) 55%, #fff);
 }
 /* a favorite: a star in the top right corner */
 .nx-t .nx-fav {
@@ -723,7 +730,8 @@ body.face-nx {
   place-items: center;
 }
 .nx-hero .nx-art.fit {
-  background-size: contain;
+  background-size: contain, cover, cover;
+  background-position: center;
   background-repeat: no-repeat;
   background-color: var(--nx-tile);
 }

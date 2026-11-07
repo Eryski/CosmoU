@@ -954,7 +954,8 @@ function nxPopOpen(title, items, at = 0) {
       nx.popI = k;
       nxPopPress();
     };
-    b.onpointerenter = () => {
+    b.onpointermove = e => {
+      if ((!e.movementX && !e.movementY) || nx.popI === k) return;
       nx.popI = k;
       nxSelUi();
     };
@@ -1089,7 +1090,8 @@ function nxQsDraw() {
         r.value = v;
         l.querySelector('.nx-val').textContent = v + '%';
         r.oninput = () => nxVol(+r.value);
-        l.onpointerenter = () => {
+        l.onpointermove = e => {
+          if ((!e.movementX && !e.movementY) || nx.qi === k) return;
           nx.qi = k;
           nxSelUi();
         };
@@ -1104,7 +1106,8 @@ function nxQsDraw() {
         nx.qi = k;
         nxQsPress();
       };
-      b.onpointerenter = () => {
+      b.onpointermove = e => {
+        if ((!e.movementX && !e.movementY) || nx.qi === k) return;
         nx.qi = k;
         nxSelUi();
       };

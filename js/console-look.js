@@ -1,5 +1,5 @@
-// CosmoU – each console's look, your way: its name, its colour and its theme – and for your own consoles the console
-// they look like. From its card when choosing a console (the pencil, X on a controller, E on the keyboard) or from
+// CosmoU – each console's look, your way: its name, its colour, its theme and its interface (its own, or the Switch's
+// or the Switch 2's) – and for your own consoles the console they look like. From its card when choosing a console (the pencil, X on a controller, E on the keyboard) or from
 // Settings → Games & Consoles ("Look"). The colour is the console's circle on the Switch and Switch 2 and the line on
 // its card. (Idea: Eduard) Names start with sl….
 let slData = {};
@@ -7,6 +7,8 @@ try {
   const d = JSON.parse(localStorage.getItem('cosmou.sysLook') || '{}');
   if (d && typeof d === 'object') slData = d;
 } catch {}
+// the interfaces a console can borrow (js/switch-face.js, js/switch2-face.js)
+const SL_FACES = ['switch', 'switch2'];
 const SL_COLS = ['#1ea7dd', '#e5484d', '#3a3f4b', '#8e9aa6', '#6b5bd2', '#2f9e5c', '#f29a3c', '#f06cc0', '#14b8a6', '#c0392b'];
 const slSave = () => {
   try {
@@ -21,6 +23,9 @@ function slApply() {
     if (!/^own-/.test(k) && base) {
       SYS[k].name = o.name || base.name;
       SYS[k].short = o.name ? (o.name.length <= 12 ? o.name : o.name.slice(0, 11) + '…') : base.short;
+      // its interface: its own, or the Switch's or the Switch 2's (Eduard: "my Wii U games in this format")
+      if (SL_FACES.includes(o.face) && o.face !== k) SYS[k].look = o.face;
+      else delete SYS[k].look;
     }
     SYS[k].col = o.col || '';
   }
@@ -60,6 +65,7 @@ function slEdit(k) {
           <div class="set"><div class="lbl"><strong>Colour</strong><small>Its circle and its card</small></div><div class="fd-cols" id="sl_c" role="radiogroup" aria-label="Colour"></div></div>
           <div class="set"><div class="lbl"><strong>Theme</strong><small>Its colours, light and music while it is on screen</small></div><select class="sel" id="sl_th" style="width: 240px"></select></div>
           <div class="set" id="sl_lr"><div class="lbl"><strong>Looks like</strong><small>Its home screen and sounds</small></div><select class="sel" id="sl_l" style="width: 240px"></select></div>
+          <div class="set" id="sl_fr"><div class="lbl"><strong>Interface</strong><small>Its own home screen – or the whole Switch or Switch 2 interface for its games</small></div><select class="sel" id="sl_f" style="width: 240px"></select></div>
         </div></div>
         <div class="ft"><button class="btn ghost" id="sl_rs">Back to standard</button><div class="acts"><button class="btn" id="sl_x">Cancel</button><button class="btn main big" id="sl_s">Save</button></div></div>
       </div>`;
@@ -99,6 +105,15 @@ function slEdit(k) {
   th.replaceChildren(...THEMES.map(t => new Option(t.name, t.id)));
   th.value = slThemeOf(k);
   $('#sl_lr').hidden = !own;
+  $('#sl_fr').hidden = own;
+  if (!own) {
+    const fs = $('#sl_f');
+    fs.replaceChildren(
+      new Option('Its own · ' + (base.homeLabel || base.name), ''),
+      ...SL_FACES.filter(x => x !== k && SYSDATA.SYSTEMS[x]).map(x => new Option(SYSDATA.SYSTEMS[x].name + ' interface', x)),
+    );
+    fs.value = (slData[k] && slData[k].face) || '';
+  }
   if (own) {
     const ls = $('#sl_l');
     ls.replaceChildren(...OWN_LOOKS.filter(x => SYS[x]).map(x => new Option(SYSDATA.SYSTEMS[x].name + ' · ' + SYS[x].homeLabel, x)));
@@ -131,8 +146,11 @@ function slEdit(k) {
     d.close();
     const prev = slData[k] || {};
     slData[k] = { ...prev, col };
-    if (!own) slData[k].name = name && name !== base.name ? name : '';
-    if (!slData[k].col && !slData[k].name) delete slData[k];
+    if (!own) {
+      slData[k].name = name && name !== base.name ? name : '';
+      slData[k].face = $('#sl_f').value || '';
+    }
+    if (!slData[k].col && !slData[k].name && !slData[k].face) delete slData[k];
     slSave();
     // its theme: now when it is on screen, else the next time it is
     const t = th.value;

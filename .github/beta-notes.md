@@ -8,6 +8,7 @@ Thanks for testing! 💙 Please don't share this file. Report bugs **[here](../.
 **🎮 Switch 2 – a console of its own**
 - **Switch 2 support** – Settings → Games & Consoles → Add a console → **Switch 2**: choose your games folder and your Switch 2 emulator (**Eden-NX2**, **Eglantine** or one of their forks). Game files (`.xci`, `.nsp`) and dumped games (a folder with `exefs/main` inside) are found, updates and DLC are not counted as games, the emulator gets `-f -g <game>`, and covers come from Nintendo's eShop.
 - **✨ Its own interface** – with the Switch 2 on screen, CosmoU becomes a Switch 2: dark glass, the chosen game's colours behind everything, its title big above a row of large squares, one frame that glows in blue and red, a dock of round buttons (Library, Play Activity, Themes, Controllers, Consoles, System Settings, Power). **Y** opens the **Library** (Y again: Recent · Most played · A–Z · Favorites, **/** searches), **+** a full **page for each game** (Start, favorite, mark, folder, its facts), **Home** (or **Q**) **Quick Settings**. *Dark* and *Light*, soft sounds that play a little scale along the row. Settings → Appearance → Switch 2 turns it off.
+- **🎮 The Switch or Switch 2 interface for any console** – Choose console → pencil (**E** / **X**) → **Interface**: *Its own*, *Switch interface* or *Switch 2 interface*. Your Wii U games (or 3DS, GameCube …) in the Switch 2's Home, Library and game pages – each console keeps its own choice. (Idea: Eduard)
 - **🎵 Its own music** – *Mix & Match*: a cheerful bossa in two moods, a classic part (nylon guitar, whistle, marimba) and a new one (electric piano, flute, a little pop beat). Written for CosmoU.
 
 **🎡 The wheel of marks, new**
@@ -27,6 +28,12 @@ Thanks for testing! 💙 Please don't share this file. Report bugs **[here](../.
 - No circle for the console you're on (you're there already), and under each circle just the console's name – no more "Switch to …". (Thanks Eduard!)
 
 ### Fixed
+- **Switch 2: the list of consoles scrolls** – with the controller the chosen line stays in view, the mouse wheel works, and a resting mouse no longer pulls the choice back up. The same for the other lists and Quick Settings on the Switch and Switch 2. (Thanks Eduard!)
+- **Settings:** the open category has a ring in its own colour (instead of a thin stripe), and nothing is cut off on the right. (Thanks Eduard!)
+- **Switch 2:** the big title is no longer cut off at the bottom (g, y, p). (Thanks Eduard!)
+- **Switch:** a marked game that is chosen gets its ring in the mark's colour – not the usual blue. (Thanks Eduard!)
+- **Folders:** the big button says **Open** on a folder and **Back** on the way out – not *Play*. (Thanks Eduard!)
+- **Switch and Switch 2:** covers that are not square (3DS, DS …) fill their square – no black bars.
 - **Grid:** moving down brings the chosen row to the top – no more names of the row above peeking out under the banner. The names under the games now have exactly the width of their pictures and frames. (Thanks Eduard!)
 - **The wheel:** the chosen piece stays on the wheel – no more overlapping its neighbours (like the M). (Thanks Eduard!)
 - **Signs on small boxes:** the badge (M, !, ?, ⚙) is sized to the box – small on 3DS and DS squares and GBA cartridges. The GBA cartridges are a little bigger too. (Thanks Eduard!)

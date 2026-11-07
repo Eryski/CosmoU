@@ -461,8 +461,9 @@ body.pal-vb .hero.blur .bgimg {
   font-size: var(--fs-md);
 }
 .sx-nav button.on {
-  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 30%, var(--line));
+  /* the open category: ringed in its own colour (Eduard) */
+  background: color-mix(in srgb, var(--c, var(--accent)) 12%, var(--surface));
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--c, var(--accent)) 80%, transparent);
 }
 /* focus inside the category bar: an inner ring, not a loud outline around it */
 .sx-nav button:focus-visible,

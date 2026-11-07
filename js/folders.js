@@ -112,8 +112,18 @@ function fdFace() {
 }
 
 // ---------- a folder's picture: up to four covers of its games on its colour, with a folder's tab ----------
+// the big button says what A does: Play a game, Open a folder, go Back out of it (Eduard: "Play" on a folder)
+function fdLabels() {
+  const g = typeof cur === 'function' ? cur() : null,
+    t = g && g.kind === 'folder' ? 'Open' : g && g.kind === 'folder-back' ? 'Back' : 'Play';
+  for (const id of ['play', 'cfplay', 'wplay', 'dplay']) {
+    const b = document.getElementById(id);
+    if (b && b.textContent !== t) b.textContent = t;
+  }
+}
 const _paintFd = paint;
 paint = function (el, g) {
+  queueMicrotask(fdLabels);
   if (!fdIs(g)) {
     el.classList.remove('fd-art', 'fd-backart');
     el.style.removeProperty('--fc');
