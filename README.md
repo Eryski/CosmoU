@@ -1,127 +1,260 @@
 # CosmoU
 
-A free Windows, Linux, macOS, Android and iPhone/iPad launcher for the [Cemu](https://cemu.info) Wii U emulator with a Wii U-inspired home menu.
+**A free launcher for your Nintendo emulators, with a home menu inspired by the Wii U.**
 
-- One dock for the places and windows you use most: Library, Favorites, Recently played, Themes and Settings – and while you use a controller, a small legend shows what its buttons do
-- The Switch has its own interface: a Home with your last played games in one row and round buttons below, All Software (sort and search), a page for each game, Quick Settings on the Home button, Basic White and Basic Black and its own sounds – with a Wii U as well, the consoles at the top left (or L / R) switch the whole window (Settings → Appearance → Switch turns it off)
-- Nintendo controllers work by the letters on their buttons (A on the right, like on a Switch)
-- Quick Menu (Q or the controller's Home button): last played games, quick switches and every window in one place
-- Favorites, sort & filter (A–Z, Z–A, recently played, most played; all, favorites, Wii U games, apps) and a game menu on right-click
-- Game details with play time, last played, sessions and first played; press ? for every shortcut
-- Covers, Grid and Wii U Look views – the Wii U Look has two layouts: the Plaza with your own buddies (Buddy maker) or a Home Menu tile grid like the console
-- 21 themes in Settings → Appearance: Liquid Glass, Wii U, Classic Wii and Plaza, plus looks inspired by Switch, Switch 2, DS, DSi, 3DS, N64, GameCube, Game Boy (four shades of green), Virtual Boy (red on black), SNES, NES and the handhelds Game & Watch, Game Boy Pocket, Game Boy Color, Game Boy Advance, Game Boy Advance SP and Game Boy Micro. Every theme works with every view and in light and dark
-- Own themes: add a theme file from the community (or make one, see [docs/THEMES.md](docs/THEMES.md)) in Settings → Appearance → Add own theme; a theme can bring its own menu music and be shared as one file
-- Real 3D Wii U cases (front, spine and back) with the game disc, in the details and when you point at a cover
-- Graphic pack manager per game: turn resolution, FPS++, mods, cheats and fixes on or off and pick presets, download the community packs in one click
-- Auto-optimize: picks resolution, Vulkan, async shaders and fitting graphic packs for your graphics card
-- Add other apps (emulators, PC games) to your library
-- Controller navigation (D-pad / stick, A to play, B to go back)
-- Automatic Cemu download and setup, automatic covers
-- One Settings window with categories (Games & Consoles, Appearance, Sound & Music, Controllers & TV, Saves & Data, and for the Wii U: Graphics, Overlay, Buddies & Plaza, then About), a search across all settings and full controller navigation
-- Per-game quality and global graphics, audio and overlay settings
-- Controller type, API and profiles, plus a button mapper: set A, B, sticks and D-pad for an Xbox controller, an SDL controller or the keyboard right in CosmoU, without opening Cemu
-- Built-in feedback form that fills in your Cemu and Windows / Linux / macOS version
-- First-time setup: Cemu, games folder, menu music and your look in five steps
-- Export / import your settings as cosmou-settings.json
-- Small notifications (for example “14 games added”)
-- Daily Log: play time per game (total, last session, sessions) and a chart of the last 7 days
-- Plaza posts: write what your buddies say in the Plaza; after a longer session CosmoU offers to post it
-- Save backups: back up and restore a game's save data in one click from its details, plus an automatic backup before every start (the last 10 are kept; restoring backs up your current saves first)
-- TV mode: fullscreen with a bigger UI for the couch, a controller or the Steam Deck (F11 or the controller's Select button), optionally on every start
-- Startup animation with a short jingle that matches your theme (can be turned off, any key skips it)
-- Updates & DLC: finds update and DLC folders in your games folder (or another folder you pick), shows what is installed and installs them where Cemu looks for them
-- Add to Steam: CosmoU or single games as Steam entries with their covers as artwork; a game started from Steam opens through CosmoU (settings, save backups, play time) and CosmoU closes with it
-- Recently played is saved on disk, so it survives restarts and updates
-- Light, dark or follow your system, smooth view transitions and optional UI sounds
-- Update check: shows a hint when a new version is on GitHub
-- Optional background music: an original tune for each of the 21 themes (copied to the music folder on install and update), or your own file
+Windows · Linux · macOS · Android · iPhone & iPad
 
-## Install
-Start CosmoU and follow the first-time setup: it gets Cemu for you, then choose your games folder.
+CosmoU started as a launcher for the [Cemu](https://cemu.info) Wii U emulator.
+Today it brings all your consoles together in one place, each with its own look.
+
+[Download](../../releases) · [Discord](https://discord.gg/BZry7jGjr7) · [Make your own theme](docs/THEMES.md)
+
+<br>
+
+## Contents
+
+- [Consoles](#-consoles)
+- [Features](#-features)
+- [Install](#-install)
+- [Build from source](#-build-from-source)
+- [Feedback & community](#-feedback--community)
+- [Notes](#notes)
+
+<br>
+
+## 🎮 Consoles
+
+| Console | Emulator |
+|---|---|
+| **Wii U** | Cemu (downloaded and set up for you) |
+| **Switch** | Eden, Citron, Sudachi and other yuzu-based emulators · MeloNX on iPhone |
+| **Switch 2** | Eden-NX2, Eglantine and their forks |
+| **Wii, GameCube** | Dolphin |
+| **3DS, DS, N64, SNES, NES, Game Boy, GBA, Virtual Boy** | RetroArch, or the emulator you choose |
+
+Add a console in **Settings → Games & Consoles → Add a console**: choose its emulator and its games folder.
+
+- Switch between consoles with **L / R**, or press **LT** to see all of them as cards
+- **Everything** (the last card) shows the games of all your consoles on one page
+- Each console has its **own name, colour and theme** – press the pencil on its card
+- A console can borrow **another console's look**: your Wii U games in the Switch 2 interface, Switch games in the 3DS HOME Menu …
+- You can also make **your own console**, for example just for mods or PC games
+
+<br>
+
+## ✨ Features
+
+### Looks
+
+- **Three views:** Covers, Grid and Wii U Look
+- **Wii U Look** has two layouts: the **Plaza** with your own buddies, or a **Home Menu** tile grid like the console
+- **The Switch and the Switch 2** each have their own full interface: Home, Library, a page for each game, Quick Settings, their own sounds and music
+- **21 themes**: Liquid Glass, Wii U, Classic Wii, Plaza, and looks inspired by Switch, Switch 2, DS, DSi, 3DS, N64, GameCube, Game Boy, Virtual Boy, SNES, NES and the handhelds
+- Every theme works with every view, in **light and dark**
+- **Your own themes:** add a theme file from the community, or make one ([docs/THEMES.md](docs/THEMES.md)). A theme can bring its own music
+- Real **3D Wii U cases** with the game disc
+
+### Your library
+
+- **Favorites** – click the left stick (or press F)
+- **The wheel of marks** – hold the left stick (or press K): colours and signs like ★, ⚙, ?, ! and M for mods
+- **Folders** – for mods, tools or games to finish
+- **Your own order** – press RT to lift a game and move it
+- **Sort & filter** – A–Z, Z–A, recently played, most played · All, Favorites, Games only, Apps only
+- **Add other apps** – emulators, PC games, programs
+- **Automatic covers**
+- **Daily Log** – play time per game and a chart of the last 7 days
+
+### Controller
+
+- Play everything with a controller: **D-pad or stick** to move, **A** to play, **B** to go back
+- **Hold Up** to reach the bar at the top (console, search, sort, views)
+- **Quick Menu** on the Home button
+- A small legend shows what the buttons do
+- Nintendo controllers work by the letters on their buttons (A on the right)
+- **TV mode:** fullscreen with a bigger UI for the couch or the Steam Deck (F11 or Select)
+
+### Wii U and Cemu
+
+- **Cemu is downloaded and set up for you**
+- **Graphic packs** per game: resolution, FPS++, mods, cheats and fixes – download the community packs in one click
+- **Auto-optimize:** the best settings for your graphics card
+- **Button mapper:** set up your controller right in CosmoU, without opening Cemu
+- **Save backups:** one click, plus an automatic backup before every start
+- **Updates & DLC:** found and installed where Cemu looks for them
+- **Add to Steam:** CosmoU or single games, with their covers
+
+### And more
+
+- One **Settings** window with a search across everything
+- **First-time setup** in five steps
+- **Plaza posts:** what your buddies say in the Plaza
+- **Background music** – an original tune for each theme, or your own file
+- Startup animation with a short jingle
+- **Export / import** your settings
+- Built-in **feedback form**
+- **Update check** when a new version is out
+
+<br>
+
+## 📥 Install
+
+Start CosmoU and follow the first-time setup. It gets Cemu for you, then you choose your games folder.
+
+| System | Download |
+|---|---|
+| **Windows** | `CosmoU-Windows-Setup-x.y.z.exe` (installer) or `CosmoU-Windows-Portable-x.y.z.exe` |
+| **Linux** | `.AppImage` (every distro, Steam Deck) · `.deb` (Ubuntu, Debian, Mint) · `.tar.gz` |
+| **macOS** | `CosmoU-macOS-x.y.z.dmg` (Apple silicon and Intel) |
+| **Android** | `CosmoU-Android-x.y.z.apk` (Android 8+) |
+| **iPhone & iPad** | `CosmoU-iOS-x.y.z.ipa` (iOS 15+) |
+
+All files are on the [Releases](../../releases) page.
+
+<br>
 
 ### Windows
-Download the latest `CosmoU-Windows-Setup-x.y.z.exe` (installer) or `CosmoU-Windows-Portable-x.y.z.exe` from **Releases** and run it.
-Windows may show a SmartScreen warning because the app is not code-signed yet: click *More info → Run anyway*.
+
+1. Download the installer or the portable `.exe` and run it.
+2. Windows may show a **SmartScreen** warning, because CosmoU is not code-signed yet.
+   Click **More info → Run anyway**.
+
+<br>
 
 ### Linux
-Three downloads, pick one:
 
-| File | For | How |
-|---|---|---|
-| `CosmoU-Linux-x.y.z.AppImage` | every distro, Steam Deck | `chmod +x CosmoU-Linux-*.AppImage` then double-click it or run `./CosmoU-Linux-*.AppImage` |
-| `CosmoU-Linux-x.y.z.deb` | Ubuntu, Debian, Mint, Pop!_OS | `sudo apt install ./CosmoU-Linux-*.deb`, then start CosmoU from the app menu |
-| `CosmoU-Linux-x.y.z.tar.gz` | anything else | unpack it and run `./cosmou` |
+| File | How to start it |
+|---|---|
+| `.AppImage` | `chmod +x CosmoU-Linux-*.AppImage`, then double-click it |
+| `.deb` | `sudo apt install ./CosmoU-Linux-*.deb`, then start CosmoU from the app menu |
+| `.tar.gz` | unpack it and run `./cosmou` |
 
-CosmoU finds Cemu by itself if you already have it: an AppImage in `~/Applications`, `~/Downloads` or `~/.local/bin`, the Flatpak `info.cemu.Cemu`, or a `cemu` program from your distro. Otherwise it downloads the official Cemu AppImage for you. Cemu's own files are used where Cemu keeps them (`~/.config/Cemu` and `~/.local/share/Cemu`, or the Flatpak / portable folders).
+CosmoU finds Cemu by itself (AppImage, Flatpak or your distro's package). Otherwise it downloads the official Cemu AppImage.
 
-Notes:
-- The AppImage needs FUSE 2. If it doesn't start, install `libfuse2` (Ubuntu 22.04) or `libfuse2t64` (Ubuntu 24.04+), or run it with `--appimage-extract-and-run`.
-- Flatpak Cemu: give it access to your games folder (for example with Flatseal, or `flatpak override --user --filesystem=/path/to/games info.cemu.Cemu`), otherwise Cemu can't open the games CosmoU starts.
-- Controllers: on Linux Cemu uses SDL. Set your controller up once in Cemu (Input settings → API "SDLController"), then the button mapper in CosmoU can change its buttons.
-- Steam Deck: download the AppImage in Desktop Mode, make it executable (right-click → Properties → Permissions), and use **Add to Steam** in CosmoU (Settings → Games & Consoles → Steam) so it shows up in Game Mode. TV mode fits the Deck screen.
-- Distros that block user namespaces (Ubuntu 24.04 with AppArmor) are handled: the launcher turns Chromium's sandbox off only when it can't work.
+<details>
+<summary><b>Linux tips</b> (FUSE, Flatpak, controllers, Steam Deck)</summary>
+
+<br>
+
+- **AppImage doesn't start?** Install `libfuse2` (Ubuntu 22.04) or `libfuse2t64` (Ubuntu 24.04+), or run it with `--appimage-extract-and-run`.
+- **Flatpak Cemu:** give it access to your games folder, for example with Flatseal or
+  `flatpak override --user --filesystem=/path/to/games info.cemu.Cemu`
+- **Controllers:** set your controller up once in Cemu (Input settings → API *SDLController*). Then CosmoU's button mapper can change its buttons.
+- **Steam Deck:** download the AppImage in Desktop Mode, make it executable (right-click → Properties → Permissions), then use **Add to Steam** in CosmoU (Settings → Games & Consoles → Steam). TV mode fits the Deck screen.
+- **Ubuntu 24.04 with AppArmor** is handled: Chromium's sandbox is only turned off when it can't work.
+- Cemu's files are used where Cemu keeps them (`~/.config/Cemu` and `~/.local/share/Cemu`, or the Flatpak / portable folders).
+
+</details>
+
+<br>
 
 ### macOS
-Download `CosmoU-macOS-x.y.z.dmg` (one file for Apple silicon and Intel Macs), open it and drag **CosmoU** into **Applications**.
 
-CosmoU is free and has no paid Apple developer certificate, so macOS stops it the first time:
-- macOS 15 (Sequoia) and newer: open CosmoU once, press **Done**, then go to **System Settings → Privacy & Security**, scroll down and press **Open Anyway** next to CosmoU.
-- macOS 14 and older: right-click CosmoU in Applications → **Open** → **Open**.
-- Or in Terminal: `xattr -dr com.apple.quarantine /Applications/CosmoU.app`
+1. Open the `.dmg` and drag **CosmoU** into **Applications**.
+2. CosmoU has no paid Apple certificate, so macOS stops it the first time:
+   - **macOS 15 and newer:** open CosmoU once, press **Done**, then go to **System Settings → Privacy & Security** and press **Open Anyway**.
+   - **macOS 14 and older:** right-click CosmoU → **Open** → **Open**.
+   - **Or in Terminal:** `xattr -dr com.apple.quarantine /Applications/CosmoU.app`
 
-CosmoU finds Cemu in `/Applications` or `~/Applications`, or downloads the official Cemu for Mac for you (Cemu for Intel runs on Apple silicon with Rosetta; macOS offers to install Rosetta the first time). Cemu's files stay in `~/Library/Application Support/Cemu`. On a Mac, Cemu draws with Vulkan through Metal, and controllers work through SDL. TV mode is F11 or ⌃⌘F.
+<details>
+<summary><b>More about Cemu on a Mac</b></summary>
+
+<br>
+
+- CosmoU finds Cemu in `/Applications` or `~/Applications`, or downloads it for you.
+- Cemu for Intel runs on Apple silicon with Rosetta (macOS offers to install it the first time).
+- Cemu's files stay in `~/Library/Application Support/Cemu`.
+- Cemu draws with Vulkan through Metal, controllers work through SDL.
+- TV mode is **F11** or **⌃⌘F**.
+
+</details>
+
+<br>
 
 ### Android
-Download `CosmoU-Android-x.y.z.apk` on your phone or tablet and open it (Android asks once to allow installing apps from your browser or file app). Works on Android 8 and newer – Samsung, Xiaomi, OPPO, OnePlus, Huawei, Pixel and any other Android device.
 
-On Android, CosmoU starts your games in **Cemu for Android**, a community version of Cemu ([SSimco/Cemu](https://github.com/SSimco/Cemu/releases)). Install it once; CosmoU finds it by itself and **Get Cemu for Android** in the setup opens its download page. Cemu for Android needs Android 11+ and a fast phone (Snapdragon 8 Gen 2 or similar).
+1. Download the `.apk` on your phone or tablet and open it.
+   Android asks once to allow installing apps from your browser or file app.
+2. Install **Cemu for Android** ([SSimco/Cemu](https://github.com/SSimco/Cemu/releases)) once – CosmoU finds it by itself.
+   It needs Android 11+ and a fast phone (Snapdragon 8 Gen 2 or similar).
+3. Choose your games folder. `.wua` works best on Android.
 
-- Choose your games folder once with Android's folder picker. `.wua`, `.wud`, `.wux` and game folders (`code`, `content`, `meta`) are found; `.wua` works best on Android
-- Covers, themes with their music, buddies, the Plaza, favorites, play time and Android apps in your library work like on the PC
-- Controllers work in CosmoU (D-pad, A, B, Start, Home), the back button closes windows
-- Cemu's own settings, graphic packs, controllers and saves are set up inside Cemu for Android, so those parts of CosmoU are hidden there
+> Cemu's own settings, graphic packs and saves are set up inside Cemu for Android, so those parts of CosmoU are hidden there.
+
+<br>
 
 ### iPhone & iPad
-Download `CosmoU-iOS-x.y.z.ipa` and install it with [SideStore](https://sidestore.io), [AltStore](https://altstore.io) or [PlumeImpactor](https://github.com/claration/Impactor/releases) and your Apple ID – the same way as MeloCafe. Works on iOS / iPadOS 15 and newer.
 
-On iPhone and iPad, CosmoU starts your games in **MeloCafe**, the Wii U emulator for iOS based on Cemu ([stossy11/MeloCafe](https://github.com/stossy11/MeloCafe)). Add your games in MeloCafe as usual, then press **Get games from MeloCafe** in CosmoU: MeloCafe opens for a moment and sends its list (with the game icons) back.
+1. Install the `.ipa` with [SideStore](https://sidestore.io), [AltStore](https://altstore.io) or [PlumeImpactor](https://github.com/claration/Impactor/releases) and your Apple ID.
+2. Add your games in **MeloCafe** ([stossy11/MeloCafe](https://github.com/stossy11/MeloCafe)), the Wii U emulator for iOS.
+3. In CosmoU, press **Get games from MeloCafe**. MeloCafe opens for a moment and sends its list back.
 
-- Play starts the game in MeloCafe; play time is counted until you come back to CosmoU
-- Themes with their music, buddies, the Plaza, favorites and other apps with a link (MeloNX, Delta, RetroArch …) work like on the PC
-- Controllers (Xbox, PlayStation, Switch Pro, MFi) work in CosmoU
-- MeloCafe's own settings, graphic packs and saves are set up inside MeloCafe
+> Play starts the game in MeloCafe. Play time is counted until you come back to CosmoU.
+> Other apps with a link (MeloNX, Delta, RetroArch …) work too.
 
-## Build from source
-```
+<br>
+
+## 🛠️ Build from source
+
+```bash
 npm install
-npm start      # run
-npm run dist   # build installer + portable .exe into dist/ (on Windows)
-npm run dist:linux  # build AppImage, .deb and .tar.gz into dist/ (on Linux)
-npm run dist:mac    # build the universal .dmg into dist/ (on a Mac)
-gradle -p android :app:assembleRelease   # build the Android app (needs the Android SDK)
-bash ios/prepare.sh && (cd ios && xcodegen generate)   # then open ios/CosmoU.xcodeproj in Xcode (on a Mac)
-npm run preview  # single-file browser preview with demo games
+npm start            # run
+npm run preview      # browser preview with demo games
 ```
 
-## Making a release
-Set the version in `package.json` and push. Then on GitHub open **Releases → Draft a new release**, create a matching tag (for example `v0.8.1`) and press **Publish release**. GitHub Actions builds the two .exe files on Windows, the AppImage, .deb and .tar.gz on Linux, the .dmg on a Mac, the .apk for Android and the .ipa for iPhone and iPad (and tests them), and attaches all of them to the release. **Actions → Build release → Run workflow** makes a test build without a release (the files are on the run page).
+<details>
+<summary><b>Build the apps</b></summary>
 
-## Project layout
+<br>
+
+```bash
+npm run dist         # Windows: installer + portable .exe
+npm run dist:linux   # Linux: AppImage, .deb and .tar.gz
+npm run dist:mac     # macOS: universal .dmg
+gradle -p android :app:assembleRelease                  # Android (needs the Android SDK)
+bash ios/prepare.sh && (cd ios && xcodegen generate)    # iOS, then open ios/CosmoU.xcodeproj in Xcode
+```
+
+**Making a release:** set the version in `package.json` and push. Then open **Releases → Draft a new release**, create a matching tag (for example `v0.14.0`) and press **Publish release**. GitHub Actions builds and tests every app and attaches them to the release.
+
+**Actions → Build release → Run workflow** makes a test build without a release.
+
+</details>
+
+<details>
+<summary><b>Project layout</b></summary>
+
+<br>
+
 ```
 main.js        Electron main process: Cemu download, game scan, launching, settings.xml, graphic packs
-platform.js    Everything that differs between Windows and Linux (Cemu folders, finding Cemu, Steam, starting programs)
-build/linux/   Linux launcher script (scripts/after-pack.js puts it into the packages and signs the Mac app)
-android/       Android app: the same window in a WebView, plus a small bridge to Android (js/mobile-api.js)
-ios/           iPhone and iPad app: the same window in a WKWebView, plus a small bridge to iOS and MeloCafe
-scripts/ci/    End-to-end tests that GitHub Actions runs after each build (real Mac, Linux PC, Android emulator, iOS Simulator)
+platform.js    Everything that differs between Windows, Linux and macOS
 preload.js     Bridge between the window and main.js
 index.html     Window markup
-css/cosmou.css All styles (themes, Wii U Look, dialogs)
-js/            UI code, one file per area (core, wiiu-look, covers, settings, details, buddies, …)
+css/           Styles (themes, views, dialogs)
+js/            UI code, one file per area (core, covers, consoles, settings, details, buddies …)
+android/       Android app: the same window in a WebView
+ios/           iPhone and iPad app: the same window in a WKWebView
+build/linux/   Linux launcher script
+scripts/ci/    End-to-end tests GitHub Actions runs after each build
 ```
 
-## Feedback & community
-Use **Settings → Send feedback** in the app, join the [CosmoU Discord](https://discord.gg/BZry7jGjr7), or open an issue here.
+</details>
+
+<br>
+
+## 💬 Feedback & community
+
+- **In the app:** Settings → Send feedback
+- **Discord:** [join the CosmoU Discord](https://discord.gg/BZry7jGjr7)
+- **GitHub:** open an issue here
+
+<br>
 
 ## Notes
-CosmoU is an independent project. It does not include any games, firmware, keys or Nintendo files, and it is not affiliated with Nintendo or the Cemu team. Wii U and Nintendo are trademarks of Nintendo. Cemu is licensed under MPL 2.0.
+
+CosmoU is an independent project. It does not include any games, firmware, keys or Nintendo files, and it is not affiliated with Nintendo, the Cemu team or the makers of any other emulator.
+
+CosmoU only starts the emulators you already have – for the Switch and Switch 2 that means your own game dumps, keys and firmware, set up in the emulator itself.
+
+Wii U and Nintendo are trademarks of Nintendo. Cemu is licensed under MPL 2.0.
