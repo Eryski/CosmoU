@@ -50,6 +50,11 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+        # a beta: its code comes from the private CosmoU-Beta repository (branch "source"), never from this public one
+        with:
+          repository: ${{ (github.event_name == 'workflow_dispatch' && inputs.beta != '') && 'Eryski/CosmoU-Beta' || github.repository }}
+          ref: ${{ (github.event_name == 'workflow_dispatch' && inputs.beta != '') && 'source' || '' }}
+          token: ${{ (github.event_name == 'workflow_dispatch' && inputs.beta != '') && secrets.BETA_TOKEN || github.token }}
 
       - uses: actions/setup-node@v4
         with:
@@ -83,6 +88,7 @@ jobs:
       - name: Keep the files on the run page
         uses: actions/upload-artifact@v4
         with:
+          retention-days: ${{ (github.event_name == 'workflow_dispatch' && inputs.beta != '') && 1 || 90 }}
           name: cosmou-windows
           path: |
             dist/CosmoU-Windows-Setup-*.exe
@@ -102,6 +108,11 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
+        # a beta: its code comes from the private CosmoU-Beta repository (branch "source"), never from this public one
+        with:
+          repository: ${{ (github.event_name == 'workflow_dispatch' && inputs.beta != '') && 'Eryski/CosmoU-Beta' || github.repository }}
+          ref: ${{ (github.event_name == 'workflow_dispatch' && inputs.beta != '') && 'source' || '' }}
+          token: ${{ (github.event_name == 'workflow_dispatch' && inputs.beta != '') && secrets.BETA_TOKEN || github.token }}
 
       - uses: actions/setup-node@v4
         with:
@@ -157,6 +168,7 @@ jobs:
       - name: Keep the files on the run page
         uses: actions/upload-artifact@v4
         with:
+          retention-days: ${{ (github.event_name == 'workflow_dispatch' && inputs.beta != '') && 1 || 90 }}
           name: cosmou-linux
           path: |
             dist/CosmoU-Linux-*.AppImage
@@ -179,6 +191,11 @@ jobs:
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
+        # a beta: its code comes from the private CosmoU-Beta repository (branch "source"), never from this public one
+        with:
+          repository: ${{ (github.event_name == 'workflow_dispatch' && inputs.beta != '') && 'Eryski/CosmoU-Beta' || github.repository }}
+          ref: ${{ (github.event_name == 'workflow_dispatch' && inputs.beta != '') && 'source' || '' }}
+          token: ${{ (github.event_name == 'workflow_dispatch' && inputs.beta != '') && secrets.BETA_TOKEN || github.token }}
 
       - uses: actions/setup-node@v4
         with:
@@ -231,6 +248,7 @@ jobs:
       - name: Keep the files on the run page
         uses: actions/upload-artifact@v4
         with:
+          retention-days: ${{ (github.event_name == 'workflow_dispatch' && inputs.beta != '') && 1 || 90 }}
           name: cosmou-mac
           path: |
             dist/CosmoU-macOS-*.dmg
@@ -252,6 +270,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        # a beta: its code comes from the private CosmoU-Beta repository (branch "source"), never from this public one
+        with:
+          repository: ${{ (github.event_name == 'workflow_dispatch' && inputs.beta != '') && 'Eryski/CosmoU-Beta' || github.repository }}
+          ref: ${{ (github.event_name == 'workflow_dispatch' && inputs.beta != '') && 'source' || '' }}
+          token: ${{ (github.event_name == 'workflow_dispatch' && inputs.beta != '') && secrets.BETA_TOKEN || github.token }}
 
       - uses: actions/setup-java@v4
         with:
@@ -311,6 +334,7 @@ jobs:
       - name: Keep the files on the run page
         uses: actions/upload-artifact@v4
         with:
+          retention-days: ${{ (github.event_name == 'workflow_dispatch' && inputs.beta != '') && 1 || 90 }}
           name: cosmou-android
           path: dist/*.apk
 
@@ -334,6 +358,11 @@ jobs:
             gpu: swiftshader_indirect
     steps:
       - uses: actions/checkout@v4
+        # a beta: its code comes from the private CosmoU-Beta repository (branch "source"), never from this public one
+        with:
+          repository: ${{ (github.event_name == 'workflow_dispatch' && inputs.beta != '') && 'Eryski/CosmoU-Beta' || github.repository }}
+          ref: ${{ (github.event_name == 'workflow_dispatch' && inputs.beta != '') && 'source' || '' }}
+          token: ${{ (github.event_name == 'workflow_dispatch' && inputs.beta != '') && secrets.BETA_TOKEN || github.token }}
 
       - uses: actions/setup-node@v4
         with:
@@ -400,6 +429,11 @@ jobs:
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
+        # a beta: its code comes from the private CosmoU-Beta repository (branch "source"), never from this public one
+        with:
+          repository: ${{ (github.event_name == 'workflow_dispatch' && inputs.beta != '') && 'Eryski/CosmoU-Beta' || github.repository }}
+          ref: ${{ (github.event_name == 'workflow_dispatch' && inputs.beta != '') && 'source' || '' }}
+          token: ${{ (github.event_name == 'workflow_dispatch' && inputs.beta != '') && secrets.BETA_TOKEN || github.token }}
 
       - uses: actions/setup-node@v4
         with:
@@ -447,6 +481,7 @@ jobs:
       - name: Keep the files on the run page
         uses: actions/upload-artifact@v4
         with:
+          retention-days: ${{ (github.event_name == 'workflow_dispatch' && inputs.beta != '') && 1 || 90 }}
           name: cosmou-ios
           path: dist/*
 
@@ -465,6 +500,11 @@ jobs:
             device: '^iPad Pro'
     steps:
       - uses: actions/checkout@v4
+        # a beta: its code comes from the private CosmoU-Beta repository (branch "source"), never from this public one
+        with:
+          repository: ${{ (github.event_name == 'workflow_dispatch' && inputs.beta != '') && 'Eryski/CosmoU-Beta' || github.repository }}
+          ref: ${{ (github.event_name == 'workflow_dispatch' && inputs.beta != '') && 'source' || '' }}
+          token: ${{ (github.event_name == 'workflow_dispatch' && inputs.beta != '') && secrets.BETA_TOKEN || github.token }}
 
       - uses: actions/setup-node@v4
         with:
@@ -521,12 +561,21 @@ jobs:
   # a beta (input "beta", a sweet like "Baklava"): the same builds and tests as a release, but the files go only to the
   # private CosmoU-Beta repository, as a pre-release. The public releases and CosmoU's update check stay untouched.
   # Needs the secret BETA_TOKEN (a GitHub token that may write the contents of Eryski/CosmoU-Beta).
+  # Afterwards the files of this run are deleted here: on a public repository anyone could download them from the run.
   beta-release:
     needs: [windows, linux, mac, android-test, ios-test]
     if: always() && github.event_name == 'workflow_dispatch' && inputs.beta != '' && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled')
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: write
     steps:
       - uses: actions/checkout@v4
+        # a beta: its code comes from the private CosmoU-Beta repository (branch "source"), never from this public one
+        with:
+          repository: ${{ (github.event_name == 'workflow_dispatch' && inputs.beta != '') && 'Eryski/CosmoU-Beta' || github.repository }}
+          ref: ${{ (github.event_name == 'workflow_dispatch' && inputs.beta != '') && 'source' || '' }}
+          token: ${{ (github.event_name == 'workflow_dispatch' && inputs.beta != '') && secrets.BETA_TOKEN || github.token }}
       - uses: actions/download-artifact@v4
         with:
           path: art
@@ -545,6 +594,15 @@ jobs:
           mapfile -t FILES < <(find art -type f \( -name 'CosmoU-Windows-*.exe' -o -name 'CosmoU-macOS-*.dmg' -o -name 'CosmoU-Linux-*' -o -name 'CosmoU-Android-*.apk' -o -name 'CosmoU-iOS-*.ipa' \) | sort)
           printf '%s\n' "${FILES[@]}"
           [ ${#FILES[@]} -gt 0 ] || { echo "::error::no files"; exit 1; }
-          sed -e "s/{version}/$VERSION/g" -e "s/{name}/$N/g" -e "s/{commit}/${GITHUB_SHA:0:7}/g" .github/beta-notes.md > notes.md
+          SHA=$(git rev-parse --short=7 HEAD)
+          sed -e "s/{version}/$VERSION/g" -e "s/{name}/$N/g" -e "s/{commit}/$SHA/g" .github/beta-notes.md > notes.md
           gh release delete "$TAG" -R Eryski/CosmoU-Beta --yes --cleanup-tag 2>/dev/null || true
           gh release create "$TAG" -R Eryski/CosmoU-Beta --prerelease --title "CosmoU $N Beta" --notes-file notes.md "${FILES[@]}"
+      - name: Delete this run's files (the beta stays private)
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for id in $(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts?per_page=100" -q '.artifacts[].id'); do
+            gh api -X DELETE "repos/$GITHUB_REPOSITORY/actions/artifacts/$id" && echo "deleted $id"
+          done
