@@ -1,0 +1,98 @@
+/* CosmoU – Settings → Switch & Switch 2 covers (js/cover-sources.js) */
+#cvx[hidden] {
+  display: none;
+}
+#cvx .acts {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+#cvx .cv-in {
+  width: 210px;
+  min-width: 0;
+  padding: 9px 13px;
+  font-weight: 500;
+}
+#cvx .cv-key .acts {
+  flex: 1 1 360px;
+}
+#cvx .cv-key .cv-in {
+  flex: 1 1 160px;
+}
+#cvx .btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+#cvx .cv-dir {
+  font-size: 12px;
+  word-break: break-all;
+}
+#cvx .cv-dir:empty {
+  display: none;
+}
+/* "Download missing covers": how far */
+.cv-bar {
+  height: 6px;
+  margin-top: 6px;
+  border-radius: 999px;
+  background: var(--field);
+  overflow: hidden;
+}
+.cv-bar[hidden] {
+  display: none;
+}
+.cv-bar i {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--act1), var(--act2));
+  transition: width 0.3s ease;
+}
+/* the red field, small: CosmoU's – or your picture */
+.cv-prev {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  width: 46px;
+  height: 48px;
+  border-radius: 6px;
+  background: #e60012 var(--bimg, none) center / contain no-repeat;
+  color: #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+  flex: none;
+}
+.cv-prev.s2 {
+  width: 92px;
+  height: 26px;
+  flex-direction: row;
+  gap: 6px;
+}
+.cv-prev svg {
+  width: 26px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.cv-prev.s2 svg {
+  width: 20px;
+  height: 12px;
+}
+.cv-prev b {
+  font: 850 7.5px / 1 var(--head, sans-serif);
+  letter-spacing: 0.06em;
+  color: #fff;
+}
+.cv-prev.s2 b {
+  font-size: 9px;
+}
+.cv-tl {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--mute);
+  margin-right: -2px;
+}

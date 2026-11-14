@@ -4,7 +4,7 @@ file (.mp3, .ogg, .wav, .m4a or .flac) there. A file in that folder is played in
 Do not put copyrighted music in this assets/music folder if you share or publish builds of CosmoU.
 
 themes/ holds one original loop per theme: Liquid Glass (Glass Lagoon), Wii U (Home Sweet Menu), Classic Wii (Channel Calm),
-Plaza (Buddy Parade), Switch (Quiet Home), Switch 2 (Next Level Lounge), DS (Dual Screen Days), DSi (Camera Café),
+Plaza (Buddy Parade), Switch (Quiet Home), Switch 2 (Mix & Match – a cheerful bossa in two moods, classic and new), DS (Dual Screen Days), DSi (Camera Café),
 3DS (Pocket Sunshine), N64 (Cartridge Night), GameCube (Indigo Cube), Game Boy (Green Screen), Virtual Boy (Red Horizon),
 SNES (16-Bit Meadow), NES (8-Bit Morning), Game & Watch (Segment Morning), Game Boy Pocket (Pocket Silver),
 Game Boy Color (Atomic Purple), Game Boy Advance (Indigo Advance), Game Boy Advance SP (Pearl Light), Game Boy Micro (Brushed Metal). All were synthesized for CosmoU and play while no own music file is chosen.

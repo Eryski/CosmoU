@@ -270,7 +270,7 @@
         for (const f of await filesOf(k, c.gamesDir)) {
           const base = f.name.replace(/\.[^.]+$/, ''),
             ext = f.name.split('.').pop().toLowerCase();
-          const tid = k === 'switch' ? ((base.match(/\[(0100[0-9a-f]{12})\]/i) || [])[1] || '').toLowerCase() : '';
+          const tid = SD.SYSTEMS[k].eshop ? SD.tidOf(base) : '';
           if (tid && tid.slice(-3) === '800') {
             updates.add(tid.slice(0, 13));
             continue;
@@ -344,7 +344,7 @@
       title = SD.titleOf(g.file || g.name);
     if (d.eshop) {
       for (const tid of g.tid ? [g.tid, ''] : ['']) {
-        const r = await call('fetchText', SD.eshopUrl(title, tid));
+        const r = await call('fetchText', SD.eshopUrl(title, tid, d.eshop));
         const u = r && r.ok && SD.eshopPick(r.text, title, tid);
         if (u) return u;
       }
@@ -530,7 +530,9 @@
 
   // ---------- music ----------
   const AUDIO = /\.(mp3|ogg|wav|m4a|flac)$/i;
-  const PICTURE = /\.(jpe?g|png|webp|gif)$/i;
+  // a console of the list or one you made yourself (own-…)
+const lookSysOk = k => /^[a-z0-9]{2,12}$/.test(String(k)) || /^own-[a-z0-9-]{1,30}$/.test(String(k));
+const PICTURE = /\.(jpe?g|png|webp|gif)$/i;
   // theme songs: .ogg, on iPhone and iPad as .m4a (made from the same songs when the app is built)
   const THEME_MUSIC = new Set((sync('assets', 'www/assets/music/themes') || []).filter(f => /\.(ogg|m4a)$/i.test(f)));
   function getMusic() {
@@ -848,7 +850,7 @@
     sysLooks: async () => {
       const out = { bg: {}, music: {} };
       for (const k of sync('list', 'public/looks') || []) {
-        if (!/^[a-z0-9]{2,12}$/.test(k)) continue;
+        if (!lookSysOk(k)) continue;
         const pics = (sync('list', 'public/looks/' + k + '/bg') || []).filter(n => PICTURE.test(n)).sort();
         if (pics.length) {
           const list = pics.map(n => ({ url: pubUrl('looks/' + k + '/bg/' + n), name: n }));
@@ -860,7 +862,7 @@
       return out;
     },
     sysLookPick: async (sys, kind) => {
-      if (!/^[a-z0-9]{2,12}$/.test(String(sys))) return null;
+      if (!lookSysOk(sys)) return null;
       const pic = kind === 'bg',
         dir = 'public/looks/' + sys + (pic ? '/bg' : '/music');
       // pictures are added (up to 30), the music folder keeps one file by itself
@@ -871,7 +873,7 @@
       return { url: pubUrl(r.rel.replace(/^public\//, '')), name: pic ? name : r.name || name };
     },
     sysLookRemove: async (sys, kind, name) => {
-      if (!/^[a-z0-9]{2,12}$/.test(String(sys))) return false;
+      if (!lookSysOk(sys)) return false;
       const dir = 'public/looks/' + sys + (kind === 'bg' ? '/bg' : '/music');
       const one = kind === 'bg' && typeof name === 'string' && /^[\w.() -]+$/.test(name) ? name : '';
       for (const n of sync('list', dir) || []) if (!one || n === one) sync('remove', dir + '/' + n);
@@ -971,6 +973,8 @@
     openIssue: async body =>
       sync('openUrl', 'https://github.com/Eryski/CosmoU/issues/new?body=' + encodeURIComponent(String(body || '').slice(0, 6000))),
     openDiscord: async () => sync('openUrl', 'https://discord.gg/BZry7jGjr7'),
+    // (a phone: the system's browser)
+    openWeb: async t => sync('openUrl', /^https?:\/\//i.test(t || '') ? t : 'https://duckduckgo.com/' + (t ? '?q=' + encodeURIComponent(t) : '')),
     checkUpdate: async () => {
       const current = INFO.version || '';
       const r = await call('fetchText', 'https://api.github.com/repos/Eryski/CosmoU/releases/latest');

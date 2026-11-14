@@ -12,8 +12,23 @@
       theme: 'switch',
       home: 'row',
       sound: 'click',
-      eshop: true,
+      // HAC: games for the (first) Switch in Nintendo's eShop
+      eshop: 'HAC',
       case: 'switch',
+    },
+    // the Switch 2 (2025): its emulators (Eden-NX2, Eglantine and their forks, since October 2026) load a game file or
+    // a dumped game – a folder with exefs/main in it; its games have title ids that start with 04 (BEE in the eShop)
+    switch2: {
+      homeLabel: 'Switch 2 Home',
+      name: 'Switch 2',
+      short: 'Switch 2',
+      ext: ['nsp', 'xci', 'nro'],
+      dumps: true,
+      theme: 'switch2',
+      home: 'row',
+      sound: 'click',
+      eshop: 'BEE',
+      case: 'switch2',
     },
     wii: {
       homeLabel: 'Wii Menu',
@@ -128,18 +143,20 @@
       thumbs: ['Nintendo - Virtual Boy'],
     },
   };
-  const ORDER = ['wiiu', 'switch', 'wii', 'gamecube', '3ds', 'ds', 'n64', 'snes', 'nes', 'gb', 'gba', 'vb'];
+  const ORDER = ['wiiu', 'switch', 'switch2', 'wii', 'gamecube', '3ds', 'ds', 'n64', 'snes', 'nes', 'gb', 'gba', 'vb'];
 
   // ---------- starting an emulator on a computer ----------
   // known emulators by their program name; anything else simply gets the game file
   const DESKTOP = [
-    { re: /eden|citron|sudachi|suyu|torzu|yuzu/i, args: g => ['-f', '-g', g] },
+    // the yuzu family – and the Switch 2 emulators built on Eden (Eden-NX2, Eglantine, Orchid, Lichii, Droplet …)
+    { re: /eden|citron|sudachi|suyu|torzu|yuzu|eglantine|orchid|lichii|droplet|pokedinner|nx2/i, args: g => ['-f', '-g', g] },
     { re: /dolphin/i, args: g => ['-b', '-e', g] },
     { re: /retroarch/i, retroarch: true },
   ];
   // RetroArch needs a core; the first one that is installed is used
   const CORES = {
     switch: [],
+    switch2: [],
     wii: ['dolphin'],
     gamecube: ['dolphin'],
     '3ds': ['citra', 'azahar'],
@@ -224,12 +241,18 @@
   // where to get one picture: the libretro server, and its GitHub archive as a second try
   const thumbUrls = (folder, file, gh) => (gh ? [ghThumbUrl(folder, file)] : [thumbUrl(folder, file), ghThumbUrl(folder, file)]);
   // Nintendo's eShop search (Europe): square pictures, and every Switch game has its title id there
-  const eshopUrl = (title, tid) =>
+  // (plat: HAC = games for the first Switch, BEE = games for the Switch 2)
+  const eshopUrl = (title, tid, plat) =>
     'https://searching.nintendo-europe.com/en/select?rows=8&wt=json&fl=title,application_id_s,image_url_sq_s,image_url&q=' +
     encodeURIComponent(title || '*') +
     '&fq=' +
-    // HAC = games for the (first) Switch; Nintendo keeps the title ids in small letters
-    encodeURIComponent('type:GAME AND playable_on_txt:HAC' + (tid ? ' AND application_id_s:' + String(tid).toLowerCase() : ''));
+    // Nintendo keeps the title ids in small letters
+    encodeURIComponent(
+      'type:GAME AND playable_on_txt:' + (/^[A-Z]{3}$/.test(String(plat)) ? plat : 'HAC') + (tid ? ' AND application_id_s:' + String(tid).toLowerCase() : ''),
+    );
+  // a Switch file or folder carries its title id: [0100ABCD12340000] (Switch) or [0400…] (Switch 2) –
+  // …000 is the game, …800 its update, other endings are DLC
+  const tidOf = name => ((String(name || '').match(/\[(0[14]00[0-9a-f]{12})\]/i) || [])[1] || '').toLowerCase();
   function eshopPick(json, title, tid) {
     let docs = [];
     try {
@@ -248,7 +271,7 @@
     return u;
   }
 
-  const api = { SYSTEMS, ORDER, DESKTOP, CORES, ANDROID, norm, titleOf, thumbList, bestThumb, thumbUrl, listUrl, ghTreeUrl, ghList, ghThumbUrl, thumbUrls, eshopUrl, eshopPick };
+  const api = { SYSTEMS, ORDER, DESKTOP, CORES, ANDROID, norm, titleOf, thumbList, bestThumb, thumbUrl, listUrl, ghTreeUrl, ghList, ghThumbUrl, thumbUrls, eshopUrl, eshopPick, tidOf };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.SYSDATA = api;
 })(this);

@@ -1,0 +1,554 @@
+/* CosmoU – the Wii Menu (the Wii's home screen, js/console-home.js → channels)
+   Big channels that fill the screen: four next to each other, three rows, as big as the screen allows. The pages lie
+   side by side and slide (the arrows at the sides, the wheel, a swipe, the D-pad past the edge); on a wide screen the
+   pages beside peek in. Each channel is a banner: the cover blurred behind, the whole box in front, the game's name.
+   The round buttons sit in the corners of the bar at the bottom, the clock in the middle above it – like the Wii. */
+
+/* ---------- the room ---------- */
+.swh[data-lay='channels'] {
+  min-height: 0;
+  justify-content: flex-start;
+  padding: 0;
+}
+.swh[data-lay='channels'] .sw-wrap {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  padding: clamp(62px, 6.5vh, 84px) 0 14px;
+}
+.swh[data-lay='channels'] .sw-row {
+  display: flex;
+  gap: var(--pg-gap, 120px);
+  width: max-content;
+  max-width: none;
+  margin: 0;
+  transition: transform 0.62s cubic-bezier(0.22, 0.9, 0.25, 1);
+  will-change: transform;
+}
+
+/* ---------- a page of twelve channels ---------- */
+.wch-page {
+  display: grid;
+  grid-template-columns: repeat(4, var(--tw, 200px));
+  grid-auto-rows: var(--th, 124px);
+  gap: var(--tg, 12px);
+  transition:
+    opacity 0.55s ease,
+    filter 0.55s ease,
+    scale 0.55s cubic-bezier(0.22, 0.9, 0.25, 1);
+}
+.wch-page:not(.cur) {
+  opacity: 0.34;
+  filter: saturate(0.45);
+  scale: 0.94;
+}
+.wch-page:not(.cur):not(.side) {
+  opacity: 0;
+}
+.wch-page.side {
+  cursor: pointer;
+}
+.wch-page.side:hover {
+  opacity: 0.55;
+}
+.wch-page:not(.cur) .wch em {
+  display: none;
+}
+
+/* ---------- a channel ---------- */
+.swh[data-lay='channels'] .wch {
+  --fw: calc(var(--tw, 200px) * 0.014);
+  position: relative;
+  width: var(--tw, 200px);
+  height: var(--th, 124px);
+  aspect-ratio: auto;
+  padding: 0;
+  border: 0;
+  border-radius: calc(var(--tw, 200px) * 0.08);
+  background: linear-gradient(180deg, #ffffff, #e4e8eb);
+  box-shadow:
+    inset 0 0 0 var(--fw) #c9d0d5,
+    inset 0 calc(var(--fw) * 2) calc(var(--fw) * 2) rgba(255, 255, 255, 0.9),
+    0 calc(var(--tw, 200px) * 0.015) calc(var(--tw, 200px) * 0.04) calc(var(--tw, 200px) * -0.02) rgba(40, 55, 70, 0.35);
+  transform: none;
+  transition:
+    transform 0.28s cubic-bezier(0.3, 1.5, 0.45, 1),
+    box-shadow 0.28s ease;
+  cursor: pointer;
+}
+/* the glass on top of every channel */
+.swh[data-lay='channels'] .wch::after {
+  content: '';
+  position: absolute;
+  inset: calc(var(--tw, 200px) * 0.03);
+  border-radius: calc(var(--tw, 200px) * 0.055);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.26), rgba(255, 255, 255, 0.04) 42%, transparent 60%);
+  pointer-events: none;
+  z-index: 3;
+}
+.swh[data-lay='channels'] .wch .art {
+  position: absolute;
+  inset: calc(var(--tw, 200px) * 0.03);
+  border-radius: calc(var(--tw, 200px) * 0.055);
+  overflow: hidden;
+  background-color: #1e242a;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12);
+}
+.swh[data-lay='channels'] .wch:not(.on):hover {
+  transform: scale(1.03);
+}
+/* the chosen channel: it grows, its frame turns Wii blue and glows */
+.swh[data-lay='channels'] .wch.on {
+  transform: scale(1.08);
+  z-index: 4;
+  background: linear-gradient(180deg, #ffffff, #e8f7fd);
+  box-shadow:
+    inset 0 0 0 calc(var(--fw) * 1.6) #3cc4f0,
+    0 0 0 calc(var(--fw) * 1.4) rgba(60, 196, 240, 0.3),
+    0 0 calc(var(--tw, 200px) * 0.14) rgba(60, 196, 240, 0.55),
+    0 calc(var(--tw, 200px) * 0.04) calc(var(--tw, 200px) * 0.08) calc(var(--tw, 200px) * -0.03) rgba(20, 90, 140, 0.5);
+  animation: wchGlow 2.2s ease-in-out infinite;
+}
+@keyframes wchGlow {
+  50% {
+    box-shadow:
+      inset 0 0 0 calc(var(--fw) * 1.6) #7fdcfa,
+      0 0 0 calc(var(--fw) * 2.2) rgba(60, 196, 240, 0.22),
+      0 0 calc(var(--tw, 200px) * 0.2) rgba(60, 196, 240, 0.7),
+      0 calc(var(--tw, 200px) * 0.04) calc(var(--tw, 200px) * 0.08) calc(var(--tw, 200px) * -0.03) rgba(20, 90, 140, 0.5);
+  }
+}
+/* the name of the chosen channel in a bubble above it */
+.swh[data-lay='channels'] .wch em {
+  bottom: calc(100% + 12px);
+  padding: 0.42em 1.05em;
+  font-size: clamp(14px, calc(var(--tw, 200px) * 0.052), 24px);
+  font-weight: 700;
+  color: #3a4550;
+  background: #fff;
+  border: 2px solid #cfe9f5;
+  box-shadow: 0 8px 20px -8px rgba(20, 60, 90, 0.45);
+  max-width: 130%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.swh[data-lay='channels'] .wch em::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  width: 12px;
+  height: 12px;
+  background: #fff;
+  border: solid #cfe9f5;
+  border-width: 0 2px 2px 0;
+  transform: translate(-50%, -55%) rotate(45deg);
+}
+
+/* ---------- the banner inside a channel ---------- */
+.wb {
+  container-type: inline-size;
+}
+.wb-bg {
+  position: absolute;
+  inset: -14%;
+  background: var(--img) center / cover no-repeat;
+  filter: blur(calc(var(--tw, 200px) * 0.028)) saturate(1.5) brightness(0.72);
+  transform: scale(1.04);
+}
+.wb-box {
+  position: absolute;
+  z-index: 1;
+  object-fit: contain;
+  filter: drop-shadow(0 calc(var(--tw, 200px) * 0.012) calc(var(--tw, 200px) * 0.022) rgba(0, 0, 0, 0.5));
+  transition: transform 0.45s cubic-bezier(0.3, 1.4, 0.45, 1);
+  pointer-events: none;
+}
+.wb[data-shape='box'] .wb-box {
+  left: 5.5%;
+  top: 9%;
+  height: 82%;
+  width: 40%;
+  object-position: left center;
+}
+.wb[data-shape='wide'] .wb-box {
+  left: 5%;
+  top: 6%;
+  width: 90%;
+  height: 88%;
+  object-position: center;
+}
+.wb-txt {
+  position: absolute;
+  z-index: 1;
+  left: 48%;
+  right: 5.5%;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3.2cqw;
+  color: #fff;
+  text-align: left;
+}
+.wb[data-shape='wide'] .wb-txt {
+  display: none;
+}
+.wb-txt b {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+  font: 800 7.6cqw/1.08 var(--head, inherit);
+  letter-spacing: -0.01em;
+  text-shadow:
+    0 0.12em 0.4em rgba(0, 0, 0, 0.6),
+    0 0 0.1em rgba(0, 0, 0, 0.4);
+}
+.wb-txt small {
+  padding: 0.28em 0.8em;
+  border-radius: 999px;
+  font-size: 4cqw;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: rgba(255, 255, 255, 0.2);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.28);
+}
+/* a light that runs over the chosen channel now and then */
+.wb-shine {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: linear-gradient(105deg, transparent 32%, rgba(255, 255, 255, 0.32) 48%, rgba(255, 255, 255, 0.05) 56%, transparent 66%);
+  transform: translateX(-130%);
+  pointer-events: none;
+}
+.wch.on .wb-shine {
+  animation: wbShine 3.4s cubic-bezier(0.4, 0, 0.3, 1) 0.25s infinite;
+}
+@keyframes wbShine {
+  0% {
+    transform: translateX(-130%);
+  }
+  45%,
+  100% {
+    transform: translateX(130%);
+  }
+}
+/* the chosen channel comes alive: the picture behind drifts, the box lifts and turns a little */
+.wch.on .wb-bg {
+  animation: wbDrift 10s ease-in-out infinite alternate;
+}
+@keyframes wbDrift {
+  from {
+    transform: scale(1.04) translate(0, 0);
+  }
+  to {
+    transform: scale(1.2) translate(-4%, 2%);
+  }
+}
+.wch.on .wb[data-shape='box'] .wb-box {
+  transform: translateY(-3%) rotate(-2.5deg) scale(1.05);
+}
+.wch.on .wb[data-shape='wide'] .wb-box {
+  transform: scale(1.03);
+}
+/* no cover: the coloured box with the initials and the whole name */
+.wb-plain > span {
+  font-size: 22cqw;
+}
+.swh[data-lay='channels'] .wch .wb-plain .art-name {
+  display: block;
+  position: absolute;
+  left: 7%;
+  right: 7%;
+  bottom: 9%;
+  font-size: 6cqw;
+  font-weight: 800;
+  line-height: 1.15;
+  color: rgba(255, 255, 255, 0.95);
+  text-align: left;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.3);
+}
+
+/* ---------- an empty channel: grey glass with fine lines ---------- */
+.swh[data-lay='channels'] .wch.ch-empty {
+  cursor: default;
+  background: linear-gradient(180deg, #f7f8f9, #e6e9ec);
+  box-shadow:
+    inset 0 0 0 var(--fw) #d3d9dd,
+    0 calc(var(--tw, 200px) * 0.01) calc(var(--tw, 200px) * 0.03) calc(var(--tw, 200px) * -0.02) rgba(40, 55, 70, 0.25);
+}
+.swh[data-lay='channels'] .wch.ch-empty:hover {
+  transform: none;
+}
+.wch-lines {
+  position: absolute;
+  inset: calc(var(--tw, 200px) * 0.03);
+  border-radius: calc(var(--tw, 200px) * 0.055);
+  background:
+    repeating-linear-gradient(180deg, rgba(120, 135, 148, 0.07) 0 2px, transparent 2px 6px),
+    linear-gradient(180deg, #eef1f3, #dfe3e6);
+  box-shadow: inset 0 2px 6px rgba(60, 75, 90, 0.12);
+}
+
+/* ---------- the channels come in, one after the other ---------- */
+.wch-in .wch {
+  animation: wchIn 0.62s cubic-bezier(0.2, 1.3, 0.4, 1) both;
+  animation-delay: calc(var(--i, 0) * 42ms);
+}
+.wch-in .wch.on {
+  animation:
+    wchIn 0.62s cubic-bezier(0.2, 1.3, 0.4, 1) both,
+    wchGlow 2.2s ease-in-out 0.7s infinite;
+  animation-delay: calc(var(--i, 0) * 42ms), 0.7s;
+}
+@keyframes wchIn {
+  from {
+    opacity: 0;
+    transform: scale(0.82);
+  }
+}
+
+/* ---------- the arrows at the sides ---------- */
+.wch-arr {
+  position: absolute;
+  top: 50%;
+  z-index: 6;
+  width: clamp(54px, 4.4vw, 88px);
+  aspect-ratio: 1;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle at 50% 30%, #ffffff, #e6ebee);
+  box-shadow:
+    0 0 0 3px #cfd8de,
+    inset 0 -3px 6px rgba(60, 75, 90, 0.1),
+    0 10px 22px -10px rgba(30, 50, 70, 0.45);
+  translate: 0 -50%;
+  cursor: pointer;
+  transition:
+    scale 0.2s cubic-bezier(0.3, 1.6, 0.5, 1),
+    box-shadow 0.2s;
+}
+.wch-arr[hidden] {
+  display: none;
+}
+.wch-arr.l {
+  left: clamp(14px, 1.8vw, 40px);
+  animation: wchNudgeL 1.8s ease-in-out infinite;
+}
+.wch-arr.r {
+  right: clamp(14px, 1.8vw, 40px);
+  animation: wchNudgeR 1.8s ease-in-out infinite;
+}
+@keyframes wchNudgeL {
+  50% {
+    transform: translateX(-5px);
+  }
+}
+@keyframes wchNudgeR {
+  50% {
+    transform: translateX(5px);
+  }
+}
+.wch-arr:hover {
+  scale: 1.12;
+  box-shadow:
+    0 0 0 4px #3cc4f0,
+    0 0 26px rgba(60, 196, 240, 0.55),
+    0 10px 22px -10px rgba(30, 50, 70, 0.45);
+}
+.wch-arr svg {
+  width: 44%;
+  height: 44%;
+  fill: none;
+  stroke: #2bb6e6;
+  stroke-width: 3.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ---------- the pages: small dots below ---------- */
+.swh[data-lay='channels'] .ch-dots {
+  margin: 0 0 4px;
+  min-height: 10px;
+}
+.swh[data-lay='channels'] .ch-dots i {
+  cursor: pointer;
+  transition:
+    background 0.3s,
+    width 0.3s;
+}
+.swh[data-lay='channels'] .ch-dots i.on {
+  width: 26px;
+  border-radius: 6px;
+  background: #3cc4f0;
+}
+
+/* ---------- the bar at the bottom: the round buttons in its corners, the clock in the middle above it ---------- */
+@media (min-width: 1100px) {
+  body.wiimenu.clock-bar #swapps {
+    position: fixed;
+    left: clamp(22px, 3vw, 64px);
+    right: clamp(22px, 3vw, 64px);
+    bottom: 20px;
+    z-index: 6;
+    margin: 0;
+    justify-content: flex-start;
+    align-items: flex-end;
+    gap: clamp(12px, 1.2vw, 22px);
+    pointer-events: none;
+  }
+  body.wiimenu.clock-bar #swapps .sw-a {
+    pointer-events: auto;
+    width: clamp(60px, 4.6vw, 86px);
+    height: clamp(60px, 4.6vw, 86px);
+    background: radial-gradient(circle at 50% 32%, #ffffff, #e5eaed);
+    box-shadow:
+      0 0 0 4px #cfd8de,
+      inset 0 -4px 8px rgba(60, 75, 90, 0.08),
+      0 10px 18px -10px rgba(30, 50, 70, 0.4);
+  }
+  body.wiimenu.clock-bar #swapps .sw-a svg {
+    width: 42%;
+    height: 42%;
+  }
+  /* the Wii button (Settings) on the left, the others to the right of it and in the right corner */
+  body.wiimenu.clock-bar #swapps .sw-a[data-a='set'] {
+    order: 1;
+    width: clamp(78px, 6vw, 112px);
+    height: clamp(78px, 6vw, 112px);
+  }
+  body.wiimenu.clock-bar #swapps .sw-a[data-a='set'] svg {
+    display: none;
+  }
+  body.wiimenu.clock-bar #swapps .sw-a[data-a='set']::before {
+    content: 'Wii';
+    font: 800 clamp(22px, 1.9vw, 34px) / 1 var(--head, inherit);
+    letter-spacing: -0.02em;
+    color: #8b979f;
+  }
+  body.wiimenu.clock-bar #swapps .sw-a[data-a='themes'] {
+    order: 2;
+  }
+  body.wiimenu.clock-bar #swapps .sw-a[data-a='pads'] {
+    order: 3;
+    margin-left: auto;
+  }
+  body.wiimenu.clock-bar #swapps .sw-a[data-a='systems'] {
+    order: 4;
+  }
+  /* the message board on the Wii is your history: Recently played sits in the right corner */
+  body.wiimenu.clock-bar #swapps .sw-a[data-a='recent'] {
+    order: 5;
+    width: clamp(78px, 6vw, 112px);
+    height: clamp(78px, 6vw, 112px);
+  }
+  body.wiimenu.clock-bar #swapps .sw-a span {
+    top: auto;
+    bottom: calc(100% + 12px);
+  }
+  body.wiimenu.clock-bar #swapps .sw-a:hover,
+  body.wiimenu.clock-bar #swapps .sw-a.sel {
+    box-shadow:
+      0 0 0 4px #3cc4f0,
+      0 0 24px rgba(60, 196, 240, 0.5),
+      0 10px 18px -10px rgba(30, 50, 70, 0.4);
+  }
+  body.wiimenu.clock-bar .wclk {
+    left: 50%;
+    bottom: 104px;
+    transform: translateX(-50%);
+    align-items: center;
+    text-align: center;
+  }
+  body.wiimenu.clock-bar .wclk b {
+    font-size: clamp(38px, 3vw, 56px);
+    font-weight: 500;
+    letter-spacing: 0.03em;
+  }
+  body.wiimenu.clock-bar .wclk small {
+    font-size: clamp(14px, 1vw, 18px);
+  }
+  body.wiimenu.clock-bar .swh[data-lay='channels'] .sw-hint {
+    display: none;
+  }
+}
+
+/* ---------- dark ---------- */
+html.dark .swh[data-lay='channels'] .wch {
+  background: linear-gradient(180deg, #3d434a, #2a2f35);
+  box-shadow:
+    inset 0 0 0 var(--fw) #4d555d,
+    inset 0 calc(var(--fw) * 2) calc(var(--fw) * 2) rgba(255, 255, 255, 0.06),
+    0 calc(var(--tw, 200px) * 0.015) calc(var(--tw, 200px) * 0.04) calc(var(--tw, 200px) * -0.02) rgba(0, 0, 0, 0.6);
+}
+html.dark .swh[data-lay='channels'] .wch.on {
+  background: linear-gradient(180deg, #3d4a54, #24323c);
+  box-shadow:
+    inset 0 0 0 calc(var(--fw) * 1.6) #3cc4f0,
+    0 0 0 calc(var(--fw) * 1.4) rgba(60, 196, 240, 0.3),
+    0 0 calc(var(--tw, 200px) * 0.14) rgba(60, 196, 240, 0.5),
+    0 calc(var(--tw, 200px) * 0.04) calc(var(--tw, 200px) * 0.08) calc(var(--tw, 200px) * -0.03) rgba(0, 0, 0, 0.7);
+}
+html.dark .swh[data-lay='channels'] .wch.ch-empty {
+  background: linear-gradient(180deg, #343a40, #2a2e33);
+  box-shadow:
+    inset 0 0 0 var(--fw) #3f464d,
+    0 calc(var(--tw, 200px) * 0.01) calc(var(--tw, 200px) * 0.03) calc(var(--tw, 200px) * -0.02) rgba(0, 0, 0, 0.5);
+}
+html.dark .wch-lines {
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.035) 0 2px, transparent 2px 6px),
+    linear-gradient(180deg, #2e3338, #25292d);
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.35);
+}
+html.dark .swh[data-lay='channels'] .wch em,
+html.dark .swh[data-lay='channels'] .wch em::after {
+  background: #2c343b;
+  color: #e6edf2;
+  border-color: #3b6a80;
+}
+html.dark .wch-arr,
+html.dark body.wiimenu.clock-bar #swapps .sw-a {
+  background: radial-gradient(circle at 50% 30%, #464d55, #30363c);
+  box-shadow:
+    0 0 0 3px #4d565f,
+    0 10px 22px -10px rgba(0, 0, 0, 0.6);
+}
+html.dark body.wiimenu.clock-bar #swapps .sw-a[data-a='set']::before {
+  color: #aab4bb;
+}
+
+/* ---------- less motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .swh[data-lay='channels'] .sw-row,
+  .wch-page {
+    transition: none;
+  }
+  .wch-in .wch,
+  .swh[data-lay='channels'] .wch.on,
+  .wch.on .wb-bg,
+  .wch.on .wb-shine,
+  .wch-arr.l,
+  .wch-arr.r {
+    animation: none;
+  }
+}
+
+/* the name is on the banner already: no bubble then (only a wide picture without a name gets one) */
+.swh[data-lay='channels'] .wch:has(.wb[data-shape='box']) em,
+.swh[data-lay='channels'] .wch:has(.wb-plain) em {
+  display: none;
+}
+html.dark .swh[data-lay='channels'] .wch::after {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.02) 40%, transparent 60%);
+}

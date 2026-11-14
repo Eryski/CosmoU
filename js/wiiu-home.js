@@ -1,14 +1,23 @@
-// CosmoU – Wii U Look "Home Menu" layout: clock and battery on top, buttons on both sides, a 5×3 tile grid
-// with the game's name below (switchable with the Plaza).
+// CosmoU – Wii U Look "Home Menu" layout: a 5×3 grid of the games with the chosen game's name below (switchable with
+// the Plaza). Two kinds:
+//   home  the full Home Menu – tiles with a frame of glass, empty places as faint glass, big arrows at the sides that
+//         turn the pages, the page dots at the top, and a bar of round buttons at the bottom (js/wiiu-dock.js:
+//         Plaza, Notes, Browser, YouTube, Discord, Controllers, Settings …) – idea: Flowery
+//   mini  the smaller one from before: clock and battery on top, a few buttons on both sides
 const WH_COLS = 5,
   WH_ROWS = 3,
   WH_PER = WH_COLS * WH_ROWS;
 let wuView = 'plaza',
-  whPage = 0;
+  whPage = 0,
+  // the Home Menu last used (the Plaza's "Home Menu" button goes back to it)
+  whKind = 'home';
 try {
-  if (localStorage.getItem('cosmou.wuView') === 'home') wuView = 'home';
+  const v = localStorage.getItem('cosmou.wuView');
+  if (v === 'home' || v === 'mini') wuView = v;
+  if (localStorage.getItem('cosmou.wuHome') === 'mini' || v === 'mini') whKind = 'mini';
 } catch {}
-const isHome = () => mode === 'wiiu' && wuView === 'home';
+const isHome = () => mode === 'wiiu' && wuView !== 'plaza';
+const whFull = () => wuView === 'home';
 const WH_ICON = {
   settings:
     '<svg viewBox="0 0 64 64"><path fill="#8b959e" d="M45.6 8.4a14 14 0 0 0-16.9 18.2L9.9 45.4a5.5 5.5 0 0 0 7.8 7.8l18.8-18.8A14 14 0 0 0 54.8 17.5l-7.9 7.9-6.9-1.2-1.2-6.9z"/></svg>',
@@ -54,10 +63,13 @@ function syncWuLayoutUi() {
   document.querySelectorAll('#wul button').forEach(b => b.classList.toggle('on', b.dataset.l === wuView));
 }
 function setWuLayout(v) {
-  wuView = v === 'home' ? 'home' : 'plaza';
+  wuView = v === 'home' || v === 'mini' ? v : 'plaza';
+  if (wuView !== 'plaza') whKind = wuView;
   try {
     localStorage.setItem('cosmou.wuView', wuView);
+    localStorage.setItem('cosmou.wuHome', whKind);
   } catch {}
+  if (typeof whDockReset === 'function') whDockReset();
   syncWuLayoutUi();
   hoverOff();
   blip('page');
@@ -67,33 +79,126 @@ const whItems = l => [...l, { sys: 'add', name: 'Add app' }];
 function whSize() {
   const W = innerWidth,
     H = innerHeight,
-    side = W < 900 ? 92 : 116,
+    home = $('#whome');
+  if (whFull()) {
+    // everything scales with the window (a 1280×720 window is 1): the tiles as big as the room between the top
+    // line, the name and the bar of buttons allows – also on an ultrawide or a small screen
+    const u = Math.max(0.6, Math.min(2.6, Math.min(W / 1280, H / 720))),
+      narrow = W < 760,
+      side = narrow ? 10 : Math.round(92 * u),
+      gap = Math.round(Math.max(8, 20 * u)),
+      tvPad = document.body.classList.contains('tv') ? 58 : 0,
+      room = H - Math.round(74 * u) - Math.round(54 * u) - Math.round(98 * u) - tvPad - 10,
+      s = Math.floor(Math.min((W - side * 2 - gap * (WH_COLS - 1) - 20) / WH_COLS, (room - gap * (WH_ROWS - 1)) / WH_ROWS));
+    home.style.setProperty('--u', u.toFixed(3));
+    home.style.setProperty('--whside', side + 'px');
+    home.classList.toggle('wh-narrow', narrow);
+    return { s: Math.max(52, Math.min(340, s)), gap };
+  }
+  const side = W < 900 ? 92 : 116,
     gap = Math.round(Math.max(10, Math.min(26, W * 0.017))),
     s = Math.floor(Math.min((W - side * 2 - 40 - gap * (WH_COLS - 1)) / WH_COLS, (H - 96 - 124 - gap * (WH_ROWS - 1)) / WH_ROWS));
-  $('#whome').style.setProperty('--whside', side + 'px');
+  home.style.setProperty('--whside', side + 'px');
   return { s: Math.max(64, Math.min(196, s)), gap };
+}
+// the full Home Menu has its parts in other places: the buddy and the page dots in the line at the top
+function whPlace() {
+  const home = $('#whome'),
+    kind = whFull() ? 'home' : 'mini';
+  if (home.dataset.kind === kind) return;
+  home.dataset.kind = kind;
+  const bar = home.querySelector('.wh-bar');
+  if (kind === 'home') {
+    bar.prepend($('#whav'));
+    bar.append($('#whdots'));
+  } else {
+    home.querySelector('.wh-side.l').insertBefore($('#whav'), $('#whset'));
+    home.querySelector('.wh-foot').append($('#whdots'));
+  }
+  $('#whgrid').dataset.key = '';
+}
+// the little "i" on the chosen tile: its details
+function whInfo(it) {
+  const inf = document.createElement('span');
+  inf.className = 'wh-i';
+  inf.textContent = 'i';
+  inf.title = 'Details';
+  inf.onclick = e => {
+    e.stopPropagation();
+    openDetail(it);
+  };
+  return inf;
 }
 function buildHome(l) {
   const items = whItems(l),
     pages = Math.max(1, Math.ceil(items.length / WH_PER)),
-    idx = items.findIndex(x => !x.sys && x.name === sel);
+    idx = items.findIndex(x => !x.sys && x.name === sel),
+    full = whFull();
   if (idx >= 0) whPage = Math.floor(idx / WH_PER);
   whPage = Math.max(0, Math.min(pages - 1, whPage));
+  whPlace();
   const { s, gap } = whSize(),
     grid = $('#whgrid');
   grid.style.setProperty('--ts', s + 'px');
   grid.style.setProperty('--tg', gap + 'px');
   if (grid.dataset.page !== String(whPage)) {
+    // (the new page comes in from the side it lies on)
+    grid.dataset.dir = +grid.dataset.page > whPage ? 'l' : 'r';
     grid.classList.remove('swap');
     void grid.offsetWidth;
     grid.classList.add('swap');
     grid.dataset.page = whPage;
+    // (only the page that comes in plays it – a tile moved later does not come in again)
+    clearTimeout(grid._swapT);
+    grid._swapT = setTimeout(() => grid.classList.remove('swap'), 900);
   }
-  grid.replaceChildren();
-  items.slice(whPage * WH_PER, (whPage + 1) * WH_PER).forEach((it, i) => {
-    const t = document.createElement('button'),
-      a = document.createElement('span');
-    t.className = 'wh-t' + (it.sys ? ' sys' : '') + (!it.sys && it.name === sel ? ' on' : '');
+  // the arrows at the sides: only where there is a page to go to
+  $('#wharl').hidden = !full || whPage < 1;
+  $('#wharr').hidden = !full || whPage >= pages - 1;
+  if (typeof whDockUi === 'function') whDockUi();
+  // the same page with the same games: only the selection moves (building every tile new played their
+  // entrance again – the whole screen seemed to reload with every step)
+  const shown = items.slice(whPage * WH_PER, (whPage + 1) * WH_PER),
+    key =
+      (full ? 'F' : 'M') +
+      whPage +
+      '|' +
+      shown.map(it => (it.sys ? '+' : it.name + (favs.has(it.name) ? '★' : '') + (it.icon || it.cover || '') + (it.kind === 'folder' ? it.format + it.col : ''))).join('\n');
+  if (grid.dataset.key === key && grid.children.length) {
+    for (const t of grid.children) {
+      const on = whAdd ? t.classList.contains('sys') : !!t.dataset.g && t.dataset.g === sel;
+      t.classList.toggle('on', on);
+      const inf = t.querySelector('.wh-i');
+      if (inf && !on) inf.remove();
+      if (on && !inf) t.append(whInfo(items.find(x => !x.sys && x.name === sel)));
+    }
+    const g = cur();
+    $('#whtitle').textContent = whAdd ? 'Add app' : g ? g.name : '';
+    return;
+  }
+  grid.dataset.key = key;
+  // the tiles there already are kept (a game moved, a page with the same games): only new ones are built – building
+  // all of them again reloaded every picture (Eduard: "moving a game will refresh everything")
+  const old = new Map(),
+    sig = it => (it.sys ? '+' : it.name + (favs.has(it.name) ? '★' : '') + (it.icon || it.cover || '') + (it.kind === 'folder' ? it.format + it.col : ''));
+  for (const t of grid.children) if (t.dataset.sig) old.set(t.dataset.sig, t);
+  const tiles = shown.map((it, i) => {
+    const k = sig(it);
+    let t = old.get(k);
+    if (t) {
+      old.delete(k);
+      const on = it.sys ? whAdd : it.name === sel && !whAdd;
+      t.classList.toggle('on', on);
+      t.style.setProperty('--i', i);
+      const inf = t.querySelector('.wh-i');
+      if (inf && !on) inf.remove();
+      if (on && !inf && !it.sys) t.append(whInfo(it));
+      return t;
+    }
+    t = document.createElement('button');
+    t.dataset.sig = k;
+    const a = document.createElement('span');
+    t.className = 'wh-t' + (it.sys ? ' sys' : '') + ((it.sys ? whAdd : it.name === sel && !whAdd) ? ' on' : '');
     t.style.setProperty('--i', i);
     t.title = it.name;
     t.setAttribute('aria-label', it.name);
@@ -106,6 +211,7 @@ function buildHome(l) {
       if (img) a.style.backgroundImage = `url("${img}")`;
       else paint(a, it);
       t.onclick = () => {
+        whAdd = false;
         if (sel === it.name) launch(it);
         else {
           sel = it.name;
@@ -120,21 +226,21 @@ function buildHome(l) {
         f.textContent = '★';
         t.append(f);
       }
-      if (it.name === sel) {
-        const inf = document.createElement('span');
-        inf.className = 'wh-i';
-        inf.textContent = 'i';
-        inf.title = 'Details';
-        inf.onclick = e => {
-          e.stopPropagation();
-          openDetail(it);
-        };
-        t.append(inf);
-      }
+      if (it.name === sel && !whAdd) t.append(whInfo(it));
     }
     t.prepend(a);
-    grid.append(t);
+    return t;
   });
+  grid.replaceChildren(...tiles);
+  // the full Home Menu: the places without a game are there too, as faint glass
+  if (full)
+    for (let i = shown.length; i < WH_PER; i++) {
+      const e = document.createElement('span');
+      e.className = 'wh-t wh-ph';
+      e.style.setProperty('--i', i);
+      e.setAttribute('aria-hidden', 'true');
+      grid.append(e);
+    }
   const dots = $('#whdots');
   dots.replaceChildren();
   for (let p = 0; p < pages; p++) {
@@ -146,7 +252,7 @@ function buildHome(l) {
   }
   dots.hidden = pages < 2;
   const g = cur();
-  $('#whtitle').textContent = g ? g.name : '';
+  $('#whtitle').textContent = whAdd ? 'Add app' : g ? g.name : '';
   drawAvatar();
   startAvatar();
 }
@@ -161,10 +267,30 @@ function whTurn(d) {
   if (first) sel = first.name;
   render();
 }
+// the "+" after the last game (add an app) can be chosen with the controller and the arrows too (Eduard)
+let whAdd = false;
+function whAddSet(on) {
+  if (whAdd === on) return;
+  whAdd = on;
+  blip('move');
+  $('#whgrid').dataset.key = '';
+  render();
+}
 function homeStep(dir) {
+  // the bar of round buttons below the games (the full Home Menu): along it, and up back to the games
+  if (whFull() && typeof whZone === 'string' && whZone === 'dock') return whDockStep(dir);
+  // a lifted game moves instead (your order, js/order.js) – up and down a row
+  if (typeof orderMove === 'string' && orderMove) return orderShift(dir === 'l' ? -1 : dir === 'r' ? 1 : dir === 'u' ? -WH_COLS : WH_COLS);
   const l = list(),
     i = l.findIndex(x => x.name === sel);
+  if (whAdd) {
+    if (dir === 'l' || dir === 'u') return whAddSet(false);
+    if (dir === 'd' && whFull() && typeof whDockEnter === 'function') return (whAdd = false), whDockEnter();
+    return;
+  }
   if (i < 0) return;
+  // right from the last game: the "+"
+  if (dir === 'r' && i === l.length - 1 && (i + 1) % WH_PER !== 0) return whAddSet(true);
   const pos = i,
     col = pos % WH_COLS,
     row = Math.floor((pos % WH_PER) / WH_COLS);
@@ -175,6 +301,8 @@ function homeStep(dir) {
   else if (dir === 'd') n = row === WH_ROWS - 1 ? pos : pos + WH_COLS;
   if (n < 0) n = 0;
   if (n >= l.length) n = dir === 'd' ? pos : l.length - 1;
+  // down from the last row of games: to the round buttons
+  if (dir === 'd' && n === pos && whFull() && typeof whDockEnter === 'function') return whDockEnter();
   const t = l[n];
   if (t && t.name !== sel) {
     sel = t.name;
@@ -207,7 +335,9 @@ function drawAvatar() {
   $('#whpad').onclick = () => openSettings('controls');
   $('#whlogo').onclick = () => whMenu('logo');
   $('#whpow').onclick = () => whMenu('power');
-  $('#wtohome').onclick = () => setWuLayout('home');
+  $('#wtohome').onclick = () => setWuLayout(whKind);
+  $('#wharl').onclick = () => whTurn(-1);
+  $('#wharr').onclick = () => whTurn(1);
   $('#whav').onclick = () => openBuddies();
   whShapes();
   whClock();
@@ -312,7 +442,7 @@ function whMenuItems(kind) {
     ['feedback', 'Send feedback', '#e5534b', () => openFeedback()],
   ];
 }
-function whMenu(kind) {
+function whMenu(kind, anchor) {
   const m = $('#whmenu');
   if (!m.hidden && whMenuFor === kind) return whMenuClose();
   whMenuFor = kind;
@@ -355,11 +485,17 @@ function whMenu(kind) {
   }
   m.hidden = false;
   const home = $('#whome').getBoundingClientRect(),
-    r = $(kind === 'power' ? '#whpow' : '#whlogo').getBoundingClientRect(),
+    r = (anchor || $(kind === 'power' ? '#whpow' : '#whlogo')).getBoundingClientRect(),
     w = m.offsetWidth,
     h = m.offsetHeight;
-  m.style.left = (kind === 'power' ? r.left - home.left - w - 14 : r.right - home.left + 14) + 'px';
-  m.style.top = Math.max(12, Math.min(home.height - h - 12, r.top - home.top + r.height / 2 - h / 2)) + 'px';
+  if (anchor) {
+    // above a button of the bar at the bottom
+    m.style.left = Math.max(12, Math.min(home.width - w - 12, r.left - home.left + r.width / 2 - w / 2)) + 'px';
+    m.style.top = Math.max(12, r.top - home.top - h - 14) + 'px';
+  } else {
+    m.style.left = (kind === 'power' ? r.left - home.left - w - 14 : r.right - home.left + 14) + 'px';
+    m.style.top = Math.max(12, Math.min(home.height - h - 12, r.top - home.top + r.height / 2 - h / 2)) + 'px';
+  }
   blip('open');
   const first = m.querySelector('input, button');
   if (first) first.focus();
@@ -369,7 +505,7 @@ function whMenuClose() {
   whMenuFor = '';
 }
 addEventListener('pointerdown', e => {
-  if (!$('#whmenu').hidden && !e.target.closest('#whmenu, #whlogo, #whpow')) whMenuClose();
+  if (!$('#whmenu').hidden && !e.target.closest('#whmenu, #whlogo, #whpow, .wh-dk')) whMenuClose();
 });
 addEventListener(
   'keydown',
@@ -377,6 +513,20 @@ addEventListener(
     if (e.key === 'Escape' && !$('#whmenu').hidden) {
       e.stopPropagation();
       whMenuClose();
+    }
+  },
+  true,
+);
+
+// Enter on the "+": add an app; any other way of choosing a game leaves the "+"
+addEventListener(
+  'keydown',
+  e => {
+    if (!whAdd || !isHome() || document.querySelector('dialog[open]') || /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      if (need()) openApp(null);
     }
   },
   true,

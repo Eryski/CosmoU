@@ -9,6 +9,7 @@
 const NX_COL = {
   wiiu: '#1ea7dd',
   switch: '#e5484d',
+  switch2: '#3a3f4b',
   wii: '#8e9aa6',
   gamecube: '#6b5bd2',
   '3ds': '#d23a52',
@@ -21,7 +22,7 @@ const NX_COL = {
   vb: '#c81d1d',
 };
 // the consoles as round "users" in the top left: a short name in each
-const NX_ABBR = { wiiu: 'Wii U', switch: 'Switch', wii: 'Wii', gamecube: 'GC', '3ds': '3DS', ds: 'DS', n64: '64', snes: 'SNES', nes: 'NES', gb: 'GB', gba: 'GBA', vb: 'VB' };
+const NX_ABBR = { wiiu: 'Wii U', switch: 'Switch', switch2: 'Switch 2', wii: 'Wii', gamecube: 'GC', '3ds': '3DS', ds: 'DS', n64: '64', snes: 'SNES', nes: 'NES', gb: 'GB', gba: 'GBA', vb: 'VB' };
 const nxS = (d, f) =>
   f
     ? `<svg viewBox="0 0 24 24" fill="currentColor">${d}</svg>`
@@ -58,10 +59,14 @@ const NX_IC = {
   bug: nxS('<path d="M8 9a4 4 0 0 1 8 0v6a4 4 0 0 1-8 0z"/><path d="M3 13h5M16 13h5M4 7l4 2M20 7l-4 2M4 19l4-2M20 19l-4-2"/>'),
   every: nxS('<rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><path d="M15 17h4M17 15v4"/>'),
   wiiu: nxS('<rect x="2" y="6" width="20" height="12" rx="4"/><rect x="7.5" y="8.5" width="9" height="7" rx="1"/>'),
+  // the Case Room (js/case-room.js): cases side by side
+  cases: nxS('<rect x="3" y="4" width="6.5" height="16" rx="1.2"/><rect x="11.5" y="4" width="9.5" height="16" rx="1.4"/><path d="M11.5 7.5h9.5M3 7h6.5"/>'),
 };
 // the round buttons on Home
 const NX_APPS = [
   ['all', 'All Software', '#e5484d', () => nxShow('all')],
+  // the second menu: your games as real cases (js/case-room.js)
+  ['cases', 'Case Room', '#ff8a3d', () => typeof czOpen === 'function' && czOpen()],
   ['log', 'Play Activity', '#3fae5a', () => typeof openLog === 'function' && openLog()],
   ['themes', 'Themes', '#f29a3c', () => nxThemesPop()],
   ['pads', 'Controllers', '#3c8cf0', () => openSettings('controls')],
@@ -153,18 +158,26 @@ function nxTheme() {
 new MutationObserver(() => nx.on && nxTheme()).observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
 
 // ---------- the games ----------
-const nxGames = () =>
+const nxGamesRaw = () =>
   games.filter(g => (g.kind === 'app' ? !g.appSys || g.appSys === 'all' || g.appSys === curSys : sysOf(g) === curSys));
-// Home: the last played first (like the Switch), the others after them A–Z
+// with folders (js/folders.js): the folders of this console instead of the games in them – or the open folder's games
+const nxGames = () => (typeof fdView === 'function' ? fdView(nxGamesRaw()) : nxGamesRaw());
+const nxFd = l => (typeof fdFirst === 'function' ? fdFirst(l) : l);
+// Home: the last played first (like the Switch), the others after them A–Z (folders first)
 const nxHomeList = () =>
-  nxGames()
-    .slice()
-    .sort((a, b) => (plays[b.name] || 0) - (plays[a.name] || 0) || a.name.localeCompare(b.name));
+  nxFd(
+    nxGames()
+      .slice()
+      .sort((a, b) => (plays[b.name] || 0) - (plays[a.name] || 0) || a.name.localeCompare(b.name)),
+  );
 const nxSec = g => (typeof secOf === 'function' ? secOf(g.name) : 0);
 const NX_SORT = { recent: 'Recently played', most: 'Most played', az: 'Title', fav: 'Favorites first' };
-function nxAllList() {
+// (your order: the folders have their places among the games – js/face-order.js, js/folders.js)
+const nxAllList = () => (nx.sort === 'own' && !nx.q.trim() && typeof fdOwn === 'function' ? fdOwn(nxAllList0()) : nxFd(nxAllList0()));
+function nxAllList0() {
   const q = nx.q.trim().toLowerCase();
-  let l = nxGames().filter(g => !q || g.name.toLowerCase().includes(q) || (g.tid && String(g.tid).toLowerCase().includes(q)));
+  // (a search looks through every game, also the ones in folders)
+  let l = (q ? nxGamesRaw() : nxGames()).filter(g => !q || g.name.toLowerCase().includes(q) || (g.tid && String(g.tid).toLowerCase().includes(q)));
   const az = (a, b) => a.name.localeCompare(b.name);
   if (nx.sort === 'az') return l.sort(az);
   if (nx.sort === 'most') return l.sort((a, b) => nxSec(b) - nxSec(a) || (plays[b.name] || 0) - (plays[a.name] || 0) || az(a, b));
@@ -298,28 +311,27 @@ function nxRender() {
   nxHints();
   nxPads();
 }
-// the consoles you have, like the users of a Switch: the one on screen has the frame colour
+// the other consoles you have, like the users of a Switch: a circle each with its short name and, under it, its name.
+// The console on screen has no circle – you are on it already (Eduard)
 function nxUsers() {
   const box = $('#nxusers'),
-    av = sysAvail(),
-    key = av.join() + '|' + curSys;
+    av = sysAvail().filter(k => k !== curSys),
+    key = av.map(k => k + ':' + (SYS[k] ? SYS[k].name + (SYS[k].col || '') : '')).join() + '|' + curSys;
   if (box.dataset.k !== key) {
     box.dataset.k = key;
     // up to eight, like the users of a Switch; with more consoles the last circle lists the rest
     let shown = av;
-    if (av.length > 8) {
-      shown = av.slice(0, 7);
-      if (!shown.includes(curSys)) shown[6] = curSys;
-    }
+    if (av.length > 8) shown = av.slice(0, 7);
     const kids = shown.map(k => {
-      const b = document.createElement('button');
-      b.className = 'nx-user' + (k === curSys ? ' here' : '');
+      const b = document.createElement('button'),
+        ab = NX_ABBR[k] || (SYS[k] ? SYS[k].name : k).replace(/[^\p{L}\p{N}]/gu, '').slice(0, 2).toUpperCase();
+      b.className = 'nx-user' + (ab.length > 6 ? ' long' : '');
       b.dataset.s = k;
-      b.style.setProperty('--c', NX_COL[k] || NX_COL[nxLookOf(k)] || '#8a8f98');
-      b.textContent = NX_ABBR[k] || (SYS[k] ? SYS[k].name : k).replace(/[^\p{L}\p{N}]/gu, '').slice(0, 2).toUpperCase();
+      b.style.setProperty('--c', (SYS[k] && SYS[k].col) || NX_COL[k] || NX_COL[nxLookOf(k)] || '#8a8f98');
+      b.textContent = ab;
       const tip = document.createElement('span');
       tip.className = 'nx-tip';
-      tip.textContent = k === curSys ? (SYS[k] ? SYS[k].name : k) : 'Switch to ' + (SYS[k] ? SYS[k].name : k);
+      tip.textContent = SYS[k] ? SYS[k].name : k;
       b.append(tip);
       b.title = tip.textContent;
       b.onclick = () => {
@@ -337,9 +349,9 @@ function nxUsers() {
       m.textContent = '+' + (av.length - shown.length);
       const tip = document.createElement('span');
       tip.className = 'nx-tip';
-      tip.textContent = 'Every console';
+      tip.textContent = 'More consoles';
       m.append(tip);
-      m.title = 'Every console';
+      m.title = 'More consoles';
       m.onclick = () => {
         nx.zone = 'top';
         nx.u = [...box.children].indexOf(m);
@@ -352,8 +364,8 @@ function nxUsers() {
   }
   nxSelUi();
 }
-// the circle of the console on screen (where Up from the games lands)
-const nxHere = () => Math.max(0, [...$('#nxusers').children].findIndex(b => b.dataset.s === curSys));
+// where Up from the games lands: the first console (the one on screen has no circle)
+const nxHere = () => 0;
 function nxUserGo(k) {
   if (k === curSys) return nxSnd('bump');
   nxSnd('page');
@@ -372,6 +384,14 @@ function nxTile(g, k) {
   const n = document.createElement('em');
   n.textContent = g.name;
   t.append(a, n);
+  // a favorite wears a star in its corner (Eduard)
+  if (favs.has(g.name)) {
+    const f = document.createElement('i');
+    f.className = 'nx-fav';
+    f.textContent = '★';
+    f.setAttribute('aria-label', 'Favorite');
+    t.append(f);
+  }
   return t;
 }
 function nxDrawHome() {
@@ -385,7 +405,7 @@ function nxDrawHome() {
     row = $('#nxrow'),
     shown = l.slice(0, 12),
     many = l.length > 12,
-    sig = shown.map(g => g.name + (g.cover || '')).join('|') + '|' + l.length;
+    sig = shown.map(g => g.name + (g.cover || '') + (favs.has(g.name) ? '★' : '') + (g.kind === 'folder' ? g.format + g.col : '')).join('|') + '|' + l.length;
   if (sig !== nx.sig) {
     nx.sig = sig;
     row.replaceChildren();
@@ -447,7 +467,7 @@ function nxDrawAll() {
   const grid = $('#nxgrid'),
     l = nxAllList();
   $('#nxsortl').textContent = (nx.q ? l.length + ' found · ' : '') + 'Sorted by ' + NX_SORT[nx.sort].toLowerCase();
-  const sig = 'all|' + l.map(g => g.name).join('|');
+  const sig = 'all|' + l.map(g => g.name + (favs.has(g.name) ? '★' : '') + (g.kind === 'folder' ? g.format + g.col : '')).join('|');
   if (grid.dataset.sig !== sig) {
     grid.dataset.sig = sig;
     grid.replaceChildren();
@@ -507,22 +527,23 @@ function nxSelUi(scroll) {
     // the keyboard focus follows the frame (screen readers read what is chosen) – not while typing a search
     const f = document.activeElement;
     if (nx.on && f !== el && el.focus && !nx.ptr && !(f && f.id === 'nxq') && !document.querySelector('dialog[open]')) el.focus({ preventScroll: true });
-    if (el.dataset.g) nxPick(games.find(g => g.name === el.dataset.g));
+    if (el.dataset.g) nxPick(gameOf(el.dataset.g));
   }
   nxHints();
 }
 
 // ---------- the bottom bar ----------
-const NX_HINT_KEYS = { a: 'A', b: 'B', x: 'X', y: 'Y', plus: '+', minus: '−', home: '⌂', lr: 'L R' };
+const NX_HINT_KEYS = { a: 'A', b: 'B', x: 'X', y: 'Y', plus: '+', minus: '−', home: '⌂', lr: 'L R', zr: 'ZR' };
 function nxHints() {
   const h = [];
   if (nx.qs) h.push(['b', 'Close'], ['a', 'OK']);
   else if (nx.pop) h.push(['b', 'Back'], ['a', 'OK']);
   else if (nx.scr === 'home') {
-    if (nx.zone === 'row' && $('#nxrow .nx-t.nx-sel[data-g]')) h.push(['plus', 'Options'], ['a', 'Start']);
-    else if (nx.zone === 'top') h.push(['a', 'Switch']);
+    if (nx.zone === 'row' && $('#nxrow .nx-t.nx-sel[data-g]')) h.push(['x', 'Case Room'], ['zr', 'Move'], ['plus', 'Options'], ['a', 'Start']);
+    // (not "Switch": the word is a console's name here – Eduard)
+    else if (nx.zone === 'top') h.push(['b', 'Back'], ['a', 'Go there']);
     else h.push(['a', 'OK']);
-  } else if (nx.scr === 'all') h.push(['y', 'Sort'], ['b', 'Back'], ['plus', 'Options'], ['a', 'Start']);
+  } else if (nx.scr === 'all') h.push(['y', 'Sort'], ['zr', 'Move'], ['b', 'Back'], ['plus', 'Options'], ['a', 'Start']);
   else if (nx.scr === 'game') h.push(['b', 'Back'], ['a', 'OK']);
   const box = $('#nxhints'),
     key = JSON.stringify(h);
@@ -535,7 +556,7 @@ function nxHints() {
       b.innerHTML = '<i></i><span></span>';
       b.querySelector('i').textContent = NX_HINT_KEYS[k];
       b.querySelector('span').textContent = t;
-      b.onclick = () => ({ a: nxA, b: nxB, plus: nxPlus, y: nxY })[k]();
+      b.onclick = () => ({ a: nxA, b: nxB, plus: nxPlus, y: nxY, x: () => typeof czOpen === 'function' && czOpen(), zr: () => typeof foRt === 'function' && foRt() })[k]();
       return b;
     }),
   );
@@ -622,7 +643,7 @@ function nxMove(d) {
     else if (d === 'd') nx.ai = Math.min(n - 1, nx.ai + cols);
     else if (d === 'u') {
       if (nx.ai - cols >= 0) nx.ai -= cols;
-      else if ($('#nxusers').children.length > 1) {
+      else if ($('#nxusers').children.length) {
         nx.zone = 'top';
         nx.u = nxHere();
       }
@@ -666,7 +687,7 @@ function nxA() {
     if (!t) return;
     if (t.classList.contains('nx-allt')) return nxShow('all');
     if (t.classList.contains('nx-empty')) return t.click();
-    const g = games.find(x => x.name === t.dataset.g);
+    const g = gameOf(t.dataset.g);
     if (g) nxStart(g, t);
   } else if (nx.scr === 'all') {
     if (nx.zone === 'top') {
@@ -675,7 +696,7 @@ function nxA() {
     }
     const c = $('#nxgrid').children[nx.ai],
       t = c && c.querySelector('.nx-t'),
-      g = t && games.find(x => x.name === t.dataset.g);
+      g = t && gameOf(t.dataset.g);
     if (g) nxStart(g, t);
   } else if (nx.scr === 'game') {
     const b = $('#nxgnav').children[nx.gi];
@@ -690,6 +711,8 @@ function nxB() {
     nxSnd('back');
     return nxRender();
   }
+  // in a folder: B leaves it first
+  if (typeof fdOpen !== 'undefined' && fdOpen && nx.zone !== 'top' && nx.zone !== 'apps') return fdLeave();
   if (nx.scr === 'all') {
     nx.scr = 'home';
     nx.zone = 'row';
@@ -725,12 +748,12 @@ function nxY() {
 const nxChosen = () => {
   if (nx.scr === 'home' && nx.zone === 'row') {
     const t = $('#nxrow').children[nx.i];
-    return t && t.dataset.g ? games.find(g => g.name === t.dataset.g) : null;
+    return t && t.dataset.g ? gameOf(t.dataset.g) : null;
   }
   if (nx.scr === 'all' && nx.zone !== 'top') {
     const c = $('#nxgrid').children[nx.ai],
       t = c && c.querySelector('.nx-t');
-    return t ? games.find(g => g.name === t.dataset.g) : null;
+    return t ? gameOf(t.dataset.g) : null;
   }
   if (nx.scr === 'game') return nx.game;
   return null;
@@ -750,6 +773,8 @@ function nxStart(g, el) {
 // ---------- a game's page: everything for this game, the Switch way ----------
 function nxOpenGame(g) {
   if (!g) return;
+  // a folder: its own small window (js/folders.js)
+  if (/^folder/.test(g.kind || '')) return openDetail(g);
   nxPick(g);
   if (nx.scr !== 'game') nx.back = nx.scr;
   nx.game = g;
@@ -768,6 +793,7 @@ function nxGameItems(g) {
     { id: 'fav', icon: 'star', label: fav ? 'Remove from favorites' : 'Add to favorites', run: () => (toggleFav(g), nxSnd(fav ? 'off' : 'on')) },
     typeof markWheel === 'function' && { id: 'mark', icon: 'mark', label: m ? 'Mark: ' + m.label : 'Mark with a colour', run: () => markWheel(g) },
     app && window.api && { id: 'edit', icon: 'edit', label: 'Edit app', run: () => openApp(g) },
+    typeof fdMoveMenu === 'function' && { id: 'group', icon: 'all', label: fdNameOf(g) ? 'Folder: ' + fdNameOf(g) : 'Put in a folder', run: () => fdMoveMenu(g) },
     g.path && !IS_MOBILE && window.api && { id: 'folder', icon: 'folder', label: 'Show in folder', run: () => api.showInFolder(g.path) },
     {
       id: 'copy',
@@ -783,7 +809,7 @@ function nxGameItems(g) {
   ].filter(Boolean);
 }
 function nxDrawGame() {
-  const g = nx.game && games.find(x => x.name === nx.game.name);
+  const g = nx.game && gameOf(nx.game.name);
   if (!g) {
     nx.scr = 'home';
     return nxRender();
@@ -874,6 +900,9 @@ function nxGamePane() {
   } else if (it.id === 'mark') {
     para('A colour or a small sign around the game’s square, so you find it quickly. Hold the left stick on a game to choose one.');
     btn('Choose a mark', it.run, true);
+  } else if (it.id === 'group') {
+    para(fdNameOf(g) ? 'In the folder “' + fdNameOf(g) + '”. Move it to another folder or take it out.' : 'Folders keep a console tidy – mods, tools, games to finish. A folder is a square of its own on Home.');
+    btn(fdNameOf(g) ? 'Change folder' : 'Put in a folder', it.run, true);
   } else if (it.id === 'folder') {
     para(String(g.path || ''));
     btn('Show in folder', it.run, true);
@@ -930,7 +959,8 @@ function nxPopOpen(title, items, at = 0) {
       nx.popI = k;
       nxPopPress();
     };
-    b.onpointerenter = () => {
+    b.onpointermove = e => {
+      if ((!e.movementX && !e.movementY) || nx.popI === k) return;
       nx.popI = k;
       nxSelUi();
     };
@@ -971,7 +1001,7 @@ function nxSortPop() {
     [
       ...keys.map(k => ({ label: NX_SORT[k], icon: 'sort', on: nx.sort === k, fn: () => nxSetSort(k) })),
       { label: 'Search…', icon: 'search', fn: () => setTimeout(() => $('#nxq').focus(), 30) },
-      many && { label: 'Every console together', icon: 'every', fn: () => setEvery(true) },
+      many && { label: 'Everything together', icon: 'every', fn: () => setEvery(true) },
     ].filter(Boolean),
     Math.max(0, keys.indexOf(nx.sort)),
   );
@@ -1007,7 +1037,7 @@ function nxConsolesPop() {
     'Consoles',
     [
       ...av.map(k => ({ label: SYS[k].name + (k === curSys ? '' : nxLookOf(k) === 'switch' ? '' : ' – its own look'), icon: k === 'wiiu' ? 'wiiu' : 'consoles', on: k === curSys, fn: () => nxUserGo(k) })),
-      av.length > 1 && { label: 'Every console together', icon: 'every', fn: () => setEvery(true) },
+      av.length > 1 && { label: 'Everything together', icon: 'every', fn: () => setEvery(true) },
       { label: 'Add a console…', icon: 'set', fn: () => openSettings('general') },
     ].filter(Boolean),
     Math.max(0, av.indexOf(curSys)),
@@ -1065,7 +1095,8 @@ function nxQsDraw() {
         r.value = v;
         l.querySelector('.nx-val').textContent = v + '%';
         r.oninput = () => nxVol(+r.value);
-        l.onpointerenter = () => {
+        l.onpointermove = e => {
+          if ((!e.movementX && !e.movementY) || nx.qi === k) return;
           nx.qi = k;
           nxSelUi();
         };
@@ -1080,7 +1111,8 @@ function nxQsDraw() {
         nx.qi = k;
         nxQsPress();
       };
-      b.onpointerenter = () => {
+      b.onpointermove = e => {
+        if ((!e.movementX && !e.movementY) || nx.qi === k) return;
         nx.qi = k;
         nxSelUi();
       };
@@ -1260,7 +1292,7 @@ addEventListener(
     e.preventDefault();
     e.stopImmediatePropagation();
     const t = e.target.closest('[data-g]'),
-      g = t && games.find(x => x.name === t.dataset.g);
+      g = t && gameOf(t.dataset.g);
     if (g) nxOpenGame(g);
   },
   true,
@@ -1271,6 +1303,8 @@ addEventListener(
   'keydown',
   e => {
     if (!nx.on || e.ctrlKey || e.metaKey || e.altKey) return;
+    // the Case Room (the second menu) on screen: its own keys (js/case-room.js)
+    if (typeof cz === 'object' && cz.on) return;
     if (document.querySelector('dialog[open]') || (typeof mkIsOpen === 'function' && mkIsOpen())) return;
     if ($('#launch').classList.contains('on') || $('#setup').classList.contains('on')) return;
     const typingNx = e.target && e.target.id === 'nxq';
@@ -1293,8 +1327,11 @@ addEventListener(
     }
     if (k === 'q' || k === 'Q' || k === 'Home') return stop(), nxQsOpen();
     if (k === 't' || k === 'T') return stop(), nxThemesPop();
+    if ((k === 'c' || k === 'C') && typeof czOpen === 'function') return stop(), czOpen();
     if (k === 'PageUp' || k === 'PageDown') return stop(), typeof sysNext === 'function' && sysNext(k === 'PageDown' ? 1 : -1);
     // the dock's and the views' keys have nothing to do here
+    // M: lift the chosen game to move it (js/face-order.js)
+    if ((k === 'm' || k === 'M') && typeof foRt === 'function') return stop(), foRt();
     if (['l', 'L', 'r', 'R', '*', '1', '2', '3', 'g', 'G', 'm', 'M', 'h', 'H'].includes(k)) return stop();
   },
   true,
@@ -1310,7 +1347,7 @@ addEventListener(
 );
 
 // ---------- controller (called by the controller loop in js/feedback-style-controller.js) ----------
-// A start · B back · + options · Y sort · X options · L/R console · − TV mode · Home Quick Settings ·
+// A start · B back · + options · Y sort · X Case Room · ZR move a game · L/R console · − consoles · LT TV mode · Home Quick Settings ·
 // left stick: clicked = favorite, held = marks
 function nxPad(fire, s, open, busy, now) {
   if (!nx.on || busy) return false;
@@ -1323,10 +1360,13 @@ function nxPad(fire, s, open, busy, now) {
   for (const k of ['l', 'r', 'u', 'd']) if (fire[k]) nxMove(k);
   if (fire.a) nxA();
   else if (fire.b) nxB();
-  if (fire.st || fire.x) nxPlus();
+  if (fire.st) nxPlus();
+  // X: the second menu, the Case Room (js/case-room.js) – RT is for moving a game, like everywhere in CosmoU (Eduard)
+  if (fire.x && !nx.qs && !nx.pop && typeof czOpen === 'function') czOpen();
   if (fire.y) nxY();
-  if (fire.sl && typeof toggleTv === 'function') toggleTv();
   if ((fire.lb || fire.rb) && !nx.qs && !nx.pop && typeof sysNext === 'function') sysNext(fire.rb ? 1 : -1);
+  // ZR: lift the chosen game to move it – your order (js/face-order.js)
+  if (fire.rt && !nx.qs && !nx.pop && typeof foRt === 'function') foRt();
   // the left stick: clicked a favorite, held the wheel of marks
   if (s.l3 && !nx.l3) {
     nx.l3 = now;

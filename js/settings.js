@@ -498,7 +498,7 @@ function renderPane(t) {
 }
 
 // ================= The Settings window =================
-const APP_VERSION = (window.api && api.appVersion) || '0.13.3';
+const APP_VERSION = (window.api && api.appVersion) || '0.14.0';
 const SX_ICON = {
   general:
     '<svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="11" fill="none" stroke="#fff" stroke-width="3.4"/><circle cx="16" cy="16" r="3.2" fill="#fff"/></svg>',
@@ -577,6 +577,8 @@ const SX_GROUP_NAME = { wiiu: 'Wii U · Cemu', end: '' };
     b.setAttribute('aria-controls', 'sxbd');
     ic.className = 'ci';
     ic.style.setProperty('--c', col);
+    // (its colour on the whole line too: the open category is ringed in it)
+    b.style.setProperty('--c', col);
     ic.innerHTML = SX_ICON[id];
     t.textContent = name;
     n.className = 'n';

@@ -55,7 +55,9 @@ function dsLegendItems() {
   if (document.querySelector('dialog[open]') || (typeof mkIsOpen === 'function' && mkIsOpen())) return [];
   if ((typeof isHome === 'function' && isHome()) || mode === 'chome' || mode === 'wiiu') return [];
   const many = typeof sysAvail === 'function' && sysAvail().length > 1;
-  return [['a', 'Play'], ['y', 'Details'], ['x', 'Menu'], many && ['lb', 'rb', 'Console'], ['hm', 'Quick Menu']].filter(Boolean);
+  const g = typeof cur === 'function' ? cur() : null,
+    a = g && g.kind === 'folder' ? 'Open' : g && g.kind === 'folder-back' ? 'Back' : 'Play';
+  return [['a', a], ['y', 'Details'], ['x', 'Menu'], many && ['lb', 'rb', 'Console'], ['hm', 'Quick Menu']].filter(Boolean);
 }
 let dsLegKey = '';
 function dsLegend() {

@@ -796,7 +796,6 @@ nav button,
   width: var(--s);
   height: var(--s);
   cursor: pointer;
-  -webkit-box-reflect: below 10px linear-gradient(transparent 68%, rgba(255, 255, 255, 0.24));
   transition:
     transform 0.65s cubic-bezier(0.34, 1.35, 0.5, 1),
     opacity 0.4s,
@@ -1735,7 +1734,6 @@ body.wiiu nav button {
   display: grid;
   place-items: start center;
   padding-top: 8px;
-  -webkit-box-reflect: below -40px linear-gradient(transparent 78%, rgba(255, 255, 255, 0.22));
 }
 .bx-c {
   position: relative;
@@ -2397,7 +2395,6 @@ body.classic .tile b {
   color: #2f383f;
 }
 body.classic .cc {
-  -webkit-box-reflect: below 10px linear-gradient(transparent 70%, rgba(255, 255, 255, 0.4));
 }
 body.classic .cf::before {
   display: none;
@@ -2796,8 +2793,9 @@ body.wuhome .wiibar {
 }
 .wh-i {
   position: absolute;
+  /* bottom right: the star of a favorite is top right (Eduard) */
   right: -6px;
-  top: -6px;
+  bottom: -6px;
   width: 26px;
   height: 26px;
   border-radius: 50%;
@@ -2961,6 +2959,52 @@ body.wuhome header > * {
 }
 ::view-transition-new(root) {
   animation-name: vtin;
+}
+/* another console: the old screen glides out to one side, the new one comes in from the other (Eduard: "hops") */
+html[data-vt]::view-transition-old(root),
+html[data-vt]::view-transition-new(root) {
+  animation-duration: 0.52s;
+  animation-timing-function: cubic-bezier(0.25, 0.85, 0.25, 1);
+}
+html[data-vt='next']::view-transition-old(root) {
+  animation-name: vtOutL;
+}
+html[data-vt='next']::view-transition-new(root) {
+  animation-name: vtInR;
+}
+html[data-vt='prev']::view-transition-old(root) {
+  animation-name: vtOutR;
+}
+html[data-vt='prev']::view-transition-new(root) {
+  animation-name: vtInL;
+}
+@keyframes vtOutL {
+  to {
+    opacity: 0;
+    transform: translateX(-7%) scale(0.97);
+    filter: blur(8px);
+  }
+}
+@keyframes vtOutR {
+  to {
+    opacity: 0;
+    transform: translateX(7%) scale(0.97);
+    filter: blur(8px);
+  }
+}
+@keyframes vtInR {
+  from {
+    opacity: 0;
+    transform: translateX(7%) scale(1.02);
+    filter: blur(8px);
+  }
+}
+@keyframes vtInL {
+  from {
+    opacity: 0;
+    transform: translateX(-7%) scale(1.02);
+    filter: blur(8px);
+  }
 }
 @keyframes vtout {
   to {
@@ -8871,6 +8915,11 @@ html {
   --k2: #6c727a;
   --k3: #b6bbc2;
 }
+.box3d[data-case='switch2'] {
+  --k1: #e3122d;
+  --k2: #8f0718;
+  --k3: #ff3d52;
+}
 .box3d[data-case] .bx-b {
   background: linear-gradient(160deg, var(--k1), var(--k2));
 }
@@ -8881,6 +8930,7 @@ html {
   color: color-mix(in srgb, var(--k2) 30%, #000);
 }
 .box3d[data-case='switch'] .bx-s span,
+.box3d[data-case='switch2'] .bx-s span,
 .box3d[data-case='gamecube'] .bx-s span {
   color: #fff;
 }
@@ -9436,8 +9486,9 @@ html.dark .wch.ch-empty {
   bottom: 12%;
 }
 .swh[data-cart='gba'] .cart {
-  --cw: 120px;
-  --ch: 78px;
+  /* a little bigger than a real one, so the picture on it reads (Eduard) */
+  --cw: 150px;
+  --ch: 98px;
   --cc: #45484f;
   --cc2: #2f3137;
   border-radius: 6px 6px 10px 10px;

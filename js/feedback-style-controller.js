@@ -87,6 +87,11 @@ function padFocusable(d) {
 function padFocus(d, f) {
   document.body.classList.add('padnav');
   pad.moved = true;
+  // choosing a console: the cards' own arrows (a row, or a grid with many consoles)
+  if (d.id === 'cpick') {
+    const key = f.l ? 'ArrowLeft' : f.r ? 'ArrowRight' : f.u ? 'ArrowUp' : 'ArrowDown';
+    return d.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }));
+  }
   const a = document.activeElement,
     inside = a && a !== d && d.contains(a);
   // sliders: left and right change the value
@@ -148,14 +153,76 @@ function padScroll(open, ry, now) {
   const v = Math.sign(ry) * Math.pow((Math.abs(ry) - 0.22) / 0.78, 1.6) * Math.max(900, pad.sBox.clientHeight * 2);
   pad.sBox.scrollTop += v * dt;
   document.body.classList.add('padnav');
+  // in the Grid the selection goes along with the scrolling (Eduard)
+  if (!open && typeof gridFollow === 'function') gridFollow();
 }
+// a short press between two pictures still counts (a slow computer, a busy moment): the buttons are also looked at
+// in between, and a press seen there is kept for the next picture
+const padLatch = {};
+setInterval(() => {
+  if (!pad.loop || document.hidden) return;
+  const gp = [...(navigator.getGamepads ? navigator.getGamepads() : [])].find(Boolean);
+  if (gp) gp.buttons.forEach((x, i) => x && x.pressed && (padLatch[i] = true));
+}, 25);
+// ---------- the bar at the top with a controller ----------
+function padTopItems() {
+  return [...document.querySelectorAll('header #sys button, header #q, header #sort, header #vt button, header #qmb')].filter(
+    e => !e.disabled && e.offsetParent !== null && !e.closest('[hidden]'),
+  );
+}
+function padGridTop() {
+  return mode === 'grid' && typeof gridCols === 'function' && list().findIndex(g => g.name === sel) < gridCols();
+}
+function padTop(on) {
+  const items = padTopItems();
+  if (on && !items.length) return;
+  pad.top = !!on;
+  document.body.classList.toggle('padtop', pad.top);
+  document.querySelectorAll('header .pad-at').forEach(e => e.classList.remove('pad-at'));
+  if (pad.top) {
+    document.body.classList.add('padnav');
+    // the sort button first: the one you need most
+    padTopAt(items.find(e => e.id === 'sort') || items[0]);
+    if (typeof blip === 'function') blip('move');
+  } else {
+    if (document.activeElement && document.activeElement.closest('header')) document.activeElement.blur();
+    if (typeof blip === 'function') blip('back');
+  }
+}
+function padTopAt(e) {
+  document.querySelectorAll('header .pad-at').forEach(x => x.classList.remove('pad-at'));
+  if (!e) return;
+  e.classList.add('pad-at');
+  e.focus({ preventScroll: true });
+}
+function padTopStep(d) {
+  const items = padTopItems(),
+    i = items.findIndex(e => e.classList.contains('pad-at')),
+    n = items[Math.max(0, Math.min(items.length - 1, (i < 0 ? 0 : i) + d))];
+  if (n && n !== items[i]) {
+    padTopAt(n);
+    if (typeof blip === 'function') blip('move');
+  }
+}
+function padTopPress() {
+  const e = document.querySelector('header .pad-at');
+  if (!e) return;
+  if (e.id === 'q') {
+    // the search: the keyboard writes, Down or B goes back to the games
+    e.focus();
+    e.select();
+    return;
+  }
+  e.click();
+}
+addEventListener('pointerdown', () => pad.top && padTop(false), { passive: true });
 function padTick(now) {
   const gp0 = [...(navigator.getGamepads ? navigator.getGamepads() : [])].find(Boolean);
   if (!gp0) {
     pad.loop = false;
     return;
   }
-  const b = i => !!(gp0.buttons[i] && gp0.buttons[i].pressed),
+  const b = i => !!((gp0.buttons[i] && gp0.buttons[i].pressed) || padLatch[i]),
     ax = gp0.axes[0] || 0,
     ay = gp0.axes[1] || 0,
     rx = gp0.axes[2] || 0,
@@ -185,6 +252,7 @@ function padTick(now) {
     pl: rx < -0.6,
     pr: rx > 0.6,
   };
+  for (const k in padLatch) delete padLatch[k];
   const hit = k => {
     if (!s[k]) {
       pad.next[k] = 0;
@@ -203,6 +271,19 @@ function padTick(now) {
   const fire = {};
   for (const k in s) fire[k] = hit(k);
   pad.prev = s;
+  // the wheel of marks just closed: the stick that chose the colour is still pushed – it does not go on to the next
+  // game until it is let go, and not for half a second (Eduard: the next game got the green border)
+  const mkOpen = typeof mkIsOpen === 'function' && mkIsOpen();
+  if (mkOpen) pad.mkWas = true;
+  else if (pad.mkWas) {
+    pad.mkWas = false;
+    pad.mkLock = true;
+    pad.mkQuiet = now + 500;
+  }
+  if (pad.mkLock && !mkOpen) {
+    if (!s.l && !s.r && !s.u && !s.d && now > pad.mkQuiet) pad.mkLock = false;
+    else fire.l = fire.r = fire.u = fire.d = false;
+  }
   // a controller is in use: its legend shows (js/ds.js)
   if (typeof dsPadUsed === 'function' && Object.keys(fire).some(k => fire[k])) dsPadUsed(gp0);
   const open = [...document.querySelectorAll('dialog[open]')].pop(),
@@ -213,8 +294,35 @@ function padTick(now) {
   }
   if (!busy && (open || mode === 'grid')) padScroll(open, gp0.axes[3] || 0, now);
   else pad.sT = now;
-  // the Switch's own interface has its own buttons (js/switch-face.js)
-  if (typeof nxPad === 'function' && nxPad(fire, s, open, busy, now)) {
+  // LT on its own – a short press, no RT with it: TV mode on or off, from anywhere (Eduard: in games that small
+  // button pauses, so it chooses the console now, and LT takes TV mode)
+  // (LT + RT held is the clean view; with a window open LT does nothing here)
+  if (!busy && !open) {
+    if (s.lt && !pad.ltAt) (pad.ltAt = now), (pad.ltRt = false);
+    if (s.lt && s.rt) pad.ltRt = true;
+    if (!s.lt && pad.ltAt) {
+      if (!pad.ltRt && now - pad.ltAt < 500 && typeof toggleTv === 'function') toggleTv();
+      pad.ltAt = 0;
+    }
+  } else pad.ltAt = 0;
+  // the small button (Select / − / View): choose a console, from anywhere – once more closes the cards again
+  if (!busy && fire.sl && typeof consolePick === 'function' && !(typeof mkIsOpen === 'function' && mkIsOpen())) {
+    const cp = $('#cpick');
+    if (cp && cp.open) cp.close();
+    else if (!open) consolePick(false);
+    requestAnimationFrame(padTick);
+    return;
+  }
+  // the right stick, as it is (the Case Room turns a case with it)
+  s.rx = rx;
+  s.ry = gp0.axes[3] || 0;
+  // the Switch's and the Switch 2's own interfaces have their own buttons (js/switch-face.js, js/switch2-face.js)
+  // (the Collection – their second menu, js/collection.js – before them)
+  if (
+    (typeof czPad === 'function' && czPad(fire, s, open, busy, now)) ||
+    (typeof nxPad === 'function' && nxPad(fire, s, open, busy, now)) ||
+    (typeof n2Pad === 'function' && n2Pad(fire, s, open, busy, now))
+  ) {
     requestAnimationFrame(padTick);
     return;
   }
@@ -224,6 +332,10 @@ function padTick(now) {
     else if (open) {
       // inside a window the D-pad moves between the buttons, A presses, B goes back
       if (open.id === 'dlg' && (fire.lb || fire.rb)) sxStep(fire.rb ? 1 : -1, true);
+      // choosing a console: X edits the look of the card in focus (js/console-look.js)
+      if (open.id === 'cpick' && fire.x && typeof slEditFocused === 'function') slEditFocused();
+      // … and RT / LT move the card in focus: your order of the consoles (Eduard)
+      if (open.id === 'cpick' && (fire.lt || fire.rt) && typeof cpMove === 'function') cpMove(fire.rt ? 1 : -1);
       if (fire.u || fire.d || fire.l || fire.r) padFocus(open, fire);
       if (fire.b) {
         if (open.id === 'dlg' && document.activeElement && document.activeElement.closest('.sx-main')) sxFocusNav();
@@ -236,17 +348,17 @@ function padTick(now) {
       }
     } else if (typeof orderMove === 'string' && orderMove) {
       // your order: a game is lifted – the D-pad moves it, A, B or RT put it down (js/order.js)
-      const rowStep = mode === 'grid' ? gridCols() : 1;
+      const rowStep = mode === 'grid' ? gridCols() : mode === 'chome' && typeof chCols === 'function' ? chCols() : isHome() ? WH_COLS : 1;
       if (fire.a || fire.b || fire.rt) orderEnd();
       else {
         if (fire.l) step(-1);
-        else if (mode === 'grid' && fire.u) step(-rowStep);
+        else if (rowStep > 1 && fire.u) step(-rowStep);
         if (fire.r) step(1);
-        else if (mode === 'grid' && fire.d) step(rowStep);
+        else if (rowStep > 1 && fire.d) step(rowStep);
       }
     } else {
       // RT: lift the chosen game to move it (Covers and Grid); LT + RT held: the clean view (js/order.js)
-      if (fire.rt && !s.lt && typeof orderStart === 'function' && (mode === 'covers' || mode === 'grid')) orderStart();
+      if (fire.rt && !s.lt && typeof orderStart === 'function' && orderHere() && !(typeof whDockOn === 'function' && whDockOn())) orderStart();
       if (typeof cleanHold === 'function') cleanHold(s.lt && s.rt, now);
       // the left stick: clicked = favorite, held = the wheel of marks (js/marks.js)
       if (s.l3 && !pad.l3At) {
@@ -261,9 +373,43 @@ function padTick(now) {
         if (!pad.l3Done && cur() && typeof toggleFav === 'function') toggleFav(cur());
         pad.l3At = 0;
       }
+      // the bar at the top (console, search, sort, views): hold Up – or Up in Covers / from the grid's first row (Eduard)
+      const lib = !isHome() && (mode === 'covers' || mode === 'grid');
+      if (!lib || !s.u) pad.uAt = 0;
+      else if (!pad.uAt) pad.uAt = now;
+      if (pad.top && !lib) padTop(false);
+      if (pad.top) {
+        if (fire.l || fire.r) padTopStep(fire.r ? 1 : -1);
+        if (fire.a) padTopPress();
+        if (fire.d || fire.b) padTop(false);
+        requestAnimationFrame(padTick);
+        return;
+      }
+      if (lib && ((fire.u && (mode === 'covers' || padGridTop())) || (pad.uAt && now - pad.uAt > 450))) {
+        pad.uAt = 0;
+        padTop(true);
+        requestAnimationFrame(padTick);
+        return;
+      }
       if (isHome()) {
+        // the "+" is chosen: A adds an app
+        if (typeof whAdd === 'boolean' && whAdd && fire.a) {
+          if (need()) openApp(null);
+          requestAnimationFrame(padTick);
+          return;
+        }
         for (const k of ['l', 'r', 'u', 'd']) if (fire[k]) homeStep(k);
+        // L / R and the right stick turn the pages
         if (fire.lb || fire.rb) whTurn(fire.rb ? 1 : -1);
+        else if (fire.pl || fire.pr) whTurn(fire.pr ? 1 : -1);
+        // the bar of round buttons (the full Home Menu, js/wiiu-dock.js): A presses, B goes back up to the games
+        if (typeof whDockOn === 'function' && whDockOn()) {
+          if (fire.a) whDockPress();
+          else if (fire.b) whDockLeave();
+          if (fire.st) openSettings();
+          requestAnimationFrame(padTick);
+          return;
+        }
       } else {
         if (mode === 'chome') {
           for (const k of ['l', 'r', 'u', 'd']) if (fire[k]) chNav(k);
@@ -286,7 +432,6 @@ function padTick(now) {
       // X or pressing the right stick: the game's menu (like a right click – favorites, details, folder…)
       if ((fire.x || fire.r3) && cur() && typeof gameMenu === 'function') gameMenu(cur(), null);
       if (fire.st) openSettings();
-      if (fire.sl && typeof toggleTv === 'function') toggleTv();
     }
   }
   requestAnimationFrame(padTick);

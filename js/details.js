@@ -75,6 +75,22 @@ function hoverUi() {
   $('#hvc').textContent = hoverCases ? 'On' : 'Off';
   $('#hvc').classList.toggle('on', hoverCases);
 }
+// the banner above the grid, on or off (js/core.js)
+function gbnUi() {
+  const on = !gridBannerOff();
+  $('#gbn').textContent = on ? 'On' : 'Off';
+  $('#gbn').classList.toggle('on', on);
+  document.body.classList.toggle('no-gbanner', !on);
+}
+$('#gbn').onclick = () => {
+  try {
+    localStorage.setItem('cosmou.gridBanner', gridBannerOff() ? '1' : '0');
+  } catch {}
+  gbnUi();
+  heroFill();
+  if (mode === 'grid') render();
+};
+gbnUi();
 $('#hvc').onclick = () => {
   hoverCases = !hoverCases;
   try {

@@ -1,0 +1,284 @@
+/* CosmoU – folders (js/folders.js) and each console's own look (js/console-look.js) */
+
+/* a folder's square: a real folder in its colour – its back with the tab, the covers of up to four games standing
+   in it like papers, its front over them (the same picture big in Covers and small in a 3DS or DS menu) */
+.fd-art {
+  background: linear-gradient(160deg, color-mix(in srgb, var(--fc, #5aa9ff) 30%, #fff), color-mix(in srgb, var(--fc, #5aa9ff) 46%, #dfe3ea)) !important;
+  display: block !important;
+  position: relative;
+  color: #fff;
+  overflow: hidden;
+  container-type: size;
+}
+.fd-art > span,
+.fd-art > .art-name {
+  display: none !important;
+}
+.fd-bk,
+.fd-fr {
+  position: absolute;
+  left: 11%;
+  right: 11%;
+  border-radius: 8cqmin;
+}
+.fd-bk {
+  top: 24%;
+  bottom: 14%;
+  border-top-left-radius: 0;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--fc, #5aa9ff) 70%, #000), color-mix(in srgb, var(--fc, #5aa9ff) 55%, #000));
+}
+/* the tab */
+.fd-bk::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 100%;
+  width: 42%;
+  height: 9cqmin;
+  border-radius: 6cqmin 9cqmin 0 0;
+  background: color-mix(in srgb, var(--fc, #5aa9ff) 70%, #000);
+}
+.fd-fr {
+  top: 48%;
+  bottom: 14%;
+  background: linear-gradient(170deg, color-mix(in srgb, var(--fc, #5aa9ff) 88%, #fff), var(--fc, #5aa9ff) 55%, color-mix(in srgb, var(--fc, #5aa9ff) 82%, #000));
+  box-shadow:
+    0 -1.5cqmin 4cqmin rgba(0, 0, 0, 0.28),
+    inset 0 1cqmin 0 rgba(255, 255, 255, 0.4);
+}
+/* the covers: papers standing in the folder, a little fanned */
+.fd-mos {
+  position: absolute;
+  left: 18%;
+  right: 18%;
+  top: 17%;
+  height: 46%;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+}
+.fd-mos i {
+  flex: 0 0 auto;
+  width: 40cqmin;
+  height: 40cqmin;
+  margin: 0 -9cqmin;
+  border-radius: 5cqmin;
+  background-size: cover;
+  background-position: center;
+  border: 1.2cqmin solid #fff;
+  box-sizing: border-box;
+  box-shadow: 0 1cqmin 3cqmin rgba(0, 0, 0, 0.3);
+}
+.fd-mos i:nth-child(1) {
+  transform: rotate(-12deg) translateY(4cqmin);
+}
+.fd-mos i:nth-child(2) {
+  transform: rotate(-3deg) translateY(-1cqmin);
+}
+.fd-mos i:nth-child(3) {
+  transform: rotate(6deg) translateY(1cqmin);
+}
+.fd-mos i:nth-child(4) {
+  transform: rotate(14deg) translateY(5cqmin);
+}
+.fd-n1 i {
+  transform: rotate(-4deg) !important;
+  width: 46cqmin;
+  height: 46cqmin;
+}
+.fd-n4 i {
+  width: 34cqmin;
+  height: 34cqmin;
+  margin: 0 -7cqmin;
+}
+/* an empty folder: just the folder */
+.fd-n0 {
+  display: none;
+}
+/* the way back: the folder's colour, dimmed, an arrow */
+.fd-backart {
+  background: linear-gradient(150deg, color-mix(in srgb, var(--fc, #5aa9ff) 38%, #2b303b), #171a21) !important;
+  display: grid !important;
+  place-items: center;
+  align-content: center;
+  gap: 4%;
+}
+.fd-arrow {
+  width: 38%;
+  height: 38%;
+  color: #fff;
+}
+.fd-cap {
+  font-weight: 700;
+  font-size: 0.95em;
+  letter-spacing: 0.01em;
+  opacity: 0.9;
+}
+
+/* colour choices (folders and consoles) */
+.fd-cols {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  max-width: 280px;
+}
+.fd-col {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--fc);
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.45);
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+.fd-col.std {
+  background: conic-gradient(#1ea7dd, #e5484d, #f29a3c, #2f9e5c, #6b5bd2, #1ea7dd);
+}
+.fd-col:hover {
+  transform: scale(1.1);
+}
+.fd-col.on {
+  box-shadow:
+    0 0 0 3px var(--surface, #fff),
+    0 0 0 5.5px var(--fc, var(--accent, #19c3e6));
+}
+.fd-col.std.on {
+  box-shadow:
+    0 0 0 3px var(--surface, #fff),
+    0 0 0 5.5px var(--text, #333);
+}
+.fd-col:focus-visible {
+  outline: 2px solid var(--ring, #19c3e6);
+  outline-offset: 4px;
+}
+
+/* choosing a console: the colour you chose on its card, a pencil to change its look */
+.cp-card {
+  position: relative;
+}
+/* its colour: a ring around the whole card (Eduard: "the bigger circle") – and the ring of the card in focus */
+.cp-card.cp-col {
+  box-shadow: inset 0 0 0 2px var(--cpc);
+}
+.cp-card.cp-col:is(:focus, :focus-visible) {
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.2),
+    0 0 0 3px var(--cpc),
+    0 0 26px -4px var(--cpc),
+    0 18px 34px -14px rgba(0, 0, 0, 0.7);
+}
+/* moved with LT / RT (or Shift + arrows): a little hop */
+.cp-card.cp-moved {
+  animation: cpHop 0.3s cubic-bezier(0.3, 1.5, 0.5, 1);
+}
+@keyframes cpHop {
+  40% {
+    translate: 0 -10px;
+  }
+}
+/* many consoles: a grid instead of one long row */
+#cpick.cp-many .cp-in {
+  max-width: 96vw;
+}
+#cpick.cp-many .cp-row {
+  flex-wrap: wrap;
+  justify-content: center;
+  overflow-x: visible;
+  overflow-y: auto;
+  max-height: 72vh;
+  row-gap: 22px;
+  scroll-snap-type: none;
+}
+#cpick.cp-many .cp-card {
+  /* a little smaller, so two or three rows fit without scrolling */
+  zoom: 0.84;
+}
+#cpick.cp-many .cp-row {
+  scroll-padding: 24px;
+}
+.cp-card.cp-col b::before {
+  content: '';
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: var(--cpc);
+  vertical-align: 1px;
+}
+.cp-edit {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: rgba(10, 14, 22, 0.62);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
+  opacity: 0;
+  transform: scale(0.8);
+  transition:
+    opacity 0.18s,
+    transform 0.18s;
+  cursor: pointer;
+}
+.cp-edit svg {
+  width: 16px;
+  height: 16px;
+}
+.cp-card:hover .cp-edit,
+.cp-card:focus .cp-edit,
+.cp-card:focus-visible .cp-edit {
+  opacity: 1;
+  transform: none;
+}
+.cp-edit:hover {
+  background: rgba(10, 14, 22, 0.85);
+}
+@media (hover: none) {
+  .cp-edit {
+    opacity: 0.85;
+    transform: none;
+  }
+}
+.cp-hint2 {
+  opacity: 0.7;
+  font-size: 13px;
+}
+
+/* text fields and lists in the dark windows of the Switch interfaces: light writing on a dark field (they were dark
+   on dark) */
+body.face-n2:not(.n2-light) dialog :is(input.sel, select.sel, textarea.sel, input[type='text'], input[type='search'], select),
+body.face-nx.nx-black dialog :is(input.sel, select.sel, textarea.sel, input[type='text'], input[type='search'], select) {
+  color: #f5f7fc !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.16) !important;
+}
+body.face-n2:not(.n2-light) dialog :is(input, textarea)::placeholder,
+body.face-nx.nx-black dialog :is(input, textarea)::placeholder {
+  color: rgba(232, 238, 250, 0.45);
+}
+body.face-n2:not(.n2-light) dialog select option,
+body.face-nx.nx-black dialog select option {
+  color: #f5f7fc;
+  background: #1c1f28;
+}
+
+/* a lifted game (your order, RT) over a folder: the folder opens its arms – put it down to put the game in */
+.fd-drop {
+  scale: 1.08;
+  z-index: 5;
+  transition: scale 0.18s cubic-bezier(0.3, 1.5, 0.5, 1);
+}
+.fd-drop :is(.art, .wa, .wh-a, .nx-art, .n2-art),
+.fd-drop.art {
+  outline: 4px dashed var(--fc, #5aa9ff);
+  outline-offset: 5px;
+  box-shadow: 0 0 34px 4px color-mix(in srgb, var(--fc, #5aa9ff) 60%, transparent);
+}

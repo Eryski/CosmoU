@@ -5,15 +5,19 @@
 // picture is free. Hold LT + RT (or press H, or use the Quick Menu) to switch it.
 let orderMove = '';
 
+// where a game can be lifted: Covers, Grid, the home screens of the consoles and the Wii U Look's Home Menu
+const orderHere = () => mode === 'covers' || mode === 'grid' || mode === 'chome' || (typeof isHome === 'function' && isHome());
 function orderStart() {
   const g = cur();
-  if (!g || (mode !== 'covers' && mode !== 'grid') || view === 'recent') {
+  if (!g || !orderHere() || view === 'recent') {
     if (view === 'recent') toast('Moving works in the Library – not in “Recently played”', 3500);
     return;
   }
+  // (the way back out of a folder stays first)
+  if (g.kind === 'folder-back') return blip('back');
   // the first move: the order on screen becomes your order
   if (sortMode !== 'own') {
-    setOwnOrder(list().map(x => x.name));
+    setOwnOrder(orderFull(list().filter(x => x.kind !== 'folder-back').map(x => x.name)));
     sortMode = 'own';
     try {
       localStorage.setItem('cosmou.sort', 'own');
@@ -35,21 +39,49 @@ function orderEnd() {
   render();
   toast('✓ “' + name + '” is in its new place (sort: Your order)', 2600);
 }
+// every name of this console in your order – its games, apps and folders, also the games inside folders and the ones
+// a filter or a search hides (the ones not placed yet after them, A–Z). Moving a game inside a folder used to keep
+// only that folder's games in your order, and folders could not be moved at all (Eduard)
+function orderFull(base) {
+  const here = games.filter(g => (g.kind === 'app' ? !g.appSys || g.appSys === 'all' || g.appSys === curSys : sysOf(g) === curSys)).map(g => g.name),
+    fds = typeof fdHere === 'function' && !everySys ? fdHere().map(f => f.name) : [],
+    have = new Set([...here, ...fds]),
+    seen = new Set(),
+    out = [];
+  for (const n of base || ownOrder()) if (have.has(n) && !seen.has(n)) seen.add(n), out.push(n);
+  const az = (a, b) => a.localeCompare(b);
+  // (a folder not placed yet goes first, where it was shown – a game not placed yet after the others)
+  return [...fds.filter(n => !seen.has(n)).sort(az), ...out, ...here.filter(n => !seen.has(n)).sort(az)];
+}
+const orderAll = () => orderFull();
 // while a game is lifted, a step moves it instead of choosing another one
 function orderShift(d) {
-  const l = list().map(x => x.name),
+  const l = list()
+      .filter(x => x.kind !== 'folder-back')
+      .map(x => x.name),
     i = l.indexOf(orderMove);
   if (i < 0) return orderEnd();
   const j = Math.max(0, Math.min(l.length - 1, i + d));
   if (j === i) return;
-  l.splice(i, 1);
-  l.splice(j, 0, orderMove);
-  // games that are not on screen right now (search, filter) keep their places after these
-  const rest = ownOrder().filter(n => !l.includes(n));
-  setOwnOrder([...l, ...rest]);
+  // the game takes the place of its neighbour on screen in the whole order of this console:
+  // with a filter (favorites, search) or inside a folder the hidden games keep their places
+  const full = orderFull().filter(n => n !== orderMove),
+    k = full.indexOf(l[j]);
+  full.splice(k < 0 ? (d > 0 ? full.length : 0) : d > 0 ? k + 1 : k, 0, orderMove);
+  setOwnOrder(full);
   sel = orderMove;
   blip('move');
   render();
+}
+// the home screens of the consoles (js/console-home.js): the arrows move the lifted game too – up and down a row
+if (typeof chNav === 'function') {
+  const _chNavOrder = chNav;
+  chNav = function (d) {
+    if (!orderMove || mode !== 'chome') return _chNavOrder.apply(this, arguments);
+    const cols = typeof chCols === 'function' ? chCols() : 0;
+    if (d === 'l' || d === 'r') return orderShift(d === 'r' ? 1 : -1);
+    if (cols) return orderShift(d === 'd' ? cols : -cols);
+  };
 }
 const _stepOrder = step;
 step = function (d) {
@@ -69,7 +101,7 @@ addEventListener(
       }
       return;
     }
-    if (e.key.toLowerCase() === 'm' && (mode === 'covers' || mode === 'grid')) {
+    if (e.key.toLowerCase() === 'm' && orderHere()) {
       e.preventDefault();
       orderStart();
     } else if (e.key.toLowerCase() === 'h' && !e.repeat) {
@@ -127,8 +159,9 @@ if (typeof quickBuild === 'function') {
     if (look)
       qmRow(look, 'eye', '#5b8def', 'Clean view', cleanOn ? 'On · only the games' : 'Off · hold LT + RT', () => toggleClean(), cleanOn);
     // apps and PC games are added often: right here, not only in Settings
-    if (snd && window.api && api.appSave)
-      qmRow(snd, 'plus', '#2fb36a', 'Add an app', 'A PC game, a port or any program', () => {
+    // (with the look: what is on your console – not under Sound)
+    if (look && window.api && api.appSave)
+      qmRow(look, 'plus', '#2fb36a', 'Add an app', 'A PC game, a port or any program', () => {
         $('#qmdlg').close();
         if (typeof openApp === 'function') openApp(null);
       });

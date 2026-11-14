@@ -202,7 +202,8 @@ function toast(t, ms = 3500, type, action) {
   n.onclick = kill;
   setTimeout(kill, Math.max(2500, ms));
 }
-const cur = () => games.find(g => g.name === sel);
+// (a folder of the library is chosen like a game – js/folders.js)
+const cur = () => games.find(g => g.name === sel) || (typeof fdItem === 'function' ? fdItem(sel) : null) || undefined;
 // ---------- favorites, sorting and the "show" filter (menu: js/menus.js) ----------
 let favs = new Set(),
   showFilter = 'all',
@@ -219,10 +220,14 @@ try {
 } catch {}
 const isFav = name => favs.has(name);
 const SORT_LABEL = { az: 'A–Z', za: 'Z–A', recent: 'Recent', most: 'Most played', own: 'Your order' },
-  SHOW_LABEL = { all: 'All games', fav: 'Favorites', wiiu: 'Wii U games', apps: 'Other apps' };
+  SHOW_LABEL = { all: 'All', fav: 'Favorites', wiiu: 'Games only', apps: 'Apps only' };
 // seconds played (Daily Log) – 0 when the log isn't loaded yet
 const secOf = name =>
   (typeof playLog === 'object' && playLog && playLog.playtime && playLog.playtime[name] && playLog.playtime[name].sec) || 0;
+// the name of a filter (the same on every console – "Wii U games" on a GameCube made no sense, Eduard)
+function showLabel(k) {
+  return SHOW_LABEL[k] || '';
+}
 // your own order of the games, for the console on screen
 function ownOrder() {
   try {
@@ -241,8 +246,8 @@ function list() {
   const q = $('#q').value.trim().toLowerCase();
   let l = games.filter(g => g.name.toLowerCase().includes(q) || (g.tid && String(g.tid).toLowerCase().includes(q)));
   // only the games of the system on screen, and the apps added to it (or to every console);
-  // favorites and "Every console" show the games of all consoles together
-  if (typeof curSys === 'string' && !everySys && showFilter !== 'fav')
+  // favorites are the favorites of this console too; only "Everything" shows the games of all consoles together
+  if (typeof curSys === 'string' && !everySys)
     l = l.filter(g => (g.kind === 'app' ? !g.appSys || g.appSys === 'all' || g.appSys === curSys : sysOf(g) === curSys));
   if (view === 'recent') l = l.filter(g => plays[g.name]);
   if (showFilter === 'fav') l = l.filter(g => favs.has(g.name));
@@ -267,9 +272,17 @@ function list() {
   );
 }
 // the banner above the grid: the chosen game
+const gridBannerOff = () => {
+  try {
+    return localStorage.getItem('cosmou.gridBanner') === '0';
+  } catch {
+    return false;
+  }
+};
 function heroFill() {
   const g = cur();
-  $('#hero').hidden = !g || mode !== 'grid';
+  // (it can be switched off: Settings → Appearance → Banner above the grid – Eduard: often blurred, without a box art)
+  $('#hero').hidden = !g || mode !== 'grid' || gridBannerOff();
   if (g) {
     $('#hero').style.setProperty('--c', glow(g));
     paint($('#hbg'), { ...g, cover: g.hero || g.cover }, false);
@@ -279,7 +292,7 @@ function heroFill() {
 }
 // choosing another game in the grid: only the selection and the banner change – the tiles stay
 // (building every tile new made the whole grid blink, like reloading a web page)
-function gridSel(name) {
+function gridSel(name, still) {
   const gr = $('#grid');
   if (mode !== 'grid' || !gr || gr.hidden) return false;
   const t = [...gr.querySelectorAll('.tile')].find(x => x.dataset.g === name);
@@ -297,8 +310,54 @@ function gridSel(name) {
   nameRoll(t, true);
   if (typeof hoverOff === 'function') hoverOff();
   heroFill();
-  t.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  // (still: the grid is being scrolled by hand – the view stays where it is)
+  if (!still) gridShow(t);
   return true;
+}
+// the chosen game in view: a row that isn't fully visible comes to the top, so the row above goes out of view
+// completely – no names of the row above peeking out under the banner (Eduard)
+function gridShow(t) {
+  const gr = $('#grid'),
+    cs = getComputedStyle(gr),
+    top = parseFloat(cs.scrollPaddingTop) || 0,
+    bot = parseFloat(cs.scrollPaddingBottom) || 0,
+    r = t.getBoundingClientRect(),
+    g = gr.getBoundingClientRect();
+  if (r.top >= g.top + top - 2 && r.bottom <= g.bottom - bot + 2) return;
+  t.scrollIntoView({ block: 'start', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+}
+// scrolling the grid without moving the selection (right stick): the selection follows – the tile in the same
+// column that is fully in view, nearest to the one chosen before. Otherwise the next press of the left stick
+// went on from the old game far above and jumped all the way back (Eduard). It never scrolls by itself.
+function gridFollow() {
+  const gr = $('#grid');
+  if (mode !== 'grid' || !gr || gr.hidden) return;
+  const on = gr.querySelector('.tile.on');
+  if (!on) return;
+  const cs = getComputedStyle(gr),
+    g = gr.getBoundingClientRect(),
+    top = g.top + (parseFloat(cs.scrollPaddingTop) || 0),
+    bot = g.bottom - (parseFloat(cs.scrollPaddingBottom) || 0),
+    // how much of a tile is in the free part of the grid (between the banner and the buttons at the bottom)
+    seen = r => Math.max(0, Math.min(r.bottom, bot) - Math.max(r.top, top)) / Math.max(1, Math.min(r.height, bot - top)),
+    r0 = on.getBoundingClientRect();
+  if (seen(r0) > 0.98) return;
+  const x0 = r0.left + r0.width / 2;
+  let best = null,
+    bd = -Infinity;
+  for (const t of gr.querySelectorAll('.tile')) {
+    const r = t.getBoundingClientRect(),
+      s = seen(r);
+    if (s < 0.5) continue;
+    // the most of it in view, then the same column, then the nearest row
+    const d = Math.round(s * 10) * 1e6 - Math.abs(r.left + r.width / 2 - x0) * 100 - Math.abs(r.top - r0.top);
+    if (d > bd) (bd = d), (best = t);
+  }
+  // only better than the one chosen now: no flicker between two rows that are both half in view
+  if (best && best.dataset.g && best.dataset.g !== sel && seen(best.getBoundingClientRect()) > seen(r0) + 0.15) {
+    sel = best.dataset.g;
+    gridSel(sel, true);
+  }
 }
 // how many tiles are next to each other in the grid (up and down move by that)
 function gridCols() {
@@ -331,10 +390,12 @@ function render() {
   $('#sw').hidden = mode !== 'chome' || em;
   document.body.classList.toggle('wiiu', mode === 'wiiu' && !em);
   document.body.dataset.mode = mode;
-  document.body.classList.toggle('wuhome', mode === 'wiiu' && !em && wuView === 'home');
+  // (the Wii U Look's Home Menu: the full one with its bar of buttons – whfull – or the small one, js/wiiu-home.js)
+  document.body.classList.toggle('wuhome', mode === 'wiiu' && !em && wuView !== 'plaza');
+  document.body.classList.toggle('whfull', mode === 'wiiu' && !em && wuView === 'home');
   if (mode === 'covers') buildCovers(l);
   if (mode === 'chome' && !em) buildCHome(l);
-  if (mode === 'wiiu' && !em && wuView === 'home') {
+  if (mode === 'wiiu' && !em && wuView !== 'plaza') {
     stopMii();
     buildHome(l);
   } else if (mode === 'wiiu' && !em) {
@@ -357,7 +418,7 @@ function render() {
       : filtered
         ? showFilter === 'fav'
           ? 'Right-click a game (or press F) and choose “Add to favorites”.'
-          : 'No games match “' + SHOW_LABEL[showFilter] + '”.'
+          : 'No games match “' + showLabel(showFilter) + '”.'
         : view === 'recent'
           ? 'Games you launch will show up here.'
           : IS_IOS

@@ -98,7 +98,7 @@ $ErrorActionPreference = 'SilentlyContinue'
 $root = [uint32]$env:COSMOU_WIN_PID; $dir = $env:COSMOU_WIN_DIR; $mode = $env:COSMOU_WIN_MODE
 # programs from the app's folder count when they started with it or after it (not one that was already running)
 $since = [DateTimeOffset]::FromUnixTimeMilliseconds([int64]$env:COSMOU_WIN_AT).LocalDateTime.AddSeconds(-3)
-$done = @{}; $logs = @{}; $once = @{}; $game = $null; $end = (Get-Date).AddSeconds(45); Write-Output ('watching ' + $root + ' ' + $mode)
+$done = @{}; $logs = @{}; $once = @{}; $full = @{}; $game = $null; $end = (Get-Date).AddSeconds(45); Write-Output ('watching ' + $root + ' ' + $mode)
 while ((Get-Date) -lt $end) {
   $procs = @(Get-CimInstance Win32_Process -Property ProcessId,ParentProcessId,ExecutablePath,CreationDate)
   $mine = @{}; if ($root) { $mine[$root] = 1 }
@@ -110,11 +110,16 @@ while ((Get-Date) -lt $end) {
     # the app's log window (a console) steps aside once the game's window is there
     if ($w[2] -eq 1) { if ($game -and -not $logs.ContainsKey($h)) { $logs[$h] = 1; [CosmoWin]::Down($h); Write-Output ('log window down ' + [CosmoWin]::Name($h)) }; continue }
     if (-not [CosmoWin]::Big($h)) { continue }
-    # a game often sizes its window again right after it opens: for a few seconds CosmoU puts it back (and in front)
-    if (-not $done.ContainsKey($h)) { $done[$h] = Get-Date; $game = $h; [CosmoWin]::Apply($h, $mode); Write-Output ('window ' + [CosmoWin]::Name($h) + ' ' + $mode + ' front=' + [CosmoWin]::IsFront($h)) }
-    elseif (((Get-Date) - $done[$h]).TotalSeconds -lt 8 -and $h -eq $game) {
-      if ($mode -eq 'full' -and -not [CosmoWin]::Fills($h)) { [CosmoWin]::Apply($h, $mode) }
-      elseif (-not [CosmoWin]::IsFront($h) -and -not $once.ContainsKey($h)) { $once[$h] = 1; [void][CosmoWin]::Front($h); Write-Output ('front again ' + [CosmoWin]::IsFront($h)) }
+    # full screen: first only maximized (that always works) – the frame goes when the game has settled in its window
+    # for a moment. Taking the frame away while a game (or the emulator it runs in) was still starting its picture
+    # left some of them with nothing on screen (Eduard: "a game where the console window opens first does not open")
+    if (-not $done.ContainsKey($h)) { $done[$h] = Get-Date; $game = $h; $first = $mode; if ($mode -eq 'full') { $first = 'max' }; [CosmoWin]::Apply($h, $first); Write-Output ('window ' + [CosmoWin]::Name($h) + ' ' + $first + ' front=' + [CosmoWin]::IsFront($h)) }
+    elseif ($h -eq $game) {
+      $age = ((Get-Date) - $done[$h]).TotalSeconds
+      if ($mode -eq 'full' -and $age -ge 2.5 -and -not $full.ContainsKey($h)) { $full[$h] = 1; [CosmoWin]::Apply($h, 'full'); Write-Output ('full screen ' + [CosmoWin]::Name($h)) }
+      # a game that sizes its window again right after: put back – a few times at most, never a fight with it
+      elseif ($mode -eq 'full' -and $full.ContainsKey($h) -and $full[$h] -lt 3 -and $age -lt 12 -and -not [CosmoWin]::Fills($h)) { $full[$h] = $full[$h] + 1; [CosmoWin]::Apply($h, 'full') }
+      elseif ($age -lt 8 -and -not [CosmoWin]::IsFront($h) -and -not $once.ContainsKey($h)) { $once[$h] = 1; [void][CosmoWin]::Front($h); Write-Output ('front again ' + [CosmoWin]::IsFront($h)) }
     }
   }
   Start-Sleep -Milliseconds 600

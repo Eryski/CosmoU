@@ -471,7 +471,7 @@ dialog .sv .btn {
 }
 
 /* without a Wii U the Wii U's own categories are not there (and the Switch has its own Settings look) */
-body:is(.no-wiiu, .face-nx) .sx-nav :is(button, .sx-gh)[data-g='wiiu'] {
+body:is(.no-wiiu, .face-nx, .face-n2) .sx-nav :is(button, .sx-gh)[data-g='wiiu'] {
   display: none;
 }
 /* save data and updates: one card with two rows */
@@ -479,9 +479,9 @@ body:is(.no-wiiu, .face-nx) .sx-nav :is(button, .sx-gh)[data-g='wiiu'] {
   margin-top: calc(-1 * var(--sp-5));
 }
 /* without a Wii U (and on the Switch's own interface) the "Cemu is ready" card is not there */
-body:is(.no-wiiu, .face-nx) #sxstat .st:first-child {
+body:is(.no-wiiu, .face-nx, .face-n2) #sxstat .st:first-child {
   display: none;
 }
-body:is(.no-wiiu, .face-nx) #sxstat {
+body:is(.no-wiiu, .face-nx, .face-n2) #sxstat {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }

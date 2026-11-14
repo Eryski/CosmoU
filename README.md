@@ -34,7 +34,7 @@ Today it brings all your consoles together in one place, each with its own look.
 
 Add a console in **Settings → Games & Consoles → Add a console**: choose its emulator and its games folder.
 
-- Switch between consoles with **L / R**, or press **LT** to see all of them as cards
+- Switch between consoles with **L / R**, or press **Select** (the small button) to see all of them as cards
 - **Everything** (the last card) shows the games of all your consoles on one page
 - Each console has its **own name, colour and theme** – press the pencil on its card
 - A console can borrow **another console's look**: your Wii U games in the Switch 2 interface, Switch games in the 3DS HOME Menu …
@@ -47,8 +47,9 @@ Add a console in **Settings → Games & Consoles → Add a console**: choose its
 ### Looks
 
 - **Three views:** Covers, Grid and Wii U Look
-- **Wii U Look** has two layouts: the **Plaza** with your own buddies, or a **Home Menu** tile grid like the console
+- **Wii U Look** has three layouts: the **Plaza** with your own buddies, the **Home Menu** like the console (glass tiles, pages with arrows, a bar with Plaza, Notes, Browser, YouTube and Discord) or the smaller **Mini** menu
 - **The Switch and the Switch 2** each have their own full interface: Home, Library, a page for each game, Quick Settings, their own sounds and music
+- **Case Room** (the Switch's and Switch 2's second menu, X): your games as real **3D cases** – showcase, carousel, vertical stack or flipbook; open a case – the booklet floats out, the cartridge flies out of its slot – turn it (right stick), zoom, flip it, play; a **details page** for each game; a red badge (Switch) or band (Switch 2) like on the real boxes – or your own picture
 - **21 themes**: Liquid Glass, Wii U, Classic Wii, Plaza, and looks inspired by Switch, Switch 2, DS, DSi, 3DS, N64, GameCube, Game Boy, Virtual Boy, SNES, NES and the handhelds
 - Every theme works with every view, in **light and dark**
 - **Your own themes:** add a theme file from the community, or make one ([docs/THEMES.md](docs/THEMES.md)). A theme can bring its own music
@@ -59,10 +60,10 @@ Add a console in **Settings → Games & Consoles → Add a console**: choose its
 - **Favorites** – click the left stick (or press F)
 - **The wheel of marks** – hold the left stick (or press K): colours and signs like ★, ⚙, ?, ! and M for mods
 - **Folders** – for mods, tools or games to finish
-- **Your own order** – press RT to lift a game and move it
+- **Your own order** – press RT to lift a game or a folder and move it (also on the Switch, Switch 2 and every Home Menu)
 - **Sort & filter** – A–Z, Z–A, recently played, most played · All, Favorites, Games only, Apps only
 - **Add other apps** – emulators, PC games, programs
-- **Automatic covers**
+- **Automatic covers** – for the Switch and Switch 2 also from **SteamGridDB** and **IGDB** (with your own key) or your own folder; your own cover always wins
 - **Daily Log** – play time per game and a chart of the last 7 days
 
 ### Controller
@@ -72,7 +73,7 @@ Add a console in **Settings → Games & Consoles → Add a console**: choose its
 - **Quick Menu** on the Home button
 - A small legend shows what the buttons do
 - Nintendo controllers work by the letters on their buttons (A on the right)
-- **TV mode:** fullscreen with a bigger UI for the couch or the Steam Deck (F11 or Select)
+- **TV mode:** fullscreen with a bigger UI for the couch or the Steam Deck (F11 or LT)
 
 ### Wii U and Cemu
 

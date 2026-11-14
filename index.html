@@ -8,6 +8,15 @@
     <link rel="stylesheet" href="css/rework.css" />
     <link rel="stylesheet" href="css/ds.css" />
     <link rel="stylesheet" href="css/switch.css" />
+    <link rel="stylesheet" href="css/switch2.css" />
+    <link rel="stylesheet" href="css/marks.css" />
+    <link rel="stylesheet" href="css/folders.css" />
+    <link rel="stylesheet" href="css/wii-menu.css" />
+    <link rel="stylesheet" href="css/case-room.css" />
+    <link rel="stylesheet" href="css/case-show.css" />
+    <link rel="stylesheet" href="css/cover-sources.css" />
+    <link rel="stylesheet" href="css/face-order.css" />
+    <link rel="stylesheet" href="css/wiiu-menu.css" />
   </head>
   <body>
     <svg class="defs" aria-hidden="true">
@@ -175,7 +184,13 @@
           </button>
           <button class="wh-sb" id="whset" aria-label="Settings" title="Settings"></button>
         </div>
+        <button class="wh-arrow l" id="wharl" aria-label="The page before" title="The page before" hidden>
+          <svg viewBox="0 0 40 80" aria-hidden="true"><path d="M30 8 8 40l22 32" /></svg>
+        </button>
         <div class="wh-stage"><div class="wh-grid" id="whgrid"></div></div>
+        <button class="wh-arrow r" id="wharr" aria-label="The next page" title="The next page" hidden>
+          <svg viewBox="0 0 40 80" aria-hidden="true"><path d="M10 8l22 32-22 32" /></svg>
+        </button>
         <div class="wh-side r">
           <button class="wh-sb" id="whpad" aria-label="Controllers" title="Controllers"></button>
           <button class="wh-sb" id="whpow" aria-label="Power" title="Power"></button>
@@ -185,6 +200,7 @@
           <div class="wh-title" id="whtitle"></div>
           <div class="wh-dots" id="whdots"></div>
         </div>
+        <div class="wh-dock" id="whdock" role="toolbar" aria-label="Home Menu"></div>
         <div class="wh-menu" id="whmenu" role="menu" hidden></div>
       </div>
       <div class="wbar">
@@ -372,6 +388,79 @@
                   <button class="btn" id="oc">Open covers folder</button>
                 </div>
               </div>
+              <div id="cvx">
+                <h3 class="sh">Switch &amp; Switch 2 covers</h3>
+                <div class="grp">
+                  <div class="set cv-key" data-k="steamgriddb api key switch covers box art auto download">
+                    <div class="lbl">
+                      <strong>SteamGridDB</strong
+                      ><small id="cvsgi">Box art for Switch and Switch 2 games. A free key: steamgriddb.com → Preferences → API</small>
+                    </div>
+                    <div class="acts">
+                      <input class="sel cv-in" id="cvsgk" type="password" autocomplete="off" spellcheck="false" placeholder="API key" aria-label="SteamGridDB API key" /><button
+                        class="btn"
+                        id="cvsgs"
+                      >
+                        Save</button
+                      ><button class="btn" id="cvsgt">Test</button>
+                    </div>
+                  </div>
+                  <div class="set cv-key" data-k="igdb twitch client id secret switch covers box art fallback">
+                    <div class="lbl">
+                      <strong>IGDB</strong><small id="cvigi">When SteamGridDB has nothing. A Twitch app’s Client ID and Secret: dev.twitch.tv → Console</small>
+                    </div>
+                    <div class="acts">
+                      <input class="sel cv-in" id="cvigk" type="password" autocomplete="off" spellcheck="false" placeholder="Client ID" aria-label="IGDB Client ID" /><input
+                        class="sel cv-in"
+                        id="cvigs"
+                        type="password"
+                        autocomplete="off"
+                        spellcheck="false"
+                        placeholder="Client Secret"
+                        aria-label="IGDB Client Secret"
+                      /><button class="btn" id="cvigv">Save</button><button class="btn" id="cvigt">Test</button>
+                    </div>
+                  </div>
+                  <div class="set cv-sys" data-sys="switch" data-k="switch covers download missing automatic cache folder local">
+                    <div class="lbl">
+                      <strong>Switch</strong><small class="cv-info">–</small><small class="cv-dir"></small>
+                      <div class="cv-bar" hidden><i></i></div>
+                    </div>
+                    <div class="acts">
+                      <span class="cv-tl">Automatic</span><button class="tg cv-auto" title="Find missing covers by itself">On</button><button class="btn cv-dl">Download missing covers</button
+                      ><button class="btn cv-loc">Your folder…</button><button class="btn cv-clr">Clear cache</button>
+                    </div>
+                  </div>
+                  <div class="set cv-sys" data-sys="switch2" data-k="switch 2 covers download missing automatic cache folder local">
+                    <div class="lbl">
+                      <strong>Switch 2</strong><small class="cv-info">–</small><small class="cv-dir"></small>
+                      <div class="cv-bar" hidden><i></i></div>
+                    </div>
+                    <div class="acts">
+                      <span class="cv-tl">Automatic</span><button class="tg cv-auto" title="Find missing covers by itself">On</button><button class="btn cv-dl">Download missing covers</button
+                      ><button class="btn cv-loc">Your folder…</button><button class="btn cv-clr">Clear cache</button>
+                    </div>
+                  </div>
+                  <div class="set" data-k="red field badge band picture image switch case room cover own">
+                    <div class="lbl">
+                      <strong>Red field</strong><small id="cvbi">The badge (Switch) and the band (Switch 2) on the cases: CosmoU’s, or a picture of yours</small>
+                    </div>
+                    <div class="acts">
+                      <select class="sel" id="cvbk" aria-label="Which red field">
+                        <option value="all">All consoles</option>
+                        <option value="switch">Switch</option>
+                        <option value="switch2">Switch 2</option></select
+                      ><button class="btn" id="cvbp">Choose picture…</button><button class="btn" id="cvbc">Remove</button>
+                    </div>
+                  </div>
+                  <div class="set" data-k="red field badge band every cover box art scan">
+                    <div class="lbl">
+                      <strong>Red field on every cover</strong><small>Off: a scan of the real box shows its own</small>
+                    </div>
+                    <button class="tg" id="cvfa">On</button>
+                  </div>
+                </div>
+              </div>
             </div>
             <!-- Appearance -->
             <div class="pane" data-c="look">
@@ -429,11 +518,17 @@
               </div>
               <h3 class="sh">Views</h3>
               <div class="grp">
-                <div class="set" data-k="wii u look layout plaza home menu tiles grid">
+                <div class="set" data-k="wii u look layout plaza home menu mini tiles grid glass dock buttons pages">
                   <div class="lbl">
-                    <strong>Wii U Look layout</strong><small>Plaza with floating icons, or the Home Menu tile grid</small>
+                    <strong>Wii U Look layout</strong><small>The Plaza with floating icons, the Home Menu (glass tiles, pages, a bar of buttons) or the smaller Mini menu</small>
                   </div>
-                  <div class="seg" id="wul"><button data-l="plaza">Plaza</button><button data-l="home">Home Menu</button></div>
+                  <div class="seg" id="wul"><button data-l="plaza">Plaza</button><button data-l="home">Home Menu</button><button data-l="mini">Mini</button></div>
+                </div>
+                <div class="set" data-k="grid banner big title name box header picture">
+                  <div class="lbl">
+                    <strong>Banner above the grid</strong><small>The chosen game’s picture and name, big, over the Grid view</small>
+                  </div>
+                  <button class="tg" id="gbn">On</button>
                 </div>
                 <div class="set" data-k="3d cases hover box case disc">
                   <div class="lbl">
@@ -626,6 +721,27 @@
               <div class="grp" id="c_about"></div>
               <h3 class="sh">What’s new in this version</h3>
               <div class="grp wnew" data-k="whats new changelog version news features">
+                <div class="wn">
+                  <i>✨</i
+                  ><span
+                    ><b>Switch 2 – a console of its own</b
+                    ><small>Eden-NX2, Eglantine and their forks · game files and dumped games · its own interface, sounds and music (Mix &amp; Match)</small></span
+                  >
+                </div>
+                <div class="wn">
+                  <i>📁</i
+                  ><span
+                    ><b>Folders, and each console your way</b
+                    ><small>Put games into folders (mods, tools …) · a console's name, colour and theme from the pencil on its card</small></span
+                  >
+                </div>
+                <div class="wn">
+                  <i>🎡</i
+                  ><span
+                    ><b>The wheel of marks, new</b
+                    ><small>The game wears the mark before you choose it · a note for every piece · A works while the stick still points</small></span
+                  >
+                </div>
                 <div class="wn">
                   <i>🎮</i
                   ><span
@@ -1052,6 +1168,19 @@
         </div>
       </div>
     </dialog>
+    <dialog id="notedlg" class="glass">
+      <div class="in win">
+        <div class="hd">
+          <h2>Notes</h2>
+          <p class="hint" style="margin: 8px 0 0">Little notes for yourself – a code, a tip, where you stopped in a game. They stay in CosmoU.</p>
+        </div>
+        <div class="bd"><div class="nt-list" id="nt_list"></div></div>
+        <div class="ft">
+          <button class="btn main" id="nt_add">New note</button>
+          <button class="btn big" id="nt_x">Done</button>
+        </div>
+      </div>
+    </dialog>
     <dialog id="logdlg" class="glass">
       <div class="in win">
         <div class="hd">
@@ -1312,6 +1441,8 @@
     <script src="js/optimize-apps.js"></script>
     <script src="js/buddies.js"></script>
     <script src="js/wiiu-home.js"></script>
+    <script src="js/stickies.js"></script>
+    <script src="js/wiiu-dock.js"></script>
     <script src="js/polish.js"></script>
     <script src="js/onboarding.js"></script>
     <script src="js/themes.js"></script>
@@ -1331,5 +1462,12 @@
     <script src="js/rework.js"></script>
     <script src="js/ds.js"></script>
     <script src="js/switch-face.js"></script>
+    <script src="js/switch2-face.js"></script>
+    <script src="js/folders.js"></script>
+    <script src="js/console-look.js"></script>
+    <script src="js/case-room.js"></script>
+    <script src="js/case-show.js"></script>
+    <script src="js/face-order.js"></script>
+    <script src="js/cover-sources.js"></script>
   </body>
 </html>

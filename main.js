@@ -1,9 +1,10 @@
-const { app, BrowserWindow, ipcMain, dialog, shell, nativeImage, nativeTheme, Menu, screen } = require('electron');
+const { app, BrowserWindow, WebContentsView, ipcMain, dialog, shell, nativeImage, nativeTheme, Menu, screen } = require('electron');
 const fs = require('fs'),
   path = require('path'),
   { pathToFileURL } = require('url'),
   { spawn } = require('child_process');
 const https = require('https'),
+  http = require('http'),
   crypto = require('crypto'),
   AdmZip = require('adm-zip');
 const P = require('./platform');
@@ -78,7 +79,14 @@ const REGION = { P: 'Europe', E: 'USA', J: 'Japan' };
 function manualCover(name) {
   for (const e of ['.png', '.jpg', '.jpeg', '.webp']) {
     const p = path.join(coversDir(), safeName(name) + e);
-    if (fs.existsSync(p)) return pathToFileURL(p).href;
+    // (a new address when the picture changes: a picture chosen again shows right away)
+    if (fs.existsSync(p)) {
+      let v = 0;
+      try {
+        v = Math.round(fs.statSync(p).mtimeMs);
+      } catch {}
+      return pathToFileURL(p).href + '?v=' + v;
+    }
   }
   return '';
 }
@@ -238,6 +246,7 @@ function scan(dir) {
     }
     const icon = path.join(autoDir(), key + '-icon.png');
     const manual = manualCover(g.name);
+    if (manual) g.own = true;
     g.cover =
       manual || urlIf(path.join(autoDir(), key + '-cover.jpg')) || urlIf(path.join(autoDir(), key + '-box.png')) || urlIf(icon);
     g.full = manual ? '' : urlIf(path.join(autoDir(), key + '-full.jpg'));
@@ -256,7 +265,7 @@ let boxRunning = false;
 function fetchImage(url, dest, hops = 0) {
   return new Promise(resolve => {
     // some image servers (Nintendo's) only answer browsers, and some move pictures to another address
-    const req = https.get(url, { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) CosmoU', Accept: 'image/*' } }, res => {
+    const req = (/^http:/.test(url) ? http : https).get(url, { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) CosmoU', Accept: 'image/*' } }, res => {
       if ([301, 302, 303, 307, 308].includes(res.statusCode) && res.headers.location && hops < 4) {
         res.resume();
         return resolve(fetchImage(new URL(res.headers.location, url).href, dest, hops + 1));
@@ -370,6 +379,8 @@ app.whenReady().then(() => {
       ]),
     );
   mainWin = win;
+  // (CosmoU's browser goes with it)
+  win.on('closed', () => webWin && !webWin.isDestroyed() && webWin.close());
   win.loadFile('index.html');
 });
 app.on('window-all-closed', () => app.quit());
@@ -585,9 +596,15 @@ function endSession(name, start, end) {
   if (sec < 60) return; // a quick test or a crash at start is not play time
   const s = read(),
     pt = { ...(s.playtime || {}) },
-    e = pt[name] || { sec: 0, sessions: 0, first: start };
-  pt[name] = { sec: e.sec + sec, sessions: e.sessions + 1, first: Math.min(e.first || start, start), last: end, lastSec: sec };
-  const sessions = [...(Array.isArray(s.sessions) ? s.sessions : []), { name, start, sec }].slice(-1000);
+    e = { ...(pt[name] || { sec: 0, sessions: 0, first: start }) },
+    old = Array.isArray(s.sessions) ? s.sessions : [];
+  // a total edited by hand into this file (or broken): counted again from the sessions (js/social.js logClean)
+  const first = Number.isFinite(e.first) && e.first > 1325376000000 && e.first <= start ? e.first : start;
+  if (!(Number.isFinite(e.sec) && e.sec >= 0 && e.sec <= (start - first) / 1000 + 7 * 86400))
+    e.sec = old.filter(x => x && x.name === name && Number.isFinite(x.sec) && x.sec > 0 && x.sec <= 7 * 86400).reduce((a, x) => a + x.sec, 0);
+  if (!(Number.isFinite(e.sessions) && e.sessions >= 0)) e.sessions = 0;
+  pt[name] = { sec: e.sec + sec, sessions: e.sessions + 1, first, last: end, lastSec: sec };
+  const sessions = [...old, { name, start, sec }].slice(-1000);
   write({ ...s, playtime: pt, sessions });
   if (mainWin && !mainWin.isDestroyed()) mainWin.webContents.send('session-ended', { name, sec });
 }
@@ -1974,12 +1991,32 @@ const SD = require('./js/systems-data.js');
 const SYSTEMS = SD.SYSTEMS;
 const sysOk = s => typeof s === 'string' && s !== 'wiiu' && Object.prototype.hasOwnProperty.call(SYSTEMS, s);
 // Switch files carry their title id: [0100ABCD12340000] is the game, …800 its update, other endings are DLC
+// (Switch 2: [0400…]). The Switch 2's emulators also start a dumped game: a folder with exefs/main in it.
+const dumpMain = d => {
+  const m = path.join(d, 'exefs', 'main');
+  try {
+    return fs.statSync(m).isFile() ? m : '';
+  } catch {
+    return '';
+  }
+};
 function scanSystem(sys, dir) {
   const def = SYSTEMS[sys],
     out = [],
     updates = new Set();
   if (!dir || !fs.existsSync(dir)) return out;
   const exts = def.ext.map(e => '.' + e);
+  // a dumped game: its folder is the game (its name, its title id), exefs/main is what the emulator starts
+  const dump = (d, main) => {
+    const name = path.basename(d),
+      tid = SD.tidOf(name);
+    if (tid && tid.slice(-3) !== '000') return;
+    out.push({ name: SD.titleOf(name + '.dir') || name, file: name, path: main, sys, tid, dump: true, format: def.short + ' · Folder' });
+  };
+  if (def.dumps && dumpMain(dir)) {
+    dump(dir, dumpMain(dir));
+    return out;
+  }
   const walk = (d, depth) => {
     let list = [];
     try {
@@ -1989,10 +2026,11 @@ function scanSystem(sys, dir) {
     }
     for (const e of list) {
       const p = path.join(d, e.name);
-      if (e.isDirectory() && depth < 3 && !e.name.startsWith('.')) walk(p, depth + 1);
+      if (e.isDirectory() && def.dumps && !e.name.startsWith('.') && dumpMain(p)) dump(p, dumpMain(p));
+      else if (e.isDirectory() && depth < 3 && !e.name.startsWith('.')) walk(p, depth + 1);
       else if (e.isFile() && exts.includes(path.extname(e.name).toLowerCase())) {
         const base = path.parse(e.name).name,
-          tid = sys === 'switch' ? ((base.match(/\[(0100[0-9a-f]{12})\]/i) || [])[1] || '').toLowerCase() : '';
+          tid = def.eshop ? SD.tidOf(base) : '';
         if (tid && tid.slice(-3) === '800') {
           updates.add(tid.slice(0, 13));
           continue;
@@ -2031,12 +2069,20 @@ function withSystems(list) {
       for (let k = 2; names.has(n); k++) n = g.name + ' (' + SYSTEMS[sys].short + ' ' + k + ')';
       names.add(n);
       g.name = n;
-      const art = sysArt(g);
-      g.cover = manualCover(n) || (art ? pathToFileURL(art).href : '');
+      const art = sysArt(g),
+        own = manualCover(n);
+      if (own) g.own = true;
+      // (with its time: a cover found again under the same name is not the old one from the window's cache)
+      let au = '';
+      try {
+        au = art ? fileUrlV(art) : '';
+      } catch {}
+      g.cover = own || au;
       found.push(g);
       list.push(g);
     }
   }
+  cvGames = found;
   if (read().onlineCovers !== false) queueSysArt(found);
   return list;
 }
@@ -2047,18 +2093,24 @@ const sysJobs = [],
   thumbLists = {};
 let sysRunning = false;
 const sysMiss = g => path.join(autoDir(), sysArtKey(g) + '-art.miss');
-function queueSysArt(list) {
+function queueSysArt(list, force) {
   fs.mkdirSync(autoDir(), { recursive: true });
+  let n = 0;
   for (const g of list) {
     const k = sysArtKey(g);
     if (sysBusy.has(k) || sysArt(g) || manualCover(g.name)) continue;
-    try {
-      if (Date.now() - Number(fs.readFileSync(sysMiss(g), 'utf8')) < 7 * 864e5) continue;
-    } catch {}
+    // Switch and Switch 2: automatic download can be off for each of them (Settings → Games & Consoles → Covers)
+    if (!force && CV_SYS.includes(g.sys) && cvCfg().auto[g.sys] === false) continue;
+    if (!force)
+      try {
+        if (Date.now() - Number(fs.readFileSync(sysMiss(g), 'utf8')) < 7 * 864e5) continue;
+      } catch {}
     sysBusy.add(k);
     sysJobs.push(g);
+    n++;
   }
   if (!sysRunning) runSysArt();
+  return n;
 }
 function getText(url, max = 12 * 1048576, hops = 0) {
   return new Promise(resolve => {
@@ -2111,9 +2163,14 @@ async function thumbFiles(folder) {
 }
 async function findSysArt(g) {
   const def = SYSTEMS[g.sys];
+  // Switch and Switch 2: your folder, SteamGridDB, IGDB first – then Nintendo's eShop as before
+  if (CV_SYS.includes(g.sys)) {
+    const hit = await cvFind(g);
+    if (hit) return hit;
+  }
   if (def.eshop) {
     for (const tid of g.tid ? [g.tid, ''] : ['']) {
-      const j = await getText(SD.eshopUrl(SD.titleOf(g.file || g.name), tid));
+      const j = await getText(SD.eshopUrl(SD.titleOf(g.file || g.name), tid, def.eshop));
       const u = j && SD.eshopPick(j, SD.titleOf(g.file || g.name), tid);
       if (u) return u;
     }
@@ -2132,11 +2189,19 @@ async function runSysArt() {
     const g = sysJobs.shift(),
       k = sysArtKey(g);
     try {
-      // one address (eShop) or a few to try one after the other (libretro, then its GitHub archive)
+      // one address (eShop) or a few to try one after the other (libretro, then its GitHub archive) – or a picture
+      // of your own covers folder for this console ({ file })
       const found = await findSysArt(g),
-        urls = (Array.isArray(found) ? found : [found]).filter(Boolean);
+        urls = (Array.isArray(found) ? found : [found]).filter(u => typeof u === 'string' && u);
       let ok = false;
-      for (const url of urls) {
+      if (found && found.file) {
+        const ext = /\.png$/i.test(found.file) ? '.png' : '.jpg';
+        try {
+          fs.copyFileSync(found.file, path.join(autoDir(), k + '-cover' + ext));
+          ok = true;
+        } catch {}
+      }
+      for (const url of ok ? [] : urls) {
         const dest = path.join(autoDir(), k + '-cover' + (/\.png(\?|$)/i.test(url) ? '.png' : '.jpg'));
         ok = await fetchImage(url, dest);
         if (process.env.COSMOU_DEBUG) console.error('cover for', g.sys, g.name, '→', url, ok ? 'ok' : 'failed');
@@ -2148,10 +2213,296 @@ async function runSysArt() {
       } else fs.writeFileSync(sysMiss(g), String(Date.now()));
     } catch {}
     sysBusy.delete(k);
+    cvTick(g, sysArt(g));
     await new Promise(r => setTimeout(r, 250));
   }
   sysRunning = false;
 }
+
+// ---------- covers for the Switch and the Switch 2: SteamGridDB, IGDB, your own folder ----------
+// Settings (their own file, cover-sources.json – not settings.json, which goes to the window; the keys never leave
+// this computer and are not exported):
+//   sgdb        SteamGridDB API key (steamgriddb.com → Preferences → API) – tall box art, 600×900
+//   igdbId/igdbSecret  a Twitch app's Client ID and Secret (dev.twitch.tv) for IGDB – the box art of the game
+//   auto        { switch: true, switch2: true } – find missing covers by itself
+//   local       { switch: 'folder', switch2: 'folder' } – your own pictures, named like the game (or its title id)
+// Order: your own cover (covers folder) > your folder > SteamGridDB > IGDB > Nintendo's eShop (no key needed)
+const CV_SYS = ['switch', 'switch2'];
+const CV_SGDB = process.env.COSMOU_SGDB_BASE || 'https://www.steamgriddb.com/api/v2',
+  CV_IGDB = process.env.COSMOU_IGDB_BASE || 'https://api.igdb.com/v4',
+  CV_TWITCH = process.env.COSMOU_TWITCH_BASE || 'https://id.twitch.tv',
+  CV_IGDB_IMG = process.env.COSMOU_IGDB_IMG || 'https://images.igdb.com/igdb/image/upload';
+// IGDB's platforms: Nintendo Switch 130, Nintendo Switch 2 508
+const CV_IGDB_PF = { switch: [130], switch2: [508, 130] };
+const cvFile = () => path.join(app.getPath('userData'), 'cover-sources.json');
+function cvRead() {
+  try {
+    const c = JSON.parse(fs.readFileSync(cvFile(), 'utf8'));
+    return c && typeof c === 'object' ? c : {};
+  } catch {
+    return {};
+  }
+}
+const cvWrite = c => fs.writeFileSync(cvFile(), JSON.stringify(c, null, 2), { mode: 0o600 });
+function cvCfg() {
+  const c = cvRead();
+  return {
+    sgdb: typeof c.sgdb === 'string' ? c.sgdb.trim() : '',
+    igdbId: typeof c.igdbId === 'string' ? c.igdbId.trim() : '',
+    igdbSecret: typeof c.igdbSecret === 'string' ? c.igdbSecret.trim() : '',
+    auto: { switch: !(c.auto && c.auto.switch === false), switch2: !(c.auto && c.auto.switch2 === false) },
+    local: { switch: (c.local && c.local.switch) || '', switch2: (c.local && c.local.switch2) || '' },
+  };
+}
+// a request with headers (and a body): the text, or null
+function cvReq(url, opt = {}) {
+  return new Promise(resolve => {
+    let u;
+    try {
+      u = new URL(url);
+    } catch {
+      return resolve(null);
+    }
+    const req = (u.protocol === 'http:' ? http : https).request(
+      u,
+      { method: opt.method || 'GET', headers: { 'User-Agent': 'CosmoU', Accept: 'application/json', ...(opt.headers || {}) } },
+      res => {
+        let body = '';
+        res.setEncoding('utf8');
+        res.on('data', c => body.length < 4 * 1048576 && (body += c));
+        res.on('end', () => resolve(res.statusCode >= 200 && res.statusCode < 300 ? body : (cvStatus = res.statusCode, null)));
+        res.on('error', () => resolve(null));
+      },
+    );
+    req.setTimeout(15000, () => req.destroy());
+    req.on('error', () => resolve(null));
+    if (opt.body) req.write(opt.body);
+    req.end();
+  });
+}
+let cvStatus = 0;
+const cvJson = t => {
+  try {
+    return t ? JSON.parse(t) : null;
+  } catch {
+    return null;
+  }
+};
+// how alike two names are (0–1): the same words count, the order a little
+function cvLike(a, b) {
+  const n = SD.norm(a),
+    m = SD.norm(b);
+  if (!n || !m) return 0;
+  if (n === m) return 1;
+  if (n.startsWith(m) || m.startsWith(n)) return 0.85;
+  const w = x => new Set(String(x).toLowerCase().replace(/[^a-z0-9 ]+/g, ' ').split(/\s+/).filter(t => t.length > 1)),
+    A = w(a),
+    B = w(b);
+  let same = 0;
+  for (const t of A) if (B.has(t)) same++;
+  return (2 * same) / (A.size + B.size || 1) * 0.8;
+}
+const cvTitle = g => SD.titleOf(g.file || g.name) || g.name;
+// 1. your own folder for this console: a picture named like the game, or with its title id in the name
+function cvLocal(g) {
+  const dir = cvCfg().local[g.sys];
+  if (!dir) return null;
+  let files = [];
+  try {
+    files = fs.readdirSync(dir).filter(f => /\.(png|jpe?g|webp)$/i.test(f));
+  } catch {
+    return null;
+  }
+  const want = SD.norm(cvTitle(g)),
+    tid = String(g.tid || '').toLowerCase(),
+    hit =
+      (tid && files.find(f => f.toLowerCase().includes(tid))) ||
+      files.find(f => SD.norm(f) === want) ||
+      files.find(f => SD.norm(f) === SD.norm(g.name));
+  return hit ? { file: path.join(dir, hit) } : null;
+}
+// 2. SteamGridDB: the game by its name, then its tall grids (600×900, a picture, not animated)
+async function cvSgdb(g, key) {
+  const H = { headers: { Authorization: 'Bearer ' + key } },
+    q = cvTitle(g),
+    found = cvJson(await cvReq(CV_SGDB + '/search/autocomplete/' + encodeURIComponent(q), H));
+  if (!found || !found.success || !Array.isArray(found.data) || !found.data.length) return '';
+  const best = found.data
+    .map(x => ({ x, s: cvLike(q, x.name) }))
+    .filter(o => o.s >= 0.5)
+    .sort((a, b) => b.s - a.s)[0];
+  if (!best) return '';
+  const grids = cvJson(await cvReq(CV_SGDB + '/grids/game/' + best.x.id + '?dimensions=600x900&types=static&nsfw=false&humor=false', H));
+  if (!grids || !grids.success || !Array.isArray(grids.data) || !grids.data.length) return '';
+  // the best liked first
+  const g0 = grids.data.slice().sort((a, b) => (b.score || 0) - (a.score || 0))[0];
+  return g0 && g0.url ? g0.url : '';
+}
+// 3. IGDB (needs a Twitch app): an access token kept until it runs out, the game by name on its console
+let cvToken = { v: '', until: 0, for: '' };
+async function cvIgdbToken(id, secret) {
+  if (cvToken.v && cvToken.for === id && Date.now() < cvToken.until) return cvToken.v;
+  const t = cvJson(
+    await cvReq(CV_TWITCH + '/oauth2/token?client_id=' + encodeURIComponent(id) + '&client_secret=' + encodeURIComponent(secret) + '&grant_type=client_credentials', {
+      method: 'POST',
+    }),
+  );
+  if (!t || !t.access_token) return '';
+  cvToken = { v: t.access_token, until: Date.now() + Math.max(60, (t.expires_in || 3600) - 300) * 1000, for: id };
+  return cvToken.v;
+}
+async function cvIgdb(g, id, secret) {
+  const tok = await cvIgdbToken(id, secret);
+  if (!tok) return '';
+  const q = cvTitle(g).replace(/"/g, ' '),
+    H = { 'Client-ID': id, Authorization: 'Bearer ' + tok, 'Content-Type': 'text/plain' };
+  for (const pf of [CV_IGDB_PF[g.sys] || [130], null]) {
+    const body = 'search "' + q + '"; fields name,cover.image_id,platforms; ' + (pf ? 'where platforms = (' + pf.join(',') + ') & cover != null; ' : 'where cover != null; ') + 'limit 10;',
+      l = cvJson(await cvReq(CV_IGDB + '/games', { method: 'POST', headers: H, body }));
+    if (!Array.isArray(l) || !l.length) continue;
+    const best = l
+      .filter(x => x.cover && x.cover.image_id)
+      .map(x => ({ x, s: cvLike(q, x.name) }))
+      .filter(o => o.s >= 0.5)
+      .sort((a, b) => b.s - a.s)[0];
+    if (best) return CV_IGDB_IMG + '/t_cover_big_2x/' + best.x.cover.image_id + '.jpg';
+  }
+  return '';
+}
+async function cvFind(g) {
+  const c = cvCfg(),
+    own = cvLocal(g);
+  if (own) return own;
+  // IGDB only when SteamGridDB has nothing (one question less for every game)
+  if (c.sgdb) {
+    const u = await cvSgdb(g, c.sgdb).catch(() => '');
+    if (u) return [u];
+  }
+  if (c.igdbId && c.igdbSecret) {
+    const u = await cvIgdb(g, c.igdbId, c.igdbSecret).catch(() => '');
+    if (u) return [u];
+  }
+  return null;
+}
+// "Download missing covers": how far it is (sent to the window as covers-progress)
+const cvRun = { switch: null, switch2: null };
+function cvTick(g, ok) {
+  const r = cvRun[g.sys];
+  if (!r || !r.keys.has(sysArtKey(g))) return;
+  r.done++;
+  if (ok) r.found++;
+  cvSend(g.sys);
+}
+function cvSend(sys) {
+  const r = cvRun[sys];
+  if (!r || !mainWin || mainWin.isDestroyed()) return;
+  mainWin.webContents.send('covers-progress', { sys, done: r.done, total: r.total, found: r.found, running: r.done < r.total });
+  if (r.done >= r.total) cvRun[sys] = null;
+}
+let cvGames = [];
+const cvOf = sys => cvGames.filter(g => g.sys === sys);
+ipcMain.handle('coverCfg', () => {
+  const c = cvCfg();
+  // (the window only learns whether a key is there, never the key itself)
+  return { sgdb: !!c.sgdb, igdb: !!(c.igdbId && c.igdbSecret), auto: c.auto, local: c.local };
+});
+ipcMain.handle('coverCfgSet', (_e, v) => {
+  if (!v || typeof v !== 'object') return false;
+  const c = cvRead(),
+    str = x => String(x || '').trim().slice(0, 200);
+  if ('sgdb' in v) c.sgdb = str(v.sgdb);
+  if ('igdbId' in v) c.igdbId = str(v.igdbId);
+  if ('igdbSecret' in v) c.igdbSecret = str(v.igdbSecret);
+  if (v.auto && typeof v.auto === 'object') c.auto = { ...(c.auto || {}), ...Object.fromEntries(Object.entries(v.auto).filter(([k, x]) => CV_SYS.includes(k) && typeof x === 'boolean')) };
+  cvWrite(c);
+  cvToken = { v: '', until: 0, for: '' };
+  return true;
+});
+// your own folder of covers for a console
+ipcMain.handle('coverLocalPick', async (_e, sys) => {
+  if (!CV_SYS.includes(sys)) return '';
+  const r = await dialog.showOpenDialog(mainWin, { title: 'Your covers for ' + SYSTEMS[sys].name, properties: ['openDirectory'] });
+  if (r.canceled || !r.filePaths[0]) return '';
+  const c = cvRead();
+  c.local = { ...(c.local || {}), [sys]: r.filePaths[0] };
+  cvWrite(c);
+  return r.filePaths[0];
+});
+ipcMain.handle('coverLocalClear', (_e, sys) => {
+  if (!CV_SYS.includes(sys)) return false;
+  const c = cvRead();
+  c.local = { ...(c.local || {}), [sys]: '' };
+  cvWrite(c);
+  return true;
+});
+// does a key work? (a small search)
+ipcMain.handle('coverTest', async (_e, which) => {
+  const c = cvCfg();
+  if (which === 'sgdb') {
+    if (!c.sgdb) return { ok: false, error: 'No key yet' };
+    const t = await cvReq(CV_SGDB + '/search/autocomplete/mario', { headers: { Authorization: 'Bearer ' + c.sgdb } });
+    return t && cvJson(t) && cvJson(t).success ? { ok: true } : { ok: false, error: cvStatus === 401 ? 'The key was not accepted' : 'SteamGridDB could not be reached' };
+  }
+  if (which === 'igdb') {
+    if (!c.igdbId || !c.igdbSecret) return { ok: false, error: 'Client ID and Secret are needed' };
+    cvToken = { v: '', until: 0, for: '' };
+    return (await cvIgdbToken(c.igdbId, c.igdbSecret)) ? { ok: true } : { ok: false, error: 'Twitch did not accept the Client ID and Secret' };
+  }
+  return { ok: false };
+});
+// the cache of one console: how many pictures and how big; empty it
+function cvCache(sys) {
+  let n = 0,
+    size = 0,
+    files = [];
+  try {
+    files = fs.readdirSync(autoDir()).filter(f => f.startsWith(sys + '-'));
+  } catch {}
+  for (const f of files)
+    if (/-cover\.(png|jpg)$/.test(f))
+      try {
+        n++;
+        size += fs.statSync(path.join(autoDir(), f)).size;
+      } catch {}
+  return { n, size, files };
+}
+ipcMain.handle('coverCache', (_e, sys) => {
+  if (!CV_SYS.includes(sys)) return null;
+  const c = cvCache(sys),
+    l = cvOf(sys);
+  return { n: c.n, size: c.size, games: l.length, missing: l.filter(g => !sysArt(g) && !manualCover(g.name)).length };
+});
+ipcMain.handle('coverCacheClear', (_e, sys) => {
+  if (!CV_SYS.includes(sys)) return false;
+  for (const f of cvCache(sys).files)
+    try {
+      fs.unlinkSync(path.join(autoDir(), f));
+    } catch {}
+  if (mainWin && !mainWin.isDestroyed()) mainWin.webContents.send('covers-updated');
+  return true;
+});
+// "Download missing covers": every game of the console without a cover, now (also when automatic is off and
+// also the ones not found last time)
+ipcMain.handle('coversMissing', (_e, sys) => {
+  if (!CV_SYS.includes(sys)) return { total: 0 };
+  if (cvRun[sys]) return { total: cvRun[sys].total, running: true };
+  const l = cvOf(sys).filter(g => !sysArt(g) && !manualCover(g.name) && !sysBusy.has(sysArtKey(g)));
+  if (!l.length) return { total: 0 };
+  cvRun[sys] = { total: l.length, done: 0, found: 0, keys: new Set(l.map(sysArtKey)) };
+  queueSysArt(l, true);
+  cvSend(sys);
+  return { total: l.length };
+});
+// one game: its automatic cover again (forgets the one there and that none was found)
+ipcMain.handle('coverReload', (_e, name) => {
+  const g = cvGames.find(x => x.name === name);
+  if (!g) return false;
+  for (const f of [sysArt(g), sysMiss(g)].filter(Boolean))
+    try {
+      fs.unlinkSync(f);
+    } catch {}
+  return queueSysArt([g], true) > 0;
+});
 
 // ---------- starting the emulator of another console ----------
 // RetroArch needs a core for the console: the first one of CORES that is installed
@@ -2285,6 +2636,94 @@ ipcMain.handle('appCoverPick', async () => {
   });
   return r.canceled ? null : r.filePaths[0];
 });
+// a game's own picture (Artwork in the Switch's Case Room): chosen from the computer and kept in the covers folder
+// under the game's name – the same place a picture dropped there by hand goes; "clear" goes back to the automatic one
+ipcMain.handle('gameCover', async (_, a) => {
+  const name = a && typeof a.name === 'string' ? a.name.trim().slice(0, 200) : '';
+  if (!name) return { ok: false };
+  const base = path.join(coversDir(), safeName(name));
+  // (only ever inside the covers folder)
+  if (path.dirname(path.resolve(base + '.png')) !== path.resolve(coversDir())) return { ok: false };
+  const EXTS = ['.png', '.jpg', '.jpeg', '.webp'],
+    drop = () => {
+      for (const e of EXTS)
+        try {
+          fs.unlinkSync(base + e);
+        } catch {}
+    },
+    done = () => mainWin && !mainWin.isDestroyed() && mainWin.webContents.send('covers-updated');
+  if (a.act === 'clear') {
+    drop();
+    done();
+    return { ok: true };
+  }
+  const r = await dialog.showOpenDialog(mainWin, {
+    title: 'Choose a picture for “' + name + '”',
+    filters: [{ name: 'Images', extensions: ['png', 'jpg', 'jpeg', 'webp'] }],
+    properties: ['openFile'],
+  });
+  if (r.canceled || !r.filePaths[0]) return { ok: false, canceled: true };
+  const src = r.filePaths[0],
+    ext = path.extname(src).toLowerCase();
+  if (!EXTS.includes(ext)) return { ok: false, error: 'Please choose a PNG, JPG or WebP picture.' };
+  try {
+    fs.mkdirSync(coversDir(), { recursive: true });
+    drop();
+    fs.copyFileSync(src, base + ext);
+  } catch (e) {
+    return { ok: false, error: friendly(e) };
+  }
+  done();
+  return { ok: true };
+});
+// ---------- the red field of the Switch covers (Case Room): your own picture, for all or for one console ----------
+// badges/all.png (every Switch console), badges/switch.png, badges/switch2.png – one for a console wins over all
+const badgeDir = () => path.join(app.getPath('userData'), 'badges'),
+  BADGE_KEYS = ['all', 'switch', 'switch2'],
+  BADGE_EXT = ['.png', '.jpg', '.jpeg', '.webp'];
+const badgeFile = k => BADGE_EXT.map(e => path.join(badgeDir(), k + e)).find(f => fs.existsSync(f)) || '';
+ipcMain.handle('badges', () => {
+  const o = {};
+  for (const k of BADGE_KEYS) {
+    const f = badgeFile(k);
+    if (f)
+      try {
+        o[k] = pathToFileURL(f).href + '?v=' + Math.round(fs.statSync(f).mtimeMs);
+      } catch {}
+  }
+  return o;
+});
+ipcMain.handle('badgeSet', async (_, k, act) => {
+  if (!BADGE_KEYS.includes(k)) return { ok: false };
+  const drop = () => {
+    for (const e of BADGE_EXT)
+      try {
+        fs.unlinkSync(path.join(badgeDir(), k + e));
+      } catch {}
+  };
+  if (act === 'clear') {
+    drop();
+    return { ok: true };
+  }
+  const r = await dialog.showOpenDialog(mainWin, {
+    title: 'A picture for the red field of the covers',
+    filters: [{ name: 'Images', extensions: ['png', 'jpg', 'jpeg', 'webp'] }],
+    properties: ['openFile'],
+  });
+  if (r.canceled || !r.filePaths[0]) return { ok: false, canceled: true };
+  const src = r.filePaths[0],
+    ext = path.extname(src).toLowerCase();
+  if (!BADGE_EXT.includes(ext)) return { ok: false, error: 'Please choose a PNG, JPG or WebP picture.' };
+  try {
+    if (fs.statSync(src).size > 8 * 1048576) return { ok: false, error: 'This picture is too big (8 MB at most).' };
+    fs.mkdirSync(badgeDir(), { recursive: true });
+    drop();
+    fs.copyFileSync(src, path.join(badgeDir(), k + ext));
+  } catch (e) {
+    return { ok: false, error: friendly(e) };
+  }
+  return { ok: true };
+});
 ipcMain.handle('appSave', (_, a) => {
   if (!a || typeof a.path !== 'string' || !P.appOk(a.path))
     return {
@@ -2350,6 +2789,105 @@ ipcMain.handle('appGet', (_, id) => {
 });
 
 ipcMain.handle('openDiscord', () => shell.openExternal('https://discord.gg/BZry7jGjr7'));
+
+// ---------- CosmoU's own browser (the Wii U Look's Browser and YouTube buttons, js/wiiu-dock.js) ----------
+// A window of its own: a small bar (browser.html) and the page below it in a view that gets nothing from CosmoU –
+// no preload, sandboxed, its own storage (sign-ins stay there). Only http and https; new windows open in the same view.
+const WEB_HOME = 'https://duckduckgo.com/',
+  WEB_BAR = 56;
+let webWin = null,
+  webView = null;
+// what was typed: an address, or words to search for
+function webUrl(t) {
+  t = String(t || '').trim();
+  if (!t) return WEB_HOME;
+  if (/^https?:\/\//i.test(t)) return t;
+  if (/^[\w-]+(\.[\w-]+)+(:\d+)?(\/\S*)?$/.test(t) && !/\s/.test(t)) return 'https://' + t;
+  return WEB_HOME + '?q=' + encodeURIComponent(t);
+}
+const webOk = u => /^https?:\/\//i.test(u || '');
+function webState() {
+  if (!webWin || webWin.isDestroyed() || !webView) return;
+  const w = webView.webContents,
+    h = w.navigationHistory;
+  webWin.webContents.send('web:state', {
+    url: w.getURL(),
+    title: w.getTitle(),
+    back: h ? h.canGoBack() : w.canGoBack(),
+    fwd: h ? h.canGoForward() : w.canGoForward(),
+    loading: w.isLoading(),
+  });
+}
+function webOpen(t) {
+  const url = webUrl(t);
+  if (webWin && !webWin.isDestroyed()) {
+    webView.webContents.loadURL(url);
+    if (webWin.isMinimized()) webWin.restore();
+    webWin.show();
+    webWin.focus();
+    return;
+  }
+  const w = new BrowserWindow({
+    width: 1280,
+    height: 820,
+    minWidth: 480,
+    minHeight: 360,
+    title: 'CosmoU Browser',
+    icon: path.join(__dirname, 'build', 'icon.png'),
+    backgroundColor: nativeTheme.shouldUseDarkColors ? '#1b1f28' : '#f2f4f8',
+    webPreferences: { preload: path.join(__dirname, 'browser-preload.js'), contextIsolation: true, sandbox: true, nodeIntegration: false },
+  });
+  w.setMenu(null);
+  const v = new WebContentsView({ webPreferences: { contextIsolation: true, sandbox: true, nodeIntegration: false, partition: 'persist:cosmou-web' } });
+  w.contentView.addChildView(v);
+  let full = false;
+  const lay = () => {
+    const [cw, ch] = w.getContentSize();
+    v.setBounds(full ? { x: 0, y: 0, width: cw, height: ch } : { x: 0, y: WEB_BAR, width: cw, height: Math.max(0, ch - WEB_BAR) });
+  };
+  w.on('resize', lay);
+  lay();
+  const wc = v.webContents,
+    ses = wc.session;
+  // a page asks for something (camera, place, notifications …): no – only full screen for videos
+  ses.setPermissionRequestHandler((_c, perm, cb) => cb(perm === 'fullscreen'));
+  ses.setPermissionCheckHandler((_c, perm) => perm === 'fullscreen');
+  wc.setWindowOpenHandler(({ url }) => {
+    if (webOk(url)) wc.loadURL(url);
+    return { action: 'deny' };
+  });
+  wc.on('will-navigate', (e, url) => !webOk(url) && e.preventDefault());
+  wc.on('will-redirect', (e, url) => !webOk(url) && e.preventDefault());
+  for (const ev of ['did-start-loading', 'did-stop-loading', 'did-navigate', 'did-navigate-in-page', 'page-title-updated']) wc.on(ev, webState);
+  // a video in full screen: the whole window, without the bar
+  wc.on('enter-html-full-screen', () => {
+    full = true;
+    w.setFullScreen(true);
+    lay();
+  });
+  wc.on('leave-html-full-screen', () => {
+    full = false;
+    w.setFullScreen(false);
+    lay();
+  });
+  w.webContents.on('did-finish-load', webState);
+  w.webContents.on('will-navigate', e => e.preventDefault());
+  w.on('closed', () => {
+    webWin = null;
+    webView = null;
+  });
+  webWin = w;
+  webView = v;
+  w.loadFile('browser.html');
+  wc.loadURL(url);
+}
+const fromBar = e => webWin && !webWin.isDestroyed() && e.sender === webWin.webContents;
+ipcMain.handle('openWeb', (_e, t) => webOpen(t));
+ipcMain.on('web:go', (e, t) => fromBar(e) && webView.webContents.loadURL(webUrl(t)));
+ipcMain.on('web:back', e => fromBar(e) && webView.webContents.navigationHistory.goBack());
+ipcMain.on('web:fwd', e => fromBar(e) && webView.webContents.navigationHistory.goForward());
+ipcMain.on('web:reload', e => fromBar(e) && webView.webContents.reload());
+ipcMain.on('web:home', e => fromBar(e) && webView.webContents.loadURL(WEB_HOME));
 
 // ---------- Recently played: saved on disk by the main process, so it survives restarts and updates ----------
 function recordPlay(name) {
@@ -2456,7 +2994,8 @@ ipcMain.handle('resetMusic', () => {
 const looksDir = () => path.join(app.getPath('userData'), 'looks');
 const PICTURE = /\.(jpe?g|png|webp|gif)$/i;
 const MAX_PICTURE = 15 * 1024 * 1024;
-const lookSys = s => (/^[a-z0-9]{2,12}$/.test(String(s)) ? String(s) : '');
+// (a console of CosmoU's own list, or one you made yourself – own-…: its pictures and music did not work, Eduard)
+const lookSys = s => (/^[a-z0-9]{2,12}$/.test(String(s)) || /^own-[a-z0-9-]{1,30}$/.test(String(s)) ? String(s) : '');
 const fileUrlV = f => pathToFileURL(f).href + '?v=' + Math.round(fs.statSync(f).mtimeMs);
 function lookFiles(dir, re) {
   try {

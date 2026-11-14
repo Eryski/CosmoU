@@ -46,7 +46,8 @@ function applySystem(first) {
     // many consoles: one button with the console on screen, the others in a menu
     const b = document.createElement('button');
     b.className = 'on';
-    b.textContent = SYS[curSys].short + ' ▾';
+    // Everything on screen: its name – not the console whose look it borrows (Eduard)
+    b.textContent = (everySys ? 'Everything' : SYS[curSys].short) + ' ▾';
     b.onclick = e => sysMenu(e.currentTarget);
     sw.append(b);
   } else
@@ -59,13 +60,16 @@ function applySystem(first) {
       b.onclick = () => (k === curSys && everySys ? setEvery(false) : setSystem(k));
       sw.append(b);
     }
-  $('.brand small').textContent = everySys ? 'Every console' : p.name + ' Library';
-  SHOW_LABEL.wiiu = p.name + ' games';
+  $('.brand small').textContent = everySys ? 'Everything' : p.name + ' Library';
+  // (the filter "only the games" is named after the console on screen: showLabel in js/core.js)
   // the third view button is the system's own home screen
   const vb = [...document.querySelectorAll('#vt button')];
   vb[2].dataset.m = p.home;
-  vb[2].textContent = p.homeLabel;
-  vb[2].title = p.homeLabel + ' (3)';
+  // (called "Home Menu" on every console – a console can wear another one's home screen, and "DS Menu" over N64
+  // games made no sense, Eduard; the tooltip says which one it is)
+  const hl = p.home === 'wiiu' ? p.homeLabel : 'Home Menu';
+  vb[2].textContent = hl;
+  vb[2].title = (hl === p.homeLabel ? hl : hl + ' · ' + p.homeLabel) + ' (3)';
   // the view: the one last used with this system; a new system starts on its own home screen
   // (Wii U keeps the view CosmoU always remembered)
   const saved = lsSys('viewMode');
@@ -111,6 +115,9 @@ function setSystem(k) {
   // each system keeps its own theme and view
   lsSys('style', style);
   lsSys('viewMode', mode);
+  // which way: the next console in the row comes in from the right, the one before from the left (Eduard: "hops")
+  const av = sysAvail(),
+    dir = av.indexOf(k) < av.indexOf(curSys) ? 'prev' : 'next';
   withVT(() => {
     curSys = k;
     try {
@@ -138,7 +145,7 @@ function setSystem(k) {
     // its own music, its theme's music, or your music file
     if (typeof swapLookMusic === 'function') swapLookMusic();
     render();
-  });
+  }, dir);
 }
 
 // ---------- Settings: the other consoles ----------

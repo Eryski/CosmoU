@@ -128,7 +128,7 @@ async function setTv(on) {
     vind();
     render();
   });
-  toast(tv ? '✓ TV mode · Select or ' + TV_KEY + ' to leave' : '✓ TV mode off', 3000, 'info');
+  toast(tv ? '✓ TV mode · LT or ' + TV_KEY + ' to leave' : '✓ TV mode off', 3000, 'info');
 }
 const toggleTv = () => setTv(!tv);
 addEventListener('keydown', e => {

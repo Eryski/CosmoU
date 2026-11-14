@@ -21,7 +21,7 @@ function dayName(ts) {
   return new Date(ts).toLocaleDateString('en', { month: 'short', day: 'numeric' });
 }
 const shortName = n => (n.length > 18 ? n.slice(0, 17).trim() + '…' : n);
-const gameOf = name => games.find(g => g.name === name);
+const gameOf = name => games.find(g => g.name === name) || (typeof fdItem === 'function' ? fdItem(name) : null) || undefined;
 
 // ---------- Plaza posts ----------
 const POST_MAX = 30;
@@ -164,8 +164,36 @@ async function loadLog() {
   if (!window.api || !api.playLog) return;
   try {
     const r = await api.playLog();
-    if (r && r.playtime) playLog = r;
+    if (r && r.playtime) playLog = logClean(r);
   } catch {}
+}
+// the play times as they can really be: a number edited into the settings file by hand (John: "2.45e+32 h") or a
+// broken one is left out – a session is at most a week long, lies between 2012 and now, and a game's total is never
+// more than its sessions or the time since it was first played
+const LOG_MAX = 7 * 86400;
+function logClean(r) {
+  const now = Date.now(),
+    from = Date.UTC(2012, 0, 1),
+    okT = t => Number.isFinite(t) && t >= from && t <= now + 86400000,
+    sessions = (Array.isArray(r.sessions) ? r.sessions : []).filter(
+      x => x && typeof x.name === 'string' && Number.isFinite(x.sec) && x.sec >= 60 && x.sec <= LOG_MAX && okT(x.start),
+    ),
+    sum = {},
+    playtime = {};
+  for (const x of sessions) sum[x.name] = (sum[x.name] || 0) + Math.round(x.sec);
+  for (const [name, p] of Object.entries(r.playtime && typeof r.playtime === 'object' ? r.playtime : {})) {
+    if (!p || typeof p !== 'object') continue;
+    const first = okT(p.first) ? p.first : okT(p.last) ? p.last : 0,
+      last = okT(p.last) ? p.last : first,
+      span = first ? (Math.max(last, first) - first) / 1000 + LOG_MAX : 0;
+    let sec = Number.isFinite(p.sec) && p.sec >= 0 ? Math.round(p.sec) : 0;
+    // impossible: more than the time since the first play – then what the sessions say
+    if (!first || sec > span) sec = Math.min(sum[name] || 0, span || LOG_MAX);
+    const n = Number.isFinite(p.sessions) && p.sessions >= 0 ? Math.min(Math.round(p.sessions), 100000) : 0;
+    if (!sec && !n) continue;
+    playtime[name] = { sec, sessions: n, first: first || last, last, lastSec: Number.isFinite(p.lastSec) && p.lastSec <= LOG_MAX ? p.lastSec : 0 };
+  }
+  return { playtime, sessions };
 }
 function playLine(name) {
   const p = playLog.playtime[name];

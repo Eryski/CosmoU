@@ -128,7 +128,20 @@ function openMenu(anchor, items, opts = {}) {
     h = m.offsetHeight,
     pad = 12;
   let x, y;
-  const r = anchor && anchor.getBoundingClientRect ? anchor.getBoundingClientRect() : null;
+  let r = anchor && anchor.getBoundingClientRect ? anchor.getBoundingClientRect() : null;
+  // not enough room below the row: its list scrolls up first, so the menu opens below it, under the finger
+  // (Eduard: it opened above the row)
+  if (r && r.width && r.bottom + 8 + h > innerHeight - pad) {
+    for (let el = anchor.parentElement; el && el !== document.body; el = el.parentElement) {
+      const o = getComputedStyle(el).overflowY;
+      if ((o === 'auto' || o === 'scroll') && el.scrollHeight > el.clientHeight + 2) {
+        const before = el.scrollTop;
+        el.scrollTop += r.bottom + 8 + h - (innerHeight - pad);
+        if (el.scrollTop !== before) r = anchor.getBoundingClientRect();
+        break;
+      }
+    }
+  }
   if (r && r.width) {
     x = opts.align === 'left' ? r.left : r.right - w;
     y = r.bottom + 8;
@@ -212,14 +225,14 @@ function setEvery(on) {
   if (typeof blip === 'function') blip(everySys ? 'open' : 'back');
   toast(
     everySys
-      ? '✓ The games of every console together – Sort & filter → Every console to go back'
+      ? '✓ Everything together: the games of all your consoles – choose a console (Select) to go back'
       : '✓ Only the ' + (typeof SYS === 'object' && SYS[curSys] ? SYS[curSys].name + ' ' : '') + 'games again',
     3200,
   );
 }
 function sortUi() {
   const b = $('#sort'),
-    lab = (everySys ? 'Every console · ' : '') + (showFilter !== 'all' ? SHOW_LABEL[showFilter] + ' · ' : '') + SORT_LABEL[sortMode];
+    lab = (everySys ? 'Everything · ' : '') + (showFilter !== 'all' ? showLabel(showFilter) + ' · ' : '') + SORT_LABEL[sortMode];
   b.innerHTML =
     '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M7 12h10M10 18h4"/></svg><span></span><svg class="car" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>';
   b.querySelector('span').textContent = lab;
@@ -228,10 +241,13 @@ function sortUi() {
   b.setAttribute('aria-haspopup', 'menu');
 }
 function sortMenu(anchor) {
+  // everything here counts the console on screen (or every console on "Everything")
+  const here = g => everySys || (g.kind === 'app' ? !g.appSys || g.appSys === 'all' || g.appSys === curSys : sysOf(g) === curSys);
   const n = k =>
-    games.filter(g => (k === 'fav' ? favs.has(g.name) : k === 'apps' ? g.kind === 'app' : k === 'wiiu' ? g.kind !== 'app' : true)).length;
-  const hasApps = games.some(g => g.kind === 'app'),
-    many = typeof sysAvail === 'function' && sysAvail().length > 1;
+    games.filter(g => here(g) && (k === 'fav' ? favs.has(g.name) : k === 'apps' ? g.kind === 'app' : k === 'wiiu' ? g.kind !== 'app' : true))
+      .length;
+  const hasApps = games.some(g => g.kind === 'app' && here(g)),
+    where = everySys ? 'every console' : typeof SYS === 'object' && SYS[curSys] ? 'this ' + SYS[curSys].name : 'this console';
   openMenu(
     anchor,
     [
@@ -243,24 +259,26 @@ function sortMenu(anchor) {
       { label: 'Your order', icon: 'all', on: sortMode === 'own', sub: 'RT (or “Move” in a game’s menu) moves a game', fn: () => setSort('own') },
       '-',
       { head: 'Show' },
-      { label: 'All games', icon: 'all', on: showFilter === 'all', hint: String(n('all')), fn: () => setShow('all') },
-      { label: 'Favorites', icon: 'star', on: showFilter === 'fav', hint: String(n('fav')), sub: many ? 'From every console' : '', fn: () => setShow('fav') },
-      many && {
-        label: 'Every console',
+      {
+        label: 'All',
         icon: 'all',
-        on: everySys,
-        sub: everySys ? 'On · the games of all consoles together' : 'The games of all consoles on one page',
-        fn: () => setEvery(!everySys),
+        on: showFilter === 'all',
+        hint: String(n('all')),
+        sub: hasApps ? 'Games and apps on ' + where : 'Every game on ' + where,
+        fn: () => setShow('all'),
       },
+      { label: 'Favorites', icon: 'star', on: showFilter === 'fav', hint: String(n('fav')), sub: 'Your favorites on ' + where, fn: () => setShow('fav') },
       hasApps && {
-        label: 'Wii U games',
-        icon: 'wiiu',
+        label: 'Games only',
+        sub: 'Without the apps you added',
+        icon: 'play',
         on: showFilter === 'wiiu',
         hint: String(n('wiiu')),
         fn: () => setShow('wiiu'),
       },
       hasApps && {
-        label: 'Other apps',
+        label: 'Apps only',
+        sub: 'PC games, ports and programs you added',
         icon: 'apps',
         on: showFilter === 'apps',
         hint: String(n('apps')),
@@ -296,6 +314,12 @@ function gameMenu(g, at) {
         hint: 'F',
         fn: () => toggleFav(g),
       },
+      typeof fdMoveMenu === 'function' && {
+        label: fdNameOf(g) ? 'Folder: ' + fdNameOf(g) + '…' : 'Put in a folder…',
+        icon: 'folder',
+        sub: 'Mods, tools, games to finish …',
+        fn: () => setTimeout(() => fdMoveMenu(g, at), 30),
+      },
       typeof markWheel === 'function' && {
         label: typeof markOf === 'function' && markOf(g.name) ? 'Mark: ' + markOf(g.name).label + '…' : 'Mark with a colour…',
         icon: 'mark',
@@ -307,7 +331,7 @@ function gameMenu(g, at) {
       cemuGame(g) && !IS_MOBILE && { label: 'Graphic packs', icon: 'packs', hint: 'G', fn: pick(() => openPacks(g)) },
       app && { label: 'Edit app', icon: 'edit', fn: pick(() => openApp(g)) },
       typeof orderStart === 'function' &&
-        (mode === 'covers' || mode === 'grid') && { label: 'Move', icon: 'all', hint: 'RT', sub: 'Change its place in your order', fn: pick(() => orderStart()) },
+        orderHere() && { label: 'Move', icon: 'all', hint: 'RT', sub: 'Change its place in your order', fn: pick(() => orderStart()) },
       g.path && !IS_MOBILE && { label: 'Show in folder', icon: 'folder', fn: () => need() && api.showInFolder(g.path) },
       cemuGame(g) && !IS_MOBILE && { label: 'Add to Steam', icon: 'steam', fn: pick(() => openSteam(g)) },
       {
@@ -452,14 +476,14 @@ const KEYS = [
     ],
   ],
   [
-    'Switch',
+    'Switch and Switch 2',
     [
       ['← → ↑ ↓', 'Move the frame'],
       ['Enter', 'Start · OK'],
       ['Esc', 'Back'],
       ['+ · I', 'The game’s page'],
-      ['S · Y', 'All Software · sort'],
-      ['/', 'Search in All Software'],
+      ['S · Y', 'All Software · sort (Switch 2: Library · next filter)'],
+      ['/', 'Search'],
       ['Q', 'Quick Settings'],
       ['T', 'Themes'],
       ['PageUp · PageDown', 'Console'],
@@ -478,7 +502,8 @@ const KEYS = [
       ['LB · RB', 'Console · categories'],
       ['Home', 'Quick Menu'],
       ['Start', 'Settings'],
-      ['Select', 'TV mode'],
+      ['Select', 'Choose a console'],
+      ['LT', 'TV mode'],
       ['L + ↓ + Select', 'Close the running game'],
     ],
   ],
@@ -510,12 +535,12 @@ function openKeys() {
         grp.append(r);
       }
       sec.append(grp);
-      if (h === 'Switch') sec.dataset.sw = '1';
+      if (h === 'Switch and Switch 2') sec.dataset.sw = '1';
       box.append(sec);
     }
   // the Switch's keys only with a Switch (its own interface)
   const sw = box.querySelector('[data-sw]');
-  if (sw) sw.hidden = !(typeof nxLookOf === 'function' && sysAvail().some(k => nxLookOf(k) === 'switch'));
+  if (sw) sw.hidden = !(typeof nxLookOf === 'function' && sysAvail().some(k => /^switch2?$/.test(nxLookOf(k))));
   blip('open');
   $('#keysdlg').showModal();
 }
@@ -529,7 +554,7 @@ if (typeof whMenuItems === 'function') {
     const l = _wmi(kind);
     for (const it of l)
       if (Array.isArray(it) && it[0] === 'sort') {
-        it[1] = 'Sort & filter: ' + (showFilter !== 'all' ? SHOW_LABEL[showFilter] + ' · ' : '') + SORT_LABEL[sortMode];
+        it[1] = 'Sort & filter: ' + (showFilter !== 'all' ? showLabel(showFilter) + ' · ' : '') + SORT_LABEL[sortMode];
         it[3] = () => sortMenu(null);
       }
     if (kind !== 'power') l.push(['keys', 'Keyboard shortcuts', '#8b959e', () => openKeys()]);
@@ -547,7 +572,7 @@ render = function () {
   const b = document.querySelector('.brand small'),
     n = games.filter(g => g.kind !== 'app' && (everySys || sysOf(g) === curSys)).length;
   if (b)
-    b.textContent = (everySys ? 'Every console' : SYS[curSys].name + ' Library') + (n ? ' · ' + n + (n === 1 ? ' game' : ' games') : '');
+    b.textContent = (everySys ? 'Everything' : SYS[curSys].name + ' Library') + (n ? ' · ' + n + (n === 1 ? ' game' : ' games') : '');
   const g = cur();
   if (g && mode === 'grid') {
     coverMeta(g, -1, 0, $('#hmeta'));
@@ -570,8 +595,8 @@ render = function () {
   if (mode === 'grid' && view === 'recent') recentGroups();
 };
 const _gridSelM = gridSel;
-gridSel = function (name) {
-  if (!_gridSelM(name)) return false;
+gridSel = function (name, still) {
+  if (!_gridSelM(name, still)) return false;
   const g = cur();
   if (g) {
     coverMeta(g, -1, 0, $('#hmeta'));
